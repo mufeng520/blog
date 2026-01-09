@@ -1,18 +1,39 @@
 ---
-const blogs = [{"link": "post-1", "title": "我准备好了"}];
+const allPosts = Object.values(import.meta.glob('./posts/*.md', { eager: true }));
 ---
 <html lang = "zh">
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width" />
     <title>Astro</title>
+    <style>
+      .header {
+				display: flex;
+				justify-content: center;
+				position: relative;
+				align-items: center;
+			}
+			.header-left {
+				position: absolute;
+				left: 0;
+				display: flex;
+				align-items: center;
+				gap: 8px;
+			}
+    </style>
   </head>
   <body>
-    <a href="/">首页</a>
-    <a href="/blog/">博客</a>
+		<div class="header">
+			<div class="header-left">
+				<img src="/favicon.ico" alt="首页" style="width: 24px; height: 24px; cursor: pointer;" onclick="window.location.href='/'">
+				<a href="/" style="margin-right: 24px;">你好，我是木风</a>
+			</div>
+			<a href="/blog/" style="margin-left: 24px;">博客</a>
+			<div></div>
+		</div>
 
     <ul>
-      {blogs.map((blog) => <li class="blog"><a href={`/posts/${blog.link}/`}>{blog.title}</a></li>)}
+      {allPosts.map((post: any) => <li><a href={post.url}>{post.frontmatter.title}</a></li>)}
     </ul>
   </body>
 </html>
