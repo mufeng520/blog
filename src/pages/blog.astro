@@ -1,4 +1,5 @@
 ---
+const blogs = [{"link": "post-1", "title": "我准备好了"}];
 ---
 <html lang = "zh">
   <head>
@@ -11,7 +12,7 @@
     <a href="/blog/">博客</a>
 
     <ul>
-      <li><a href="/posts/post-1/">我准备好了</a></li>
+      {blogs.map((blog) => <li class="blog"><a href={`/posts/${blog.link}/`}>{blog.title}</a></li>)}
     </ul>
   </body>
 </html>
