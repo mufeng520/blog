@@ -1,0 +1,302 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="P5.js 演示 - 木风">
+  <style>
+    .demo-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .demo-section {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(10px);
+      border-radius: 24px;
+      padding: 30px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .demo-title {
+      font-size: 2rem;
+      font-weight: 600;
+      color: #1a202c;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+
+    .demo-description {
+      color: #4a5568;
+      text-align: center;
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .canvas-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 12px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.05);
+      padding: 10px;
+    }
+
+    .canvas-container {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    }
+
+    .page-title {
+      text-align: center;
+      font-size: 2.5rem;
+      color: #2d3748;
+      margin-bottom: 15px;
+      font-weight: 300;
+      letter-spacing: 2px;
+    }
+
+    .page-subtitle {
+      text-align: center;
+      color: #718096;
+      margin-bottom: 40px;
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 768px) {
+      .demo-container {
+        padding: 15px;
+      }
+
+      .demo-section {
+        padding: 20px;
+      }
+
+      .demo-title {
+        font-size: 1.5rem;
+      }
+
+      .page-title {
+        font-size: 2rem;
+      }
+    }
+  </style>
+
+  <div class="demo-container">
+    <h1 class="page-title">P5.js 创意演示</h1>
+    <p class="page-subtitle">探索创意编程的无限可能 ✨</p>
+
+    <!-- Demo 1: 粒子系统 -->
+    <div class="demo-section">
+      <h2 class="demo-title">🌟 粒子系统</h2>
+      <p class="demo-description">鼠标移动时创建美丽的粒子效果</p>
+      <div class="canvas-wrapper">
+        <div id="canvas1" class="canvas-container"></div>
+      </div>
+    </div>
+
+    <!-- Demo 2: 波浪效果 -->
+    <div class="demo-section">
+      <h2 class="demo-title">🌊 动态波浪</h2>
+      <p class="demo-description">流畅的波浪动画效果</p>
+      <div class="canvas-wrapper">
+        <div id="canvas2" class="canvas-container"></div>
+      </div>
+    </div>
+
+    <!-- Demo 3: 互动网格 -->
+    <div class="demo-section">
+      <h2 class="demo-title">✨ 互动网格</h2>
+      <p class="demo-description">跟随鼠标的网格变形效果</p>
+      <div class="canvas-wrapper">
+        <div id="canvas3" class="canvas-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js" is:inline></script>
+  <script is:inline>
+    // 等待 p5.js 和 DOM 完全加载
+    function initP5Demos() {
+      // 确保 p5 已加载
+      if (typeof p5 === 'undefined') {
+        setTimeout(initP5Demos, 100);
+        return;
+      }
+
+      // Demo 1: 粒子系统
+      (function() {
+        let particles = [];
+        const canvas1Id = 'canvas1';
+
+        new p5(function(p) {
+          p.setup = function() {
+            const container = document.getElementById(canvas1Id);
+            if (!container) {
+              console.error('Container canvas1 not found');
+              return;
+            }
+            // 确保容器有尺寸
+            const containerWidth = container.offsetWidth || 800;
+            const width = Math.min(800, Math.max(300, containerWidth - 20));
+            const canvas = p.createCanvas(width, 400);
+            canvas.parent(canvas1Id);
+            p.colorMode(p.HSB, 360, 100, 100, 1);
+            p.noStroke();
+          };
+
+          p.draw = function() {
+            p.background(240, 20, 100, 0.1);
+            
+            if (p.mouseX > 0 && p.mouseY > 0) {
+              for (let i = 0; i < 5; i++) {
+                particles.push({
+                  x: p.mouseX + p.random(-10, 10),
+                  y: p.mouseY + p.random(-10, 10),
+                  vx: p.random(-2, 2),
+                  vy: p.random(-2, 2),
+                  life: 255,
+                  hue: (p.frameCount * 2) % 360
+                });
+              }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+              const part = particles[i];
+              part.x += part.vx;
+              part.y += part.vy;
+              part.life -= 3;
+              part.vy += 0.1;
+
+              if (part.life > 0 && part.x > 0 && part.x < p.width && part.y > 0 && part.y < p.height) {
+                p.fill(part.hue, 80, 90, part.life / 255);
+                p.noStroke();
+                p.ellipse(part.x, part.y, 8, 8);
+              } else {
+                particles.splice(i, 1);
+              }
+            }
+          };
+        });
+      })();
+
+      // Demo 2: 波浪效果
+      (function() {
+        let waveOffset = 0;
+        const canvas2Id = 'canvas2';
+
+        new p5(function(p) {
+          p.setup = function() {
+            const container = document.getElementById(canvas2Id);
+            if (!container) {
+              console.error('Container canvas2 not found');
+              return;
+            }
+            const containerWidth = container.offsetWidth || 800;
+            const width = Math.min(800, Math.max(300, containerWidth - 20));
+            const canvas = p.createCanvas(width, 400);
+            canvas.parent(canvas2Id);
+            p.colorMode(p.RGB);
+          };
+
+          p.draw = function() {
+            p.background(240, 240, 250);
+            p.stroke(96, 165, 250);
+            p.strokeWeight(3);
+            p.noFill();
+
+            waveOffset += 0.02;
+            
+            // 绘制多层波浪
+            for (let layer = 0; layer < 5; layer++) {
+              p.beginShape();
+              const layerOffset = layer * 0.3;
+              const amplitude = 50 + layer * 10;
+              const frequency = 0.01;
+              
+              for (let x = 0; x <= p.width; x += 5) {
+                const y = p.height / 2 + 
+                  p.sin((x * frequency) + waveOffset + layerOffset) * amplitude * 
+                  p.cos(waveOffset * 2 + layer * 0.5);
+                p.vertex(x, y);
+              }
+              
+              const alpha = 255 - layer * 40;
+              p.stroke(236 - layer * 20, 72 + layer * 15, 153 - layer * 20, alpha);
+              p.endShape();
+            }
+          };
+        });
+      })();
+
+      // Demo 3: 互动网格
+      (function() {
+        const canvas3Id = 'canvas3';
+        const gridSize = 30;
+        let mouseTargetX = 0;
+        let mouseTargetY = 0;
+
+        new p5(function(p) {
+          p.setup = function() {
+            const container = document.getElementById(canvas3Id);
+            if (!container) {
+              console.error('Container canvas3 not found');
+              return;
+            }
+            const containerWidth = container.offsetWidth || 800;
+            const width = Math.min(800, Math.max(300, containerWidth - 20));
+            const canvas = p.createCanvas(width, 400);
+            canvas.parent(canvas3Id);
+            p.colorMode(p.RGB);
+          };
+
+          p.draw = function() {
+            p.background(250, 245, 255);
+            
+            mouseTargetX = p.lerp(mouseTargetX, p.mouseX, 0.1);
+            mouseTargetY = p.lerp(mouseTargetY, p.mouseY, 0.1);
+
+            for (let x = 0; x <= p.width; x += gridSize) {
+              for (let y = 0; y <= p.height; y += gridSize) {
+                const distance = p.dist(x, y, mouseTargetX, mouseTargetY);
+                const maxDistance = p.dist(0, 0, p.width, p.height);
+                const influence = p.map(distance, 0, maxDistance, 1, 0);
+                
+                const offsetX = (x - mouseTargetX) * influence * 0.3;
+                const offsetY = (y - mouseTargetY) * influence * 0.3;
+                
+                const finalX = x + offsetX;
+                const finalY = y + offsetY;
+
+                p.stroke(236, 72, 153, 100 + influence * 155);
+                p.strokeWeight(1 + influence * 2);
+                p.point(finalX, finalY);
+
+                // 绘制连线
+                if (x < p.width && y < p.height) {
+                  const nextX = x + gridSize + offsetX * 0.5;
+                  const nextY = y + offsetY * 0.5;
+                  p.stroke(96, 165, 250, 50 + influence * 100);
+                  p.line(finalX, finalY, nextX, nextY);
+                }
+              }
+            }
+          };
+        });
+      })();
+    }
+
+    // 等待 DOM 和 p5.js 都准备好
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initP5Demos, 100);
+      });
+    } else {
+      setTimeout(initP5Demos, 100);
+    }
+  </script>
+</BaseLayout>

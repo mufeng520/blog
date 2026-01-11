@@ -1,0 +1,125 @@
+{
+    "header": [
+        " *   ",
+        " *   如非需要调试，本文件可删除",
+        " *   非专业人员可将本文件删除",
+        " *   详细介绍请参考: https://bazhan.wang/faq#INFO-JSON",
+        " *   "
+    ],
+    "resources": [
+        {
+            "url": "https://www.jinchuang.org/fireworks/",
+            "path": "index.html",
+            "saved": true,
+            "size": 6808,
+            "children": [
+                {
+                    "url": "https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/fscreen%401.0.1.js",
+                    "saved": false
+                },
+                {
+                    "url": "https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/Stage%400.1.4.js",
+                    "saved": false
+                },
+                {
+                    "url": "https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/MyMath.js",
+                    "saved": false
+                },
+                {
+                    "url": "https://www.jinchuang.org/fireworks/script.js",
+                    "path": "js/script.js",
+                    "saved": true,
+                    "size": 0,
+                    "children": []
+                },
+                {
+                    "url": "https://fonts.googleapis.com/css?family=Russo+One",
+                    "saved": false
+                },
+                {
+                    "url": "https://cdnjs.cloudflare.com/ajax/libs/reseter.css/2.0.0/reseter.min.css",
+                    "path": "css/reseter.min.css",
+                    "saved": true,
+                    "size": 2161,
+                    "children": []
+                },
+                {
+                    "url": "https://www.jinchuang.org/fireworks/style.css",
+                    "path": "css/style.css",
+                    "saved": true,
+                    "size": 6096,
+                    "children": []
+                },
+                {
+                    "url": "https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/firework-burst-icon-v2.png",
+                    "saved": false
+                },
+                {
+                    "url": "https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/firework-burst-icon-v2.png",
+                    "saved": false
+                },
+                {
+                    "url": "https://s3-us-west-2.amazonaws.com/s.cdpn.io/329180/firework-burst-icon-v2.png",
+                    "saved": false
+                }
+            ]
+        }
+    ],
+    "alias": "www-jinchuang-org-pq7ep4qj",
+    "info": {
+        "remark": [],
+        "title": "HTML5超逼真烟花绽放动画 - 靳闯网站",
+        "domain": "www.jinchuang.org",
+        "origin": "https://www.jinchuang.org",
+        "ip": "18.158.204.42",
+        "main": "index.html",
+        "url": "https://www.jinchuang.org/fireworks/",
+        "totalSize": "15.1 kB",
+        "request": {
+            "headers": {
+                "accept": "text/html,*/*",
+                "accept-language": "zh-CN,zh;q=0.9",
+                "cache-control": "no-cache",
+                "cookie": "",
+                "referer": "https://www.jinchuang.org/fireworks/",
+                "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
+                "x-scraper-website": "https://bazhan.wang/"
+            }
+        },
+        "response": {
+            "responseUrl": "https://www.jinchuang.org/fireworks/",
+            "redirects": [],
+            "statusCode": 200,
+            "headers": {
+                "date": "Sat, 02 Jul 2022 13:23:01 GMT",
+                "content-type": "text/html; charset=utf-8",
+                "content-length": "6932",
+                "connection": "close",
+                "server": "nginx",
+                "last-modified": "Sat, 14 May 2022 03:03:54 GMT",
+                "vary": "Accept-Encoding",
+                "etag": "\"627f1c1a-1b14\"",
+                "country": "IN",
+                "city": "Asia/Kolkata",
+                "domain": "www.jinchuang.org",
+                "accept-ranges": "bytes",
+                "x-nws-log-uuid": "0498a356-5fba-4b16-a92c-7bc2b004edfd",
+                "x-daa-tunnel": "hop_count=1",
+                "strict-transport-security": "max-age=31536000;",
+                "cache-control": "no-cache"
+            }
+        },
+        "time": {
+            "start": "2022-07-02T13:22:58.402Z",
+            "end": "2022-07-02T13:23:05.338Z"
+        }
+    },
+    "options": {
+        "url": "https://www.jinchuang.org/fireworks/",
+        "referer": "",
+        "cookies": "",
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/78.0.3904.108 Safari/537.36",
+        "formatter": [],
+        "filenameGenerator": "byType"
+    }
+}
