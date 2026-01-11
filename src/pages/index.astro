@@ -1,87 +1,37 @@
 ---
-
+import BaseLayout from '../layouts/BaseLayout.astro';
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/x-icon" href="/favicon.ico" />
-		<link rel="apple-touch-icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<meta name="author" content="木风" />
-		<title>Read in the air</title>
-		<style>
-			.header {
-				display: flex;
-				justify-content: center;
-				position: relative;
-				align-items: center;
-			}
-			.header-left {
-				position: absolute;
-				left: 0;
-				display: flex;
-				align-items: center;
-				gap: 8px;
-			}
-			.header a {
-				text-decoration: none;
-				color: #6bdfff;
-				transition: all 0.3s ease;
-			}
-			.header a:hover {
-				color: #fb82ff;
-				transform: translateY(-2px);
-				text-shadow: 0 2px 4px rgba(220, 40, 40, 0.1);
-			}
-			h1 {
-				display: flex;/** 该元素生成一个弹性盒子，可以沿着主轴和交叉轴排列子元素。 */
-				justify-content: center;
-				align-items: center;
-				/* min-height: 100vh; */
-				margin: 0;
-			}
-			.content {
-				position: relative;
-				min-height: 70vh;
-				width: 100%;
-				padding: 20px;
-			}
-			.word-cloud {
-				position: absolute;
-				display: inline-block;
-				font-weight: bold;
-				color: #6bdfff;
-				transition: all 0.3s ease;
-				text-decoration: none;
-				cursor: pointer;
-			}
-			.word-cloud:hover {
-				color: #fb82ff;
-				transform: scale(1.1) !important;
-				text-shadow: 0 4px 8px rgba(251, 130, 255, 0.4);
-				z-index: 10;
-			}
-		</style>
-	</head>
-	<body>
-		<div class="header">
-			<div class="header-left">
-				<img src="/avatar.jpg" alt="首页" style="width: 24px; height: 24px; cursor: pointer;" onclick="window.location.href='/'">
-				<a href="/" style="margin-right: 24px;">你好，我是木风</a>
-			</div>
-			<a href="/blog/" style="margin-left: 24px;">博客</a>
-			<div></div>
-		</div>
-		<div class="content">
-			<span class="word-cloud" style="font-size: 48px; top: 18%; left: 15%; transform: rotate(-15deg);">装修中（0/100）</span>
-			<span class="word-cloud" style="font-size: 32px; top: 30%; left: 50%; transform: rotate(10deg);">崩坏：星穹铁道</span>
-			<span class="word-cloud" style="font-size: 42px; top: 55%; left: 35%; transform: rotate(5deg);">感谢<a href="https://www.viki.moe/">viki</a></span>
-			<span class="word-cloud" style="font-size: 32px; top: 39%; left: 68%; transform: rotate(-7deg);">python</span>
-			<span class="word-cloud" style="font-size: 32px; top: 45%; left: 23%; transform: rotate(5deg);">工程造价</span>
-			<span class="word-cloud" style="font-size: 32px; top: 65%; left: 60%; transform: rotate(-12deg);">辅助</span>
-
-		</div>
-	</body>
-</html>
+<BaseLayout title="Read in the air">
+	<style>
+		.content {
+			position: relative;
+			min-height: 70vh;
+			width: 100%;
+			padding: 20px;
+		}
+		.word-cloud {
+			position: absolute;
+			display: inline-block;
+			font-weight: bold;
+			color: #6bdfff;
+			transition: all 0.3s ease;
+			text-decoration: none;
+			cursor: pointer;
+		}
+		.word-cloud:hover {
+			color: #fb82ff;
+			transform: scale(1.1) !important;
+			text-shadow: 0 4px 8px rgba(251, 130, 255, 0.4);
+			z-index: 10;
+		}
+	</style>
+	<div class="content">
+		<span class="word-cloud" style="font-size: 48px; top: 18%; left: 15%; transform: rotate(-15deg);">装修中（0/100）</span>
+		<span class="word-cloud" style="font-size: 32px; top: 30%; left: 50%; transform: rotate(10deg);">崩坏：星穹铁道</span>
+		<span class="word-cloud" style="font-size: 42px; top: 55%; left: 35%; transform: rotate(5deg);">感谢<a href="https://www.viki.moe/">viki</a></span>
+		<span class="word-cloud" style="font-size: 32px; top: 39%; left: 68%; transform: rotate(-7deg);">python</span>
+		<span class="word-cloud" style="font-size: 32px; top: 45%; left: 23%; transform: rotate(5deg);">工程造价</span>
+		<span class="word-cloud" style="font-size: 32px; top: 65%; left: 60%; transform: rotate(-12deg);">辅助</span>
+	</div>
+</BaseLayout>

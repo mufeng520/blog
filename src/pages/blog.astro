@@ -1,39 +1,83 @@
 ---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
 const allPosts = Object.values(import.meta.glob('./posts/*.md', { eager: true }));
 ---
-<html lang = "zh">
-  <head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width" />
-    <title>Astro</title>
-    <style>
-      .header {
-				display: flex;
-				justify-content: center;
-				position: relative;
-				align-items: center;
-			}
-			.header-left {
-				position: absolute;
-				left: 0;
-				display: flex;
-				align-items: center;
-				gap: 8px;
-			}
-    </style>
-  </head>
-  <body>
-		<div class="header">
-			<div class="header-left">
-				<img src="/favicon.ico" alt="首页" style="width: 24px; height: 24px; cursor: pointer;" onclick="window.location.href='/'">
-				<a href="/" style="margin-right: 24px;">你好，我是木风</a>
-			</div>
-			<a href="/blog/" style="margin-left: 24px;">博客</a>
-			<div></div>
-		</div>
+<BaseLayout title="博客 - 木风">
+  <style>
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
 
-    <ul>
-      {allPosts.map((post: any) => <li><a href={post.url}>{post.frontmatter.title}</a></li>)}
+    .page-title {
+      text-align: center;
+      font-size: 2.5rem;
+      color: #2d3748;
+      margin-bottom: 50px;
+      font-weight: 300;
+      letter-spacing: 2px;
+    }
+
+    .posts-list {
+      list-style: none;
+      display: grid;
+      gap: 20px;
+    }
+
+    .post-item {
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .post-item:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(236, 72, 153, 0.25);
+    }
+
+    .post-item a {
+      text-decoration: none;
+      color: #2d3748;
+      font-size: 1.1rem;
+      font-weight: 400;
+      display: block;
+      transition: color 0.3s ease;
+    }
+
+    .post-item a:hover {
+      color: #ec4899;
+    }
+
+    .post-item::before {
+      content: "📝";
+      margin-right: 12px;
+      font-size: 1.2rem;
+    }
+
+    @media (max-width: 768px) {
+      .page-title {
+        font-size: 2rem;
+      }
+
+      .container {
+        padding: 0 15px;
+      }
+    }
+  </style>
+
+  <div class="container">
+    <h1 class="page-title">我的博客</h1>
+    <ul class="posts-list">
+      {allPosts.map((post: any) => (
+        <li class="post-item">
+          <a href={post.url}>{post.frontmatter.title}</a>
+        </li>
+      ))}
     </ul>
-  </body>
-</html>
+  </div>
+</BaseLayout>
