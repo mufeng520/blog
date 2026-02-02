@@ -1719,7 +1719,7 @@ class Shell {
 		// making comet "heavy" limits air drag
 		comet.heavy = true;
 		// comet spark trail
-		comet.spinRadius = MyMath.random(0.32, 0.85);
+		comet.spinRadius = Math.random() * (0.85 - 0.32) + 0.32;
 		comet.sparkFreq = 32 / quality;
 		if (isHighQuality) comet.sparkFreq = 8;
 		comet.sparkLife = 320;
@@ -1877,8 +1877,8 @@ class Shell {
 					const initSpeedX = Math.sin(angle) * speed * ringSquash;
 					const initSpeedY = Math.cos(angle) * speed;
 					// Rotate ring
-					const newSpeed = MyMath.pointDist(0, 0, initSpeedX, initSpeedY);
-					const newAngle = MyMath.pointAngle(0, 0, initSpeedX, initSpeedY) + ringStartAngle;
+					const newSpeed = Math.sqrt(initSpeedX *initSpeedX + initSpeedY * initSpeedY);
+					const newAngle = Math.PI / 2 + Math.atan2(initSpeedY, initSpeedX) + ringStartAngle;
 					const star = Star.add(
 						x,
 						y,
@@ -2229,7 +2229,7 @@ const soundManager = {
 	 */
 	playSound(type, scale=1) {
 		// Ensure `scale` is within valid range.
-		scale = MyMath.clamp(scale, 0, 1);
+		scale = Math.min(Math.max(scale, 0), 1);
 
 		// Disallow starting new sounds if sound is disabled, app is running in slow motion, or paused.
 		// Slow motion check has some wiggle room in case user doesn't finish dragging the speed bar
@@ -2254,10 +2254,7 @@ const soundManager = {
 		}
 		
 		const initialVolume = source.volume;
-		const initialPlaybackRate = MyMath.random(
-			source.playbackRateMin,
-			source.playbackRateMax
-		);
+		const initialPlaybackRate = Math.random() * (source.playbackRateMax - source.playbackRateMin) + source.playbackRateMin;
 		
 		// Volume descreases with scale.
 		const scaledVolume = initialVolume * scale;
@@ -2267,8 +2264,13 @@ const soundManager = {
 		
 		const gainNode = this.ctx.createGain();
 		gainNode.gain.value = scaledVolume;
-
-		const buffer = MyMath.randomChoice(source.buffers);
+		function randomChoice(choices) {
+			if (arguments.length === 1 && Array.isArray(choices)) {
+				return choices[(Math.random() * choices.length) | 0];
+			}
+			return arguments[(Math.random() * arguments.length) | 0];
+		};
+		const buffer = randomChoice(source.buffers);
 		const bufferSource = this.ctx.createBufferSource();
 		bufferSource.playbackRate.value = scaledPlaybackRate;
 		bufferSource.buffer = buffer;
