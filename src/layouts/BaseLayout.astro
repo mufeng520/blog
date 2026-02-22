@@ -18,10 +18,10 @@ const { title } = Astro.props;
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-        background: linear-gradient(135deg, #1fddff 0%, #FFEDBC 50%, #96DEDA 100%);
+        font-family: "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #fff;
         min-height: 100vh;
-        color: #2d3748;
+        color: #333;
         line-height: 1.6;
         display: flex;
         flex-direction: column;
@@ -35,10 +35,9 @@ const { title } = Astro.props;
         position: relative;
         align-items: center;
         padding: 20px;
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(10px);
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        margin-bottom: 40px;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border-bottom: 1px solid #eee;
       }
 
       .header-left {
@@ -62,135 +61,77 @@ const { title } = Astro.props;
 
       .header a {
         text-decoration: none;
-        color: #60a5fa;
+        color: #555;
         font-weight: 500;
         transition: all 0.3s ease;
         padding: 8px 16px;
-        border-radius: 20px;
+        position: relative;
+        background: transparent;
       }
-
+      .header a::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border: 2px solid #FFD700;
+        border-radius: 0;
+        clip-path: polygon(
+          0% 0%, 
+          calc(100% - 12px) 0%, 
+          calc(100% - 12px) 4px,
+          100% 4px,
+          100% 8px,
+          calc(100% - 4px) 8px,
+          calc(100% - 4px) 100%,
+          0% 100%
+        );
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: -1;
+      }
+      .header a::after {
+        content: '';
+        position: absolute;
+        inset: 2px;
+        border: 1px solid #1a3a5c;
+        border-radius: 0;
+        clip-path: polygon(
+          0% 0%, 
+          calc(100% - 10px) 0%, 
+          calc(100% - 10px) 2px,
+          calc(100% - 2px) 2px,
+          calc(100% - 2px) 6px,
+          100% 6px,
+          100% calc(100% - 2px),
+          0% calc(100% - 2px)
+        );
+        opacity: 0;
+        transition: opacity 0.3s;
+        z-index: -1;
+      }
       .header a:hover {
-        color: #ec4899;
-        background: rgba(236, 72, 153, 0.15);
+        color: #1a3a5c;
+        background: #FFD700;
+      }
+      .header a:hover::before,
+      .header a:hover::after {
+        opacity: 1;
       }
 
       main {
         flex: 1;
         position: relative;
         z-index: 1;
-      }
-
-      /* 泡泡动画效果 */
-      .bubbles {
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-        z-index: 0;
-        overflow: hidden;
-      }
-
-      .bubble {
-        position: absolute;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
-        animation: float 15s infinite ease-in-out;
-        opacity: 0.6;
-      }
-
-      .bubble:nth-child(1) {
-        width: 80px;
-        height: 80px;
-        left: 10%;
-        animation-delay: 0s;
-        animation-duration: 20s;
-      }
-
-      .bubble:nth-child(2) {
-        width: 60px;
-        height: 60px;
-        left: 30%;
-        animation-delay: 2s;
-        animation-duration: 18s;
-      }
-
-      .bubble:nth-child(3) {
-        width: 100px;
-        height: 100px;
-        left: 50%;
-        animation-delay: 4s;
-        animation-duration: 22s;
-      }
-
-      .bubble:nth-child(4) {
-        width: 70px;
-        height: 70px;
-        left: 70%;
-        animation-delay: 1s;
-        animation-duration: 19s;
-      }
-
-      .bubble:nth-child(5) {
-        width: 90px;
-        height: 90px;
-        left: 85%;
-        animation-delay: 3s;
-        animation-duration: 21s;
-      }
-
-      .bubble:nth-child(6) {
-        width: 50px;
-        height: 50px;
-        left: 20%;
-        animation-delay: 5s;
-        animation-duration: 17s;
-      }
-
-      .bubble:nth-child(7) {
-        width: 75px;
-        height: 75px;
-        left: 60%;
-        animation-delay: 2.5s;
-        animation-duration: 20s;
-      }
-
-      .bubble:nth-child(8) {
-        width: 65px;
-        height: 65px;
-        left: 40%;
-        animation-delay: 3.5s;
-        animation-duration: 18s;
-      }
-
-      @keyframes float {
-        0%, 100% {
-          transform: translateY(100vh) translateX(0) scale(1);
-          opacity: 0;
-        }
-        10% {
-          opacity: 0.6;
-        }
-        90% {
-          opacity: 0.6;
-        }
-        100% {
-          transform: translateY(-100px) translateX(50px) scale(1.2);
-          opacity: 0;
-        }
+        background: #fafafa;
       }
 
       .footer {
         margin-top: 60px;
         padding: 30px 20px;
-        background: rgba(255, 255, 255, 0.5);
-        backdrop-filter: blur(10px);
+        background: #fff;
         text-align: center;
-        color: #718096;
+        color: #666;
         font-size: 0.9rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.3);
+        border-top: 1px solid #eee;
       }
 
       .footer-content {
@@ -211,13 +152,13 @@ const { title } = Astro.props;
       }
 
       .footer-links a {
-        color: #60a5fa;
+        color: #666;
         text-decoration: none;
         transition: color 0.3s ease;
       }
 
       .footer-links a:hover {
-        color: #ec4899;
+        color: #00a8e8;
       }
 
       @media (max-width: 768px) {
@@ -242,16 +183,6 @@ const { title } = Astro.props;
     </style>
   </head>
   <body>
-    <div class="bubbles">
-      <div class="bubble"></div>
-      <div class="bubble"></div>
-      <div class="bubble"></div>
-      <div class="bubble"></div>
-      <div class="bubble"></div>
-      <div class="bubble"></div>
-      <div class="bubble"></div>
-      <div class="bubble"></div>
-    </div>
     <header class="header">
       <div class="header-left">
         <img src="/favicon.ico" alt="首页" onclick="window.location.href='/'">
@@ -259,6 +190,7 @@ const { title } = Astro.props;
       </div>
       <a href="/blog/">博客</a>
       <a href="/borrow/">他山之石</a>
+      <a href="/pv/">PV 预览</a>
     </header>
 
     <main>
@@ -272,6 +204,7 @@ const { title } = Astro.props;
           <a href="/">首页</a>
           <a href="/blog/">博客</a>
           <a href="/borrow/">他山之石</a>
+          <a href="/pv/">PV 预览</a>
         </div>
         <p style="margin-top: 15px; font-size: 0.85rem;">愿你每一天都充满阳光 ☀️</p>
       </div>

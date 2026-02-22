@@ -14,16 +14,20 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 			position: absolute;
 			display: inline-block;
 			font-weight: bold;
-			color: #6bdfff;
+			color: #00a8e8;
 			transition: all 0.3s ease;
 			text-decoration: none;
 			cursor: pointer;
 		}
 		.word-cloud:hover {
-			color: #fb82ff;
+			color: #0077b6;
 			transform: scale(1.1) !important;
-			text-shadow: 0 4px 8px rgba(251, 130, 255, 0.4);
+			text-shadow: 0 4px 8px rgba(0, 168, 232, 0.3);
 			z-index: 10;
+		}
+		.word-cloud a {
+			color: inherit;
+			text-decoration: none;
 		}
 	</style>
 	<div class="content">
