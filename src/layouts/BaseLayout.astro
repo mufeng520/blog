@@ -60,61 +60,25 @@ const { title } = Astro.props;
       }
 
       .header a {
-        text-decoration: none;
-        color: #555;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        padding: 8px 16px;
         position: relative;
-        background: transparent;
-      }
-      .header a::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border: 2px solid #FFD700;
-        border-radius: 0;
-        clip-path: polygon(
-          0% 0%, 
-          calc(100% - 12px) 0%, 
-          calc(100% - 12px) 4px,
-          100% 4px,
-          100% 8px,
-          calc(100% - 4px) 8px,
-          calc(100% - 4px) 100%,
-          0% 100%
-        );
-        opacity: 0;
-        transition: opacity 0.3s;
-        z-index: -1;
+        text-decoration: none;
+        color: #1f2937;
+        font-weight: 500;
+        padding: 8px 16px;
       }
       .header a::after {
         content: '';
         position: absolute;
-        inset: 2px;
-        border: 1px solid #1a3a5c;
-        border-radius: 0;
-        clip-path: polygon(
-          0% 0%, 
-          calc(100% - 10px) 0%, 
-          calc(100% - 10px) 2px,
-          calc(100% - 2px) 2px,
-          calc(100% - 2px) 6px,
-          100% 6px,
-          100% calc(100% - 2px),
-          0% calc(100% - 2px)
-        );
-        opacity: 0;
-        transition: opacity 0.3s;
-        z-index: -1;
+        width: 0;
+        height: 2px;
+        bottom: -4px;
+        left: 50%;
+        background-color: #3b82f6;
+        transition: all 0.3s ease;
       }
-      .header a:hover {
-        color: #1a3a5c;
-        background: #FFD700;
-      }
-      .header a:hover::before,
       .header a:hover::after {
-        opacity: 1;
+        width: 100%;
+        left: 0;
       }
 
       main {
