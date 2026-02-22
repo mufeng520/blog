@@ -6,41 +6,171 @@ const title = frontmatter.title || '文章';
 ---
 <BaseLayout title={`${title} - 木风`}>
   <style>
-    .post-container {
-      max-width: 900px;
+    .post-wrapper {
+      display: flex;
+      max-width: 1400px;
       margin: 0 auto;
+      gap: 40px;
+      padding: 0 20px;
+      position: relative;
+    }
+
+    .post-container {
+      flex: 1;
+      max-width: 900px;
       padding: 40px 30px;
-      background: rgba(255, 255, 255, 0.85);
-      backdrop-filter: blur(10px);
+      background: #fff;
       border-radius: 24px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      border: 1px solid #eee;
       margin-bottom: 40px;
+    }
+
+    .toc-sidebar {
+      width: 280px;
+      position: sticky;
+      top: 100px;
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      border: 1px solid #eee;
+      align-self: flex-start;
+    }
+
+    .toc-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #eee;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .toc-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .toc-item {
+      margin-bottom: 8px;
+    }
+
+    .toc-link {
+      display: block;
+      padding: 8px 12px;
+      color: #666;
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .toc-link:hover {
+      background: rgba(0, 168, 232, 0.08);
+      color: #00a8e8;
+    }
+
+    .toc-link.active {
+      background: rgba(0, 168, 232, 0.12);
+      color: #00a8e8;
+      font-weight: 500;
+      border-left: 3px solid #00a8e8;
+      padding-left: 9px;
+    }
+
+    .toc-item-h1 .toc-link {
+      font-weight: 600;
+      color: #333;
+      padding-left: 12px;
+    }
+
+    .toc-item-h2 .toc-link {
+      padding-left: 24px;
+      font-size: 0.85rem;
+    }
+
+    .toc-item-h3 .toc-link {
+      padding-left: 36px;
+      font-size: 0.8rem;
+      color: #777;
+    }
+
+    .toc-item-h4 .toc-link {
+      padding-left: 48px;
+      font-size: 0.75rem;
+      color: #888;
+    }
+
+    .toc-empty {
+      color: #999;
+      font-size: 0.9rem;
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    /* 滚动条样式 */
+    .toc-sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .toc-sidebar::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    .toc-sidebar::-webkit-scrollbar-thumb {
+      background: #00a8e8;
+      border-radius: 10px;
+    }
+
+    .toc-sidebar::-webkit-scrollbar-thumb:hover {
+      background: #0077b6;
     }
 
     .post-header {
       text-align: center;
       margin-bottom: 40px;
       padding-bottom: 30px;
-      border-bottom: 2px solid rgba(236, 72, 153, 0.2);
+      border-bottom: 2px solid #eee;
     }
 
     .post-title {
       font-size: 2.8rem;
       font-weight: 600;
-      color: #1a202c;
+      color: #333;
       margin-bottom: 15px;
       line-height: 1.3;
       letter-spacing: -0.5px;
     }
 
     .post-meta {
-      color: #718096;
+      color: #666;
       font-size: 0.95rem;
       display: flex;
       justify-content: center;
       align-items: center;
       gap: 20px;
       flex-wrap: wrap;
+    }
+
+    .post-category {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      background: #00a8e8;
+      color: #fff;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
     }
 
     .post-date {
@@ -50,7 +180,7 @@ const title = frontmatter.title || '文章';
     }
 
     .post-content {
-      color: #2d3748;
+      color: #333;
       line-height: 1.8;
       font-size: 1.05rem;
     }
@@ -59,27 +189,27 @@ const title = frontmatter.title || '文章';
     .post-content :global(h1) {
       font-size: 2.2rem;
       font-weight: 600;
-      color: #1a202c;
+      color: #333;
       margin-top: 50px;
       margin-bottom: 20px;
       padding-bottom: 10px;
-      border-bottom: 2px solid rgba(96, 165, 250, 0.3);
+      border-bottom: 2px solid rgba(0, 168, 232, 0.3);
     }
 
     .post-content :global(h2) {
       font-size: 1.8rem;
       font-weight: 600;
-      color: #2d3748;
+      color: #333;
       margin-top: 40px;
       margin-bottom: 18px;
       padding-bottom: 8px;
-      border-bottom: 1px solid rgba(96, 165, 250, 0.2);
+      border-bottom: 1px solid rgba(0, 168, 232, 0.2);
     }
 
     .post-content :global(h3) {
       font-size: 1.5rem;
       font-weight: 600;
-      color: #4a5568;
+      color: #555;
       margin-top: 30px;
       margin-bottom: 15px;
     }
@@ -87,7 +217,7 @@ const title = frontmatter.title || '文章';
     .post-content :global(h4) {
       font-size: 1.3rem;
       font-weight: 600;
-      color: #4a5568;
+      color: #555;
       margin-top: 25px;
       margin-bottom: 12px;
     }
@@ -96,7 +226,7 @@ const title = frontmatter.title || '文章';
     .post-content :global(h6) {
       font-size: 1.1rem;
       font-weight: 600;
-      color: #718096;
+      color: #666;
       margin-top: 20px;
       margin-bottom: 10px;
     }
@@ -109,15 +239,15 @@ const title = frontmatter.title || '文章';
 
     /* 链接样式 */
     .post-content :global(a) {
-      color: #60a5fa;
+      color: #00a8e8;
       text-decoration: none;
-      border-bottom: 1px solid rgba(96, 165, 250, 0.3);
+      border-bottom: 1px solid rgba(0, 168, 232, 0.3);
       transition: all 0.3s ease;
     }
 
     .post-content :global(a:hover) {
-      color: #ec4899;
-      border-bottom-color: #ec4899;
+      color: #0077b6;
+      border-bottom-color: #0077b6;
     }
 
     /* 列表样式 */
@@ -138,27 +268,28 @@ const title = frontmatter.title || '文章';
     }
 
     .post-content :global(ul li::before) {
-      content: "🌸";
+      content: "•";
       position: absolute;
-      left: -25px;
+      left: -20px;
+      color: #00a8e8;
     }
 
     /* 代码块样式 */
     .post-content :global(pre) {
-      background: linear-gradient(135deg, #667eea15 0%, #764ba215 50%, #f093fb15 100%);
-      border: 1px solid rgba(236, 72, 153, 0.2);
+      background: #f5f5f5;
+      border: 1px solid #eee;
       border-radius: 12px;
       padding: 20px;
       overflow-x: auto;
       margin: 25px 0;
       font-size: 0.95rem;
       line-height: 1.6;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
     }
 
     .post-content :global(code) {
-      background: rgba(236, 72, 153, 0.1);
-      color: #ec4899;
+      background: rgba(0, 168, 232, 0.1);
+      color: #0077b6;
       padding: 3px 8px;
       border-radius: 6px;
       font-size: 0.9em;
@@ -167,7 +298,7 @@ const title = frontmatter.title || '文章';
 
     .post-content :global(pre code) {
       background: transparent;
-      color: #2d3748;
+      color: #333;
       padding: 0;
       border-radius: 0;
       font-size: inherit;
@@ -175,13 +306,13 @@ const title = frontmatter.title || '文章';
 
     /* 引用样式 */
     .post-content :global(blockquote) {
-      border-left: 4px solid #60a5fa;
-      background: rgba(96, 165, 250, 0.08);
+      border-left: 4px solid #00a8e8;
+      background: rgba(0, 168, 232, 0.06);
       padding: 20px 25px;
       margin: 25px 0;
       border-radius: 0 12px 12px 0;
       font-style: italic;
-      color: #4a5568;
+      color: #555;
     }
 
     .post-content :global(blockquote p) {
@@ -193,7 +324,7 @@ const title = frontmatter.title || '文章';
       max-width: 100%;
       height: auto;
       border-radius: 12px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
       margin: 30px auto;
       display: block;
     }
@@ -203,45 +334,46 @@ const title = frontmatter.title || '文章';
       width: 100%;
       border-collapse: collapse;
       margin: 25px 0;
-      background: rgba(255, 255, 255, 0.6);
+      background: #fff;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      border: 1px solid #eee;
     }
 
     .post-content :global(th) {
-      background: rgba(96, 165, 250, 0.2);
+      background: rgba(0, 168, 232, 0.1);
       padding: 12px 15px;
       text-align: left;
       font-weight: 600;
-      color: #2d3748;
+      color: #333;
     }
 
     .post-content :global(td) {
       padding: 12px 15px;
-      border-top: 1px solid rgba(236, 72, 153, 0.1);
+      border-top: 1px solid #eee;
     }
 
     .post-content :global(tr:hover) {
-      background: rgba(236, 72, 153, 0.05);
+      background: rgba(0, 168, 232, 0.04);
     }
 
     /* 水平分割线 */
     .post-content :global(hr) {
       border: none;
-      border-top: 2px solid rgba(236, 72, 153, 0.2);
+      border-top: 2px solid #eee;
       margin: 40px 0;
       border-radius: 2px;
     }
 
     /* 强调样式 */
     .post-content :global(strong) {
-      color: #1a202c;
+      color: #333;
       font-weight: 600;
     }
 
     .post-content :global(em) {
-      color: #ec4899;
+      color: #0077b6;
       font-style: italic;
     }
 
@@ -251,10 +383,20 @@ const title = frontmatter.title || '文章';
       font-size: 1.1em;
     }
 
+    @media (max-width: 1200px) {
+      .toc-sidebar {
+        display: none;
+      }
+    }
+
     @media (max-width: 768px) {
+      .post-wrapper {
+        padding: 0 15px;
+      }
+
       .post-container {
         padding: 30px 20px;
-        margin: 20px 15px;
+        margin: 20px 0;
         border-radius: 16px;
       }
 
@@ -281,20 +423,172 @@ const title = frontmatter.title || '文章';
     }
   </style>
 
-  <article class="post-container">
-    <header class="post-header">
-      <h1 class="post-title">{frontmatter.title}</h1>
-      {frontmatter.pubdate && (
+  <div class="post-wrapper">
+    <article class="post-container">
+      <header class="post-header">
+        <h1 class="post-title">{frontmatter.title}</h1>
         <div class="post-meta">
-          <div class="post-date">
-            <span>📅</span>
-            <time>{frontmatter.pubdate}</time>
-          </div>
+          {frontmatter.category && (
+            <div class="post-category">
+              <span>📂</span>
+              <span>{frontmatter.category}</span>
+            </div>
+          )}
+          {frontmatter.pubdate && (
+            <div class="post-date">
+              <span>📅</span>
+              <time>{frontmatter.pubdate}</time>
+            </div>
+          )}
         </div>
-      )}
-    </header>
-    <div class="post-content">
-      <slot />
-    </div>
-  </article>
+      </header>
+      <div class="post-content" id="post-content">
+        <slot />
+      </div>
+    </article>
+
+    <aside class="toc-sidebar" id="toc-sidebar">
+      <div class="toc-title">
+        <span>📑</span>
+        <span>目录</span>
+      </div>
+      <ul class="toc-list" id="toc-list">
+        <li class="toc-empty">正在加载目录...</li>
+      </ul>
+    </aside>
+  </div>
+
+  <script>
+    function generateTOC() {
+      const content = document.getElementById('post-content');
+      const tocList = document.getElementById('toc-list');
+      
+      if (!content || !tocList) return;
+
+      // 获取所有标题
+      const headings = content.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      
+      if (headings.length === 0) {
+        tocList.innerHTML = '<li class="toc-empty">暂无目录</li>';
+        return;
+      }
+
+      // 清空现有内容
+      tocList.innerHTML = '';
+
+      // 为每个标题添加 ID（如果还没有）
+      headings.forEach((heading, index) => {
+        if (!heading.id) {
+          // 生成基于文本的 ID
+          const text = heading.textContent || '';
+          const id = text
+            .toLowerCase()
+            .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+            .replace(/^-|-$/g, '') || `heading-${index}`;
+          heading.id = id;
+        }
+      });
+
+      // 生成目录项
+      headings.forEach((heading) => {
+        const level = parseInt(heading.tagName.charAt(1));
+        const text = heading.textContent || '';
+        const id = heading.id;
+
+        const li = document.createElement('li');
+        li.className = `toc-item toc-item-h${level}`;
+        
+        const a = document.createElement('a');
+        a.href = `#${id}`;
+        a.className = 'toc-link';
+        a.textContent = text;
+        
+        // 平滑滚动
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          const target = document.getElementById(id) as HTMLElement;
+          if (target) {
+            const offsetTop = target.offsetTop - 80;
+            window.scrollTo({
+              top: offsetTop,
+              behavior: 'smooth'
+            });
+            // 更新 URL 但不触发滚动
+            history.pushState(null, '', `#${id}`);
+          }
+        });
+
+        li.appendChild(a);
+        tocList.appendChild(li);
+      });
+
+      // 监听滚动，高亮当前章节
+      let currentActive = '';
+      const observerOptions = {
+        rootMargin: '-80px 0px -80% 0px',
+        threshold: 0
+      };
+
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const id = entry.target.id;
+            if (id && id !== currentActive) {
+              // 移除旧的 active 类
+              document.querySelectorAll('.toc-link.active').forEach((link) => {
+                link.classList.remove('active');
+              });
+              
+              // 添加新的 active 类
+              const activeLink = document.querySelector(`.toc-link[href="#${id}"]`);
+              if (activeLink) {
+                activeLink.classList.add('active');
+                currentActive = id;
+                
+                // 滚动到可见区域（如果需要）
+                const sidebar = document.getElementById('toc-sidebar') as HTMLElement;
+                if (sidebar && (activeLink as HTMLElement).offsetTop > sidebar.scrollTop + sidebar.clientHeight - 100) {
+                  sidebar.scrollTo({
+                    top: (activeLink as HTMLElement).offsetTop - 100,
+                    behavior: 'smooth'
+                  });
+                }
+              }
+            }
+          }
+        });
+      }, observerOptions);
+
+      // 观察所有标题
+      headings.forEach((heading) => {
+        observer.observe(heading);
+      });
+
+      // 处理页面加载时的 hash
+      if (window.location.hash) {
+        const hash = window.location.hash.substring(1);
+        const target = document.getElementById(hash) as HTMLElement;
+        if (target) {
+          setTimeout(() => {
+            const offsetTop = target.offsetTop - 80;
+            window.scrollTo({
+              top: offsetTop,
+              behavior: 'smooth'
+            });
+            const activeLink = document.querySelector(`.toc-link[href="#${hash}"]`);
+            if (activeLink) {
+              activeLink.classList.add('active');
+            }
+          }, 100);
+        }
+      }
+    }
+
+    // 页面加载完成后生成目录
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', generateTOC);
+    } else {
+      generateTOC();
+    }
+  </script>
 </BaseLayout>
