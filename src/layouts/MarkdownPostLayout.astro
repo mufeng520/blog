@@ -32,29 +32,31 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
     }
 
     .toc-sidebar {
-      width: 280px;
+      width: 260px;
       position: sticky;
-      top: 100px;
-      max-height: calc(100vh - 120px);
+      top: 80px;
+      max-height: calc(100vh - 100px);
       overflow-y: auto;
-      padding: 20px;
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-      border: 1px solid #eee;
+      padding: 18px 16px;
+      background: linear-gradient(135deg, #fafbfc 0%, #f5f6f7 100%);
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      border: 1px solid #e1e4e8;
       align-self: flex-start;
     }
 
     .toc-title {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 20px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #24292e;
+      margin-bottom: 18px;
       padding-bottom: 12px;
-      border-bottom: 2px solid #eee;
+      border-bottom: 2px solid #e1e4e8;
       display: flex;
       align-items: center;
       gap: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      letter-spacing: 0.5px;
     }
 
     .toc-list {
@@ -64,80 +66,169 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
     }
 
     .toc-item {
-      margin-bottom: 8px;
+      margin-bottom: 3px;
+      position: relative;
     }
 
     .toc-link {
       display: block;
-      padding: 8px 12px;
-      color: #666;
+      padding: 7px 12px;
+      color: #586069;
       text-decoration: none;
-      border-radius: 8px;
-      transition: all 0.2s ease;
-      font-size: 0.9rem;
+      border-radius: 6px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 0.88rem;
       line-height: 1.5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      letter-spacing: 0.3px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     .toc-link:hover {
       background: rgba(0, 168, 232, 0.08);
       color: #00a8e8;
+      transform: translateX(2px);
     }
 
     .toc-link.active {
-      background: rgba(0, 168, 232, 0.12);
+      background: linear-gradient(90deg, rgba(0, 168, 232, 0.12) 0%, rgba(0, 168, 232, 0.05) 100%);
       color: #00a8e8;
-      font-weight: 500;
+      font-weight: 600;
       border-left: 3px solid #00a8e8;
       padding-left: 9px;
+      box-shadow: 0 2px 4px rgba(0, 168, 232, 0.15);
     }
 
+    /* 层级样式优化 */
     .toc-item-h1 .toc-link {
-      font-weight: 600;
-      color: #333;
-      padding-left: 12px;
+      font-weight: 700;
+      color: #24292e;
+      padding-left: 16px;
+      font-size: 0.92rem;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      letter-spacing: 0.5px;
     }
 
     .toc-item-h2 .toc-link {
-      padding-left: 24px;
-      font-size: 0.85rem;
+      padding-left: 28px;
+      font-size: 0.88rem;
+      color: #2f363d;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      letter-spacing: 0.3px;
     }
 
     .toc-item-h3 .toc-link {
-      padding-left: 36px;
-      font-size: 0.8rem;
-      color: #777;
+      padding-left: 40px;
+      font-size: 0.85rem;
+      color: #444d56;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      letter-spacing: 0.2px;
     }
 
     .toc-item-h4 .toc-link {
-      padding-left: 48px;
-      font-size: 0.75rem;
-      color: #888;
+      padding-left: 52px;
+      font-size: 0.82rem;
+      color: #586069;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .toc-item-h5 .toc-link {
+      padding-left: 64px;
+      font-size: 0.8rem;
+      color: #6a737d;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .toc-item-h6 .toc-link {
+      padding-left: 76px;
+      font-size: 0.78rem;
+      color: #959da5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    /* 目录折叠样式 */
+    .toc-item-h1 > .toc-list {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .toc-item-h1.expanded > .toc-list {
+      max-height: 500px;
+      transition: max-height 0.5s ease-in;
+    }
+
+    /* 箭头指示 */
+    .toc-item-h1 > .toc-link {
+      position: relative;
+      padding-right: 24px;
+    }
+
+    .toc-item-h1 > .toc-link::after {
+      content: '▶';
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%) rotate(0deg);
+      transition: transform 0.3s ease;
+      font-size: 0.7rem;
+      color: #adb5bd;
+    }
+
+    .toc-item-h1.expanded > .toc-link::after {
+      transform: translateY(-50%) rotate(90deg);
+    }
+
+    /* 移除默认超链接样式 */
+    .toc-link {
+      text-decoration: none;
+      color: inherit;
+      transition: all 0.2s ease;
+    }
+
+    .toc-link:hover {
+      color: #00a8e8;
+      background: rgba(0, 168, 232, 0.05);
+    }
+
+    .toc-link.active {
+      color: #00a8e8;
+      font-weight: 500;
+      background: rgba(0, 168, 232, 0.08);
+      border-left: 3px solid #00a8e8;
+      padding-left: 13px;
     }
 
     .toc-empty {
-      color: #999;
-      font-size: 0.9rem;
+      color: #868e96;
+      font-size: 0.85rem;
       text-align: center;
-      padding: 20px 0;
+      padding: 30px 16px;
+      border-radius: 6px;
+      background: #ffffff;
+      margin-top: 16px;
     }
 
-    /* 滚动条样式 */
+    /* 滚动条样式优化 */
     .toc-sidebar::-webkit-scrollbar {
       width: 6px;
     }
 
     .toc-sidebar::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 10px;
+      background: #f1f3f5;
+      border-radius: 3px;
+      margin: 8px 0;
     }
 
     .toc-sidebar::-webkit-scrollbar-thumb {
-      background: #00a8e8;
-      border-radius: 10px;
+      background: #ced4da;
+      border-radius: 3px;
+      transition: background 0.3s ease;
     }
 
     .toc-sidebar::-webkit-scrollbar-thumb:hover {
-      background: #0077b6;
+      background: #adb5bd;
     }
 
     .post-header {
@@ -188,109 +279,164 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
     .post-content {
       color: #333;
       line-height: 1.8;
-      font-size: 1.05rem;
+      font-size: 1rem;
     }
 
     /* 标题样式 */
     .post-content :global(h1) {
-      font-size: 2.2rem;
+      font-size: 2rem;
       font-weight: 600;
       color: #333;
-      margin-top: 50px;
+      margin-top: 40px;
       margin-bottom: 20px;
       padding-bottom: 10px;
       border-bottom: 2px solid rgba(0, 168, 232, 0.3);
     }
 
     .post-content :global(h2) {
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       font-weight: 600;
       color: #333;
-      margin-top: 40px;
+      margin-top: 35px;
       margin-bottom: 18px;
       padding-bottom: 8px;
       border-bottom: 1px solid rgba(0, 168, 232, 0.2);
     }
 
     .post-content :global(h3) {
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       font-weight: 600;
-      color: #555;
+      color: #333;
       margin-top: 30px;
       margin-bottom: 15px;
     }
 
     .post-content :global(h4) {
-      font-size: 1.3rem;
+      font-size: 1.1rem;
       font-weight: 600;
-      color: #555;
+      color: #333;
       margin-top: 25px;
       margin-bottom: 12px;
     }
 
     .post-content :global(h5),
     .post-content :global(h6) {
-      font-size: 1.1rem;
+      font-size: 1rem;
       font-weight: 600;
-      color: #666;
+      color: #333;
       margin-top: 20px;
       margin-bottom: 10px;
     }
 
     /* 段落样式 */
     .post-content :global(p) {
-      margin-bottom: 20px;
-      text-align: justify;
+      margin-bottom: 16px;
+      text-align: left;
     }
 
     /* 链接样式 */
     .post-content :global(a) {
-      color: #00a8e8;
+      color: #0066cc;
       text-decoration: none;
-      border-bottom: 1px solid rgba(0, 168, 232, 0.3);
+      border-bottom: 1px solid rgba(0, 102, 204, 0.3);
       transition: all 0.3s ease;
     }
 
     .post-content :global(a:hover) {
-      color: #0077b6;
-      border-bottom-color: #0077b6;
+      color: #004c99;
+      border-bottom-color: #004c99;
     }
 
     /* 列表样式 */
     .post-content :global(ul),
     .post-content :global(ol) {
-      margin-bottom: 20px;
-      padding-left: 30px;
+      margin-bottom: 16px;
+      padding-left: 25px;
     }
 
     .post-content :global(li) {
-      margin-bottom: 10px;
-      line-height: 1.7;
+      margin-bottom: 8px;
+      line-height: 1.6;
     }
 
     .post-content :global(ul li) {
-      list-style-type: none;
-      position: relative;
+      list-style-type: disc;
+      position: static;
     }
 
     .post-content :global(ul li::before) {
-      content: "•";
-      position: absolute;
-      left: -20px;
-      color: #00a8e8;
+      display: none;
     }
 
-    /* 代码块样式 */
-    .post-content :global(pre) {
-      background: #f5f5f5;
+    /* 引用样式 */
+    .post-content :global(blockquote) {
+      border-left: 4px solid #00a8e8;
+      background: rgba(0, 168, 232, 0.06);
+      padding: 15px 20px;
+      margin: 20px 0;
+      border-radius: 0 8px 8px 0;
+      font-style: italic;
+      color: #555;
+    }
+
+    /* 过期通知样式 */
+    .post-expire {
+      background: #f8f8f8;
       border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    /* 许可证信息样式 */
+    .post-license {
+      background: #f8f8f8;
+      border: 1px solid #eee;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 40px;
+      font-size: 0.9rem;
+      color: #666;
+    }
+
+    /* 标签样式 */
+    .post-tags {
+      margin-top: 30px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .post-tag {
+      display: inline-block;
+      padding: 6px 14px;
+      background: #f0f0f0;
+      color: #666;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .post-tag:hover {
+      background: #e0e0e0;
+      color: #333;
+    }
+
+    /* 代码块样式 - 参考第一张图的浅色风格 */
+    .post-content :global(pre) {
+      background: #f8f5e6;
+      border: 1px solid #e8e0c9;
       border-radius: 12px;
       padding: 20px;
       overflow-x: auto;
       margin: 25px 0;
       font-size: 0.95rem;
       line-height: 1.6;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     .post-content :global(code) {
@@ -308,6 +454,68 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       padding: 0;
       border-radius: 0;
       font-size: inherit;
+    }
+
+    /* 参考figure代码块样式 */
+    .post-content :global(figure.highlight) {
+      margin: 25px 0;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .post-content :global(figure.highlight table) {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0;
+      background: #f8f5e6;
+    }
+
+    .post-content :global(figure.highlight tbody) {
+      margin: 0;
+      padding: 0;
+    }
+
+    .post-content :global(figure.highlight tr) {
+      margin: 0;
+      padding: 0;
+    }
+
+    .post-content :global(figure.highlight td.code) {
+      padding: 0;
+      border: none;
+    }
+
+    .post-content :global(figure.highlight pre) {
+      margin: 0;
+      border: none;
+      border-radius: 0;
+      box-shadow: none;
+      background: #f8f5e6;
+    }
+
+    /* 代码高亮样式 - 参考第一张图 */
+    .post-content :global(.punctuation) {
+      color: #999;
+    }
+
+    .post-content :global(.attr) {
+      color: #d17a22;
+    }
+
+    .post-content :global(.string) {
+      color: #2c70b3;
+    }
+
+    /* 浅色主题代码高亮 */
+    .post-content :global(.astro-code) {
+      background: #f8f5e6 !important;
+      color: #333 !important;
+    }
+
+    .post-content :global(.astro-code github-dark) {
+      background: #f8f5e6 !important;
+      color: #333 !important;
     }
 
     /* 引用样式 */
@@ -430,6 +638,16 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
   </style>
 
   <div class="post-wrapper">
+    <aside class="toc-sidebar" id="toc-sidebar">
+      <div class="toc-title">
+        <span>📑</span>
+        <span>目录</span>
+      </div>
+      <ul class="toc-list" id="toc-list">
+        <li class="toc-empty">正在加载目录...</li>
+      </ul>
+    </aside>
+
     <article class="post-container">
       <header class="post-header">
         <h1 class="post-title">{frontmatter.title}</h1>
@@ -462,16 +680,6 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
         <slot />
       </div>
     </article>
-
-    <aside class="toc-sidebar" id="toc-sidebar">
-      <div class="toc-title">
-        <span>📑</span>
-        <span>目录</span>
-      </div>
-      <ul class="toc-list" id="toc-list">
-        <li class="toc-empty">正在加载目录...</li>
-      </ul>
-    </aside>
   </div>
 
   <script>
@@ -517,7 +725,14 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
         }
       });
 
-      // 生成目录项
+      // 生成目录项（嵌套结构）
+      const headingMap = new Map();
+      let currentH1 = null;
+      let currentH2 = null;
+      let currentH3 = null;
+      let currentH4 = null;
+      let currentH5 = null;
+
       headings.forEach((heading) => {
         const level = parseInt(heading.tagName.charAt(1));
         const text = heading.textContent || '';
@@ -547,10 +762,87 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
         });
 
         li.appendChild(a);
-        tocList.appendChild(li);
+
+        // 嵌套目录结构
+        if (level === 1) {
+          // 创建子目录列表
+          const subList = document.createElement('ul');
+          subList.className = 'toc-list';
+          li.appendChild(subList);
+          tocList.appendChild(li);
+          currentH1 = li;
+          currentH2 = null;
+          currentH3 = null;
+          currentH4 = null;
+          currentH5 = null;
+        } else if (level === 2 && currentH1) {
+          const subList = currentH1.querySelector('.toc-list');
+          if (subList) {
+            subList.appendChild(li);
+            currentH2 = li;
+            currentH3 = null;
+            currentH4 = null;
+            currentH5 = null;
+          }
+        } else if (level === 3 && currentH2) {
+          // 为H2创建子目录列表
+          let subList = currentH2.querySelector('.toc-list');
+          if (!subList) {
+            subList = document.createElement('ul');
+            subList.className = 'toc-list';
+            currentH2.appendChild(subList);
+          }
+          subList.appendChild(li);
+          currentH3 = li;
+          currentH4 = null;
+          currentH5 = null;
+        } else if (level === 4 && currentH3) {
+          // 为H3创建子目录列表
+          let subList = currentH3.querySelector('.toc-list');
+          if (!subList) {
+            subList = document.createElement('ul');
+            subList.className = 'toc-list';
+            currentH3.appendChild(subList);
+          }
+          subList.appendChild(li);
+          currentH4 = li;
+          currentH5 = null;
+        } else if (level === 5 && currentH4) {
+          // 为H4创建子目录列表
+          let subList = currentH4.querySelector('.toc-list');
+          if (!subList) {
+            subList = document.createElement('ul');
+            subList.className = 'toc-list';
+            currentH4.appendChild(subList);
+          }
+          subList.appendChild(li);
+          currentH5 = li;
+        } else if (level === 6 && currentH5) {
+          // 为H5创建子目录列表
+          let subList = currentH5.querySelector('.toc-list');
+          if (!subList) {
+            subList = document.createElement('ul');
+            subList.className = 'toc-list';
+            currentH5.appendChild(subList);
+          }
+          subList.appendChild(li);
+        }
+
+        // 存储标题映射
+        headingMap.set(id, li);
       });
 
-      // 监听滚动，高亮当前章节
+      // 添加H1点击事件，实现折叠/展开
+      document.querySelectorAll('.toc-item-h1 > .toc-link').forEach((link) => {
+        link.addEventListener('click', function(e) {
+          const parent = this.closest('.toc-item-h1');
+          if (parent) {
+            parent.classList.toggle('expanded');
+          }
+        });
+      });
+
+      // 监听滚动，高亮当前章节并展开对应目录
       let currentActive = '';
       const observerOptions = {
         rootMargin: '-80px 0px -80% 0px',
@@ -572,6 +864,15 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
               if (activeLink) {
                 activeLink.classList.add('active');
                 currentActive = id;
+                
+                // 展开所有父级目录
+                let current = activeLink.closest('.toc-item');
+                while (current) {
+                  if (current.classList.contains('toc-item-h1')) {
+                    current.classList.add('expanded');
+                  }
+                  current = current.parentElement?.closest('.toc-item');
+                }
                 
                 // 滚动到可见区域（如果需要）
                 const sidebar = document.getElementById('toc-sidebar') as HTMLElement;
@@ -606,6 +907,15 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
             const activeLink = document.querySelector(`.toc-link[href="#${hash}"]`);
             if (activeLink) {
               activeLink.classList.add('active');
+              
+              // 展开所有父级目录
+              let current = activeLink.closest('.toc-item');
+              while (current) {
+                if (current.classList.contains('toc-item-h1')) {
+                  current.classList.add('expanded');
+                }
+                current = current.parentElement?.closest('.toc-item');
+              }
             }
           }, 100);
         }
