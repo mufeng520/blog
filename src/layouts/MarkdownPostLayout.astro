@@ -1,8 +1,13 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import { calculateReadingTime } from '../components/lib/reading-time';
 
-const { frontmatter} = Astro.props;
+const { frontmatter, rawContent } = Astro.props as { frontmatter: Record<string, unknown>; rawContent?: (() => string) | string };
 const title = frontmatter.title || '文章';
+
+// 优先使用 rawContent（Markdown 原始内容），否则在客户端计算
+const rawMarkdown = rawContent ? (typeof rawContent === 'function' ? rawContent() : rawContent) : '';
+const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : null;
 ---
 <BaseLayout title={`${title} - 木风`}>
   <style>
@@ -173,7 +178,8 @@ const title = frontmatter.title || '文章';
       font-weight: 500;
     }
 
-    .post-date {
+    .post-date,
+    .post-reading-time {
       display: flex;
       align-items: center;
       gap: 5px;
@@ -440,6 +446,16 @@ const title = frontmatter.title || '文章';
               <time>{frontmatter.pubdate}</time>
             </div>
           )}
+          <div class="post-reading-time" id="post-reading-time">
+            {readingTimeMinutes !== null ? (
+              <>
+                <span>⏱️</span>
+                <span>{readingTimeMinutes} 分钟阅读</span>
+              </>
+            ) : (
+              <span class="reading-time-placeholder">⏱️ <span id="reading-time-value">--</span> 分钟阅读</span>
+            )}
+          </div>
         </div>
       </header>
       <div class="post-content" id="post-content">
@@ -459,6 +475,18 @@ const title = frontmatter.title || '文章';
   </div>
 
   <script>
+    import { calculateReadingTimeFromText } from '../components/lib/reading-time';
+
+    function updateReadingTime() {
+      const content = document.getElementById('post-content');
+      const readingTimeEl = document.getElementById('reading-time-value');
+      if (content && readingTimeEl && readingTimeEl.textContent === '--') {
+        const plainText = content.textContent || '';
+        const minutes = calculateReadingTimeFromText(plainText);
+        readingTimeEl.textContent = String(minutes);
+      }
+    }
+
     function generateTOC() {
       const content = document.getElementById('post-content');
       const tocList = document.getElementById('toc-list');
@@ -584,11 +612,15 @@ const title = frontmatter.title || '文章';
       }
     }
 
-    // 页面加载完成后生成目录
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', generateTOC);
-    } else {
+    // 页面加载完成后生成目录并更新阅读时间
+    function init() {
       generateTOC();
+      updateReadingTime();
+    }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', init);
+    } else {
+      init();
     }
   </script>
 </BaseLayout>
