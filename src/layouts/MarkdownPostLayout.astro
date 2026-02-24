@@ -727,11 +727,11 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
 
       // 生成目录项（嵌套结构）
       const headingMap = new Map();
-      let currentH1 = null;
-      let currentH2 = null;
-      let currentH3 = null;
-      let currentH4 = null;
-      let currentH5 = null;
+      let currentH1: HTMLLIElement | null = null;
+      let currentH2: HTMLLIElement | null = null;
+      let currentH3: HTMLLIElement | null = null;
+      let currentH4: HTMLLIElement | null = null;
+      let currentH5: HTMLLIElement | null = null;
 
       headings.forEach((heading) => {
         const level = parseInt(heading.tagName.charAt(1));
@@ -818,6 +818,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
           subList.appendChild(li);
           currentH5 = li;
         } else if (level === 6 && currentH5) {
+
           // 为H5创建子目录列表
           let subList = currentH5.querySelector('.toc-list');
           if (!subList) {
@@ -835,7 +836,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       // 添加H1点击事件，实现折叠/展开
       document.querySelectorAll('.toc-item-h1 > .toc-link').forEach((link) => {
         link.addEventListener('click', function(e) {
-          const parent = this.closest('.toc-item-h1');
+          const parent = (e.currentTarget as HTMLElement).closest('.toc-item-h1');
           if (parent) {
             parent.classList.toggle('expanded');
           }
@@ -871,7 +872,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
                   if (current.classList.contains('toc-item-h1')) {
                     current.classList.add('expanded');
                   }
-                  current = current.parentElement?.closest('.toc-item');
+                  current = current.parentElement?.closest('.toc-item') ?? null;
                 }
                 
                 // 滚动到可见区域（如果需要）
@@ -914,7 +915,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
                 if (current.classList.contains('toc-item-h1')) {
                   current.classList.add('expanded');
                 }
-                current = current.parentElement?.closest('.toc-item');
+                current = current.parentElement?.closest('.toc-item') ?? null;
               }
             }
           }, 100);
