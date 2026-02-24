@@ -11,6 +11,11 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
 ---
 <BaseLayout title={`${title} - 木风`}>
   <style>
+    /* ========================================
+       文章页面布局样式
+       ======================================== */
+
+    /* 文章页面主容器 - 左侧目录 + 右侧文章内容 */
     .post-wrapper {
       display: flex;
       max-width: 1400px;
@@ -20,6 +25,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       position: relative;
     }
 
+    /* 文章内容容器 */
     .post-container {
       flex: 1;
       max-width: 900px;
@@ -31,6 +37,11 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       margin-bottom: 40px;
     }
 
+    /* ========================================
+       目录侧边栏样式
+       ======================================== */
+
+    /* 目录侧边栏容器 */
     .toc-sidebar {
       width: 260px;
       position: sticky;
@@ -45,6 +56,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       align-self: flex-start;
     }
 
+    /* 目录标题 */
     .toc-title {
       font-size: 1.05rem;
       font-weight: 700;
@@ -59,113 +71,145 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       letter-spacing: 0.5px;
     }
 
+    /* 目录列表容器 */
     .toc-list {
       list-style: none;
       padding: 0;
       margin: 0;
     }
 
+    /* 目录项 */
     .toc-item {
       margin-bottom: 3px;
       position: relative;
     }
+    /* ========================================
+       目录链接样式
+       ======================================== */
 
-    .toc-link {
-      display: block;
-      padding: 7px 12px;
-      color: #586069;
-      text-decoration: none;
-      border-radius: 6px;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-      font-size: 0.88rem;
-      line-height: 1.5;
+    /* 目录链接基础样式 - 使用多选择器覆盖浏览器默认样式 */
+    :global(.toc-link){
+      display: block !important;
+      padding: 10px 18px;
+      color: #73b8e3 !important;
+      text-decoration: none !important;
+      border-radius: 10px;
+      transition: all 0.25s ease;
+      font-size: 0.95rem;
+      line-height: 1.6;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-      letter-spacing: 0.3px;
+      letter-spacing: 0.4px;
       -webkit-font-smoothing: antialiased;
       -moz-osx-font-smoothing: grayscale;
+      position: relative;
+      border-left: 3px solid transparent;
+      margin: 4px 0;
+      background-color: transparent;
+      font-weight: 450;
     }
 
-    .toc-link:hover {
-      background: rgba(0, 168, 232, 0.08);
-      color: #00a8e8;
+    /* 目录链接悬停效果 */
+    :global(.toc-link):hover{
+      background-color: #f6f8fa;
+      border-left-color: #0366d6;
+      color: #0366d6 !important;
+      transform: translateX(3px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    }
+
+    /* 目录链接点击效果 */
+    :global(.toc-link):active{
+      background-color: #e9ecef;
       transform: translateX(2px);
+      transition: all 0.1s;
     }
 
+    /* 目录链接激活状态 - 当前章节 */
+    :global(.toc-link).active{
+      border-left-color: #0366d6;
+      background-color: #f1f8ff;
+      color: #0366d6 !important;
+      font-weight: 500;
+    }
+
+    /* 响应式媒体查询 - 大屏幕 */
+    @media (min-width: 768px) { 
+    }
+
+    /* 目录链接装饰点 - 悬停时显示 */
+    .toc-link::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #d1d5da;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+
+    /* 目录链接悬停效果 - 渐变背景 */
+    :global(.toc-link):hover {
+      background: linear-gradient(90deg, rgba(0, 168, 232, 0.08) 0%, transparent 100%);
+      color: #00a8e8;
+      transform: translateX(4px);
+      border-left-color: #00a8e8;
+    }
+
+    /* 目录链接悬停时显示装饰点 */
+    .toc-link:hover::before {
+      opacity: 1;
+      background: #00a8e8;
+    }
+
+    /* 目录链接激活状态 - 渐变背景和阴影 */
     .toc-link.active {
-      background: linear-gradient(90deg, rgba(0, 168, 232, 0.12) 0%, rgba(0, 168, 232, 0.05) 100%);
+      background: linear-gradient(90deg, rgba(0, 168, 232, 0.15) 0%, rgba(0, 168, 232, 0.05) 100%);
       color: #00a8e8;
       font-weight: 600;
       border-left: 3px solid #00a8e8;
-      padding-left: 9px;
-      box-shadow: 0 2px 4px rgba(0, 168, 232, 0.15);
+      padding-left: 11px;
+      box-shadow: 0 2px 8px rgba(0, 168, 232, 0.2);
+      transform: translateX(2px);
     }
 
-    /* 层级样式优化 */
-    .toc-item-h1 .toc-link {
-      font-weight: 700;
-      color: #24292e;
-      padding-left: 16px;
-      font-size: 0.92rem;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-      letter-spacing: 0.5px;
-    }
+    /* 目录链接激活时显示装饰点 */
+    :global(.toc-link.active::before) {
+      opacity: 1;
+      background: #00a8e8;
+      width: 6px;
+      height: 6px;
+    } 
 
-    .toc-item-h2 .toc-link {
-      padding-left: 28px;
-      font-size: 0.88rem;
-      color: #2f363d;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-      letter-spacing: 0.3px;
-    }
 
-    .toc-item-h3 .toc-link {
-      padding-left: 40px;
-      font-size: 0.85rem;
-      color: #444d56;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-      letter-spacing: 0.2px;
-    }
+    /* ========================================
+       目录折叠功能样式
+       ======================================== */
 
-    .toc-item-h4 .toc-link {
-      padding-left: 52px;
-      font-size: 0.82rem;
-      color: #586069;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    }
-
-    .toc-item-h5 .toc-link {
-      padding-left: 64px;
-      font-size: 0.8rem;
-      color: #6a737d;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    }
-
-    .toc-item-h6 .toc-link {
-      padding-left: 76px;
-      font-size: 0.78rem;
-      color: #959da5;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    }
-
-    /* 目录折叠样式 */
-    .toc-item-h1 > .toc-list {
+    /* 目录折叠样式 - 默认折叠状态 */
+    :global(.toc-item-h1 > .toc-list) {
       max-height: 0;
       overflow: hidden;
       transition: max-height 0.3s ease-out;
     }
 
-    .toc-item-h1.expanded > .toc-list {
+    /* 目录展开状态 */
+    :global(.toc-item-h1.expanded > .toc-list) {
       max-height: 500px;
       transition: max-height 0.5s ease-in;
     }
 
-    /* 箭头指示 */
-    .toc-item-h1 > .toc-link {
+    /* 箭头指示器 - 一级标题右侧 */
+    :global(.toc-item-h1 > .toc-link) {
       position: relative;
       padding-right: 24px;
     }
 
-    .toc-item-h1 > .toc-link::after {
+    /* 箭头指示器样式 */
+    :global(.toc-item-h1 > .toc-link::after) {
       content: '▶';
       position: absolute;
       right: 8px;
@@ -176,30 +220,12 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       color: #adb5bd;
     }
 
-    .toc-item-h1.expanded > .toc-link::after {
+    /* 展开时箭头旋转 */
+    :global(.toc-item-h1.expanded > .toc-link::after) {
       transform: translateY(-50%) rotate(90deg);
     }
 
-    /* 移除默认超链接样式 */
-    .toc-link {
-      text-decoration: none;
-      color: inherit;
-      transition: all 0.2s ease;
-    }
-
-    .toc-link:hover {
-      color: #00a8e8;
-      background: rgba(0, 168, 232, 0.05);
-    }
-
-    .toc-link.active {
-      color: #00a8e8;
-      font-weight: 500;
-      background: rgba(0, 168, 232, 0.08);
-      border-left: 3px solid #00a8e8;
-      padding-left: 13px;
-    }
-
+    /* 目录为空时的提示样式 */
     .toc-empty {
       color: #868e96;
       font-size: 0.85rem;
@@ -210,27 +236,39 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       margin-top: 16px;
     }
 
-    /* 滚动条样式优化 */
+    /* ========================================
+       目录滚动条样式
+       ======================================== */
+
+    /* 滚动条宽度 */
     .toc-sidebar::-webkit-scrollbar {
       width: 6px;
     }
 
+    /* 滚动条轨道 */
     .toc-sidebar::-webkit-scrollbar-track {
       background: #f1f3f5;
       border-radius: 3px;
       margin: 8px 0;
     }
 
+    /* 滚动条滑块 */
     .toc-sidebar::-webkit-scrollbar-thumb {
       background: #ced4da;
       border-radius: 3px;
       transition: background 0.3s ease;
     }
 
+    /* 滚动条滑块悬停效果 */
     .toc-sidebar::-webkit-scrollbar-thumb:hover {
       background: #adb5bd;
     }
 
+    /* ========================================
+       文章头部样式
+       ======================================== */
+
+    /* 文章头部容器 */
     .post-header {
       text-align: center;
       margin-bottom: 40px;
@@ -238,6 +276,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       border-bottom: 2px solid #eee;
     }
 
+    /* 文章标题 */
     .post-title {
       font-size: 2.8rem;
       font-weight: 600;
@@ -247,6 +286,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       letter-spacing: -0.5px;
     }
 
+    /* 文章元信息（分类、日期、阅读时间） */
     .post-meta {
       color: #666;
       font-size: 0.95rem;
@@ -257,6 +297,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       flex-wrap: wrap;
     }
 
+    /* 文章分类标签 */
     .post-category {
       display: flex;
       align-items: center;
@@ -269,6 +310,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       font-weight: 500;
     }
 
+    /* 文章日期和阅读时间 */
     .post-date,
     .post-reading-time {
       display: flex;
@@ -276,13 +318,18 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       gap: 5px;
     }
 
+    /* ========================================
+       文章内容样式
+       ======================================== */
+
+    /* 文章内容容器 */
     .post-content {
       color: #333;
       line-height: 1.8;
       font-size: 1rem;
     }
 
-    /* 标题样式 */
+    /* 文章内一级标题样式 */
     .post-content :global(h1) {
       font-size: 2rem;
       font-weight: 600;
@@ -293,6 +340,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       border-bottom: 2px solid rgba(0, 168, 232, 0.3);
     }
 
+    /* 文章内二级标题样式 */
     .post-content :global(h2) {
       font-size: 1.6rem;
       font-weight: 600;
@@ -303,6 +351,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       border-bottom: 1px solid rgba(0, 168, 232, 0.2);
     }
 
+    /* 文章内三级标题样式 */
     .post-content :global(h3) {
       font-size: 1.3rem;
       font-weight: 600;
@@ -311,6 +360,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       margin-bottom: 15px;
     }
 
+    /* 文章内四级标题样式 */
     .post-content :global(h4) {
       font-size: 1.1rem;
       font-weight: 600;
@@ -634,7 +684,8 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
         padding: 15px;
         font-size: 0.85rem;
       }
-    }
+    } 
+
   </style>
 
   <div class="post-wrapper">
