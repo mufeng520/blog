@@ -1,0 +1,410 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+// 友链数据
+const links = [
+  {
+    name: '木风',
+    url: 'https://rita.cc.cd/',
+    description: '愿你每一天都充满阳光 ☀️',
+    avatar: 'https://rita.cc.cd/favicon.ico',
+    rss: 'https://rita.cc.cd/rss.xml'
+  },
+  {
+    "name": "Viki 写东西的地方",
+    "url": "https://blog.viki.moe",
+    "description": "生活需要记录。",
+    "avatar": "https://blog.viki.moe/avatar.png",
+    "rss": "https://blog.viki.moe/rss"
+  }
+];
+
+// 友链申请信息
+const applyInfo = {
+  title: '友链申请',
+  description: '欢迎交换友链！请确保您的网站符合以下要求：',
+  requirements: [
+    '牛战士从不摘下他的面具',
+    '网站能够正常访问，加载速度良好',
+    '有原创内容，定期更新',
+    '赫鲁晓夫爱吃玉米'
+  ],
+  myInfo: {
+    name: '木风',
+    url: 'https://rita.cc.cd/',
+    description: '愿你每一天都充满阳光 ☀️',
+    avatar: 'https://rita.cc.cd/favicon.ico',
+    rss: 'https://rita.cc.cd/rss.xml'
+  }
+};
+---
+
+<BaseLayout title="看看他们 - 木风">
+  <style>
+    /* ========================================
+       友链页面整体布局
+       ======================================== */
+    .links-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* 页面标题 */
+    .page-header {
+      text-align: center;
+      margin-bottom: 50px;
+    }
+
+    .page-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      color: #24292e;
+      margin-bottom: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .page-subtitle {
+      font-size: 1.1rem;
+      color: #586069;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    /* ========================================
+       友链卡片网格布局
+       ======================================== */
+    .links-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 25px;
+      margin-bottom: 60px;
+    }
+
+    /* 友链卡片 */
+    .link-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 25px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e1e4e8;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .link-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 24px rgba(0, 168, 232, 0.15);
+      border-color: #00a8e8;
+    }
+
+    /* 友链头像 */
+    .link-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #e1e4e8;
+      transition: all 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .link-card:hover .link-avatar {
+      border-color: #00a8e8;
+      transform: scale(1.05);
+    }
+
+    /* 友链信息 */
+    .link-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .link-name {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #24292e;
+      margin-bottom: 6px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .link-description {
+      font-size: 0.9rem;
+      color: #586069;
+      line-height: 1.5;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .link-url {
+      font-size: 0.8rem;
+      color: #959da5;
+      margin-top: 6px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ========================================
+       友链申请区域
+       ======================================== */
+    .apply-section {
+      background: linear-gradient(135deg, #fafbfc 0%, #f5f6f7 100%);
+      border-radius: 16px;
+      padding: 40px;
+      border: 1px solid #e1e4e8;
+    }
+
+    .apply-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .apply-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #24292e;
+      margin-bottom: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .apply-description {
+      font-size: 1rem;
+      color: #586069;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .apply-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+    }
+
+    @media (max-width: 768px) {
+      .apply-content {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* 申请要求 */
+    .requirements {
+      background: #fff;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .requirements-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #24292e;
+      margin-bottom: 15px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .requirements-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .requirements-list li {
+      padding: 10px 0;
+      padding-left: 25px;
+      position: relative;
+      color: #444d56;
+      font-size: 0.95rem;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .requirements-list li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: #00a8e8;
+      font-weight: bold;
+    }
+
+    /* 本站信息 */
+    .my-info {
+      background: #fff;
+      border-radius: 12px;
+      padding: 25px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+
+    .my-info-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #24292e;
+      margin-bottom: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .my-info-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px;
+      background: #f6f8fa;
+      border-radius: 10px;
+      border: 1px solid #e1e4e8;
+    }
+
+    .my-info-avatar {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #00a8e8;
+    }
+
+    .my-info-details {
+      flex: 1;
+    }
+
+    .my-info-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #24292e;
+      margin-bottom: 4px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .my-info-description {
+      font-size: 0.9rem;
+      color: #586069;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .my-info-url {
+      font-size: 0.85rem;
+      color: #00a8e8;
+      margin-top: 4px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    /* 联系邮箱 */
+    .contact-email {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f1f8ff;
+      border-radius: 8px;
+      border-left: 3px solid #00a8e8;
+    }
+
+    .contact-email-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #24292e;
+      margin-bottom: 5px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    .contact-email-address {
+      font-size: 0.95rem;
+      color: #00a8e8;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    }
+
+    /* 响应式适配 */
+    @media (max-width: 768px) {
+      .links-container {
+        padding: 20px 15px;
+      }
+
+      .page-title {
+        font-size: 2rem;
+      }
+
+      .links-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+      }
+
+      .link-card {
+        padding: 18px;
+      }
+
+      .link-avatar {
+        width: 50px;
+        height: 50px;
+      }
+
+      .apply-section {
+        padding: 25px 20px;
+      }
+
+      .apply-title {
+        font-size: 1.5rem;
+      }
+    }
+  </style>
+
+  <div class="links-container">
+    <!-- 页面标题 -->
+    <header class="page-header">
+      <h1 class="page-title">👀 看看他们</h1>
+      <p class="page-subtitle">与志同道合的朋友们交换链接，共同进步</p>
+    </header>
+
+    <!-- 友链列表 -->
+    <div class="links-grid">
+      {links.map((link) => (
+        <a href={link.url} target="_blank" rel="noopener noreferrer" class="link-card">
+          <img src={link.avatar} alt={link.name} class="link-avatar" />
+          <div class="link-info">
+            <div class="link-name">{link.name}</div>
+            <div class="link-description">{link.description}</div>
+            <div class="link-url">{link.url}</div>
+          </div>
+        </a>
+      ))}
+    </div>
+
+    <!-- 友链申请 -->
+    <section class="apply-section">
+      <header class="apply-header">
+        <h2 class="apply-title">{applyInfo.title}</h2>
+        <p class="apply-description">{applyInfo.description}</p>
+      </header>
+
+      <div class="apply-content">
+        <!-- 申请要求 -->
+        <div class="requirements">
+          <h3 class="requirements-title">📋 申请要求</h3>
+          <ul class="requirements-list">
+            {applyInfo.requirements.map((req) => (
+              <li>{req}</li>
+            ))}
+          </ul>
+        </div>
+
+        <!-- 本站信息 -->
+        <div class="my-info">
+          <h3 class="my-info-title">💡 本站信息</h3>
+          <div class="my-info-card">
+            <img src={applyInfo.myInfo.avatar} alt={applyInfo.myInfo.name} class="my-info-avatar" />
+            <div class="my-info-details">
+              <div class="my-info-name">{applyInfo.myInfo.name}</div>
+              <div class="my-info-description">{applyInfo.myInfo.description}</div>
+              <div class="my-info-url">{applyInfo.myInfo.url}</div>
+            </div>
+          </div>
+          <div class="contact-email">
+            <div class="contact-email-title">📧 联系方式</div>
+            <div class="contact-email-address">请发送邮件至：your-email@example.com</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
