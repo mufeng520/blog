@@ -27,7 +27,7 @@ export async function GET(context) {
         // 文章标题
         title: frontmatter.title || '无标题',
         // 文章链接
-        link: `/posts/${frontmatter.slug || ''}/`,
+        link: `/posts/${post.slug || ''}/`,
         // 发布日期
         pubDate: frontmatter.pubdate ? new Date(frontmatter.pubdate) : new Date(),
         // 文章描述/摘要
