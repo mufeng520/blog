@@ -9,7 +9,7 @@ export async function GET(context) {
     site: context.site || 'https://rita.cc.cd',
     // 文章列表
     items: await pagesGlobToRssItems(
-      import.meta.glob('./posts/*.md', { eager: true }),
+      import.meta.glob('./posts/*.md'),
     ),
     // 自定义命名空间
     customData: `<language>zh-CN</language>`,
