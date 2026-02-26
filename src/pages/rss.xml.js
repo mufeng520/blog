@@ -2,7 +2,7 @@ import rss from '@astrojs/rss';
 import { getCollection } from 'astro:content';
 export async function GET(context) {
   // 获取所有文章
-  const blog = await getCollection('posts');
+  const blog = await getCollection('blog');
   return rss({
     // RSS Feed 标题
     title: '木风的博客',
@@ -17,7 +17,7 @@ export async function GET(context) {
       description: post.data.description,
       // 从 `id` 属性计算出 RSS 链接
       // 这个例子假设所有的文章都被渲染为 `/blog/[id]` 路由
-      link: `/blog/${post.id}/`,
+      link: `/posts/${post.id}/`,
     })),
     // 自定义命名空间
     customData: `<language>zh-CN</language>`,
