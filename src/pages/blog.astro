@@ -72,31 +72,7 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
       color: #00a8e8;
       margin: 0 4px;
     }
-    /* RSS订阅按钮 */
-    .blog-rss {
-      margin-bottom: 20px;
-    }
-    .rss-link {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 16px;
-      background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
-      color: #fff;
-      text-decoration: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      transition: all 0.3s ease;
-      box-shadow: 0 2px 8px rgba(238, 90, 90, 0.3);
-    }
-    .rss-link:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(238, 90, 90, 0.4);
-    }
-    .rss-icon {
-      font-size: 16px;
-    }
+
     .blog-filter dl {
       margin-bottom: 25px;
     }
@@ -280,12 +256,6 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
           <div class="title">
             <h4>Mufeng Blog</h4>
             <p><i>{</i><span>文章</span><i>}</i></p>
-          </div>
-          <div class="blog-rss">
-            <a href="/rss.xml" target="_blank" class="rss-link">
-              <span class="rss-icon">📡</span>
-              <span>RSS订阅</span>
-            </a>
           </div>
           <div class="blog-filter">
             <dl>

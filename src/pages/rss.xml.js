@@ -19,7 +19,7 @@ export async function GET(context) {
     // RSS Feed 描述
     description: '记录生活，分享技术，木风的个人博客',
     // 网站地址
-    site: context.site || 'https://mufeng.blog',
+    site: context.site || 'https://rita.cc.cd',
     // 文章列表
     items: posts.map((post) => {
       const frontmatter = post.frontmatter || {};
