@@ -16,7 +16,17 @@ const blog = defineCollection({
       // ... 其他字段
     }),
  });
-const dogs = defineCollection({ /* ... */ });
+
+// 定义 quotes 集合 - 从 JSON 文件加载
+const quotes = defineCollection({
+  loader: file("src/data/quotes.json"),
+  schema: z.object({
+    id: z.string(),
+    text: z.string(),
+    author: z.string(),
+  }),
+});
+
 
 // 5. 导出一个 `collections` 对象来注册你的集合
-export const collections = { blog, dogs };
+export const collections = { blog, quotes};
