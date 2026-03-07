@@ -40,7 +40,9 @@
     <div class="input-group">
       <div class="input-item">
         <label for="projectName">工程站名称</label>
-        <input type="text" id="projectName" placeholder="例如：阿尔法站、贝塔站" />
+        <select id="projectName">
+          <option value="">请选择工程站</option>
+        </select>
       </div>
       <div class="input-item">
         <label for="allianceName">所属联盟</label>
@@ -83,7 +85,7 @@
     </div>
 
     <div style="margin-top: 15px;">
-      <button id="addTimer">添加倒计时</button>
+      <button id="addTimer">添加/更新倒计时</button>
       <button class="secondary" id="resetAll">重置所有</button>
     </div>
   </div>
@@ -232,7 +234,7 @@
     font-size: 0.8rem;
   }
 
-  input {
+  input, select {
     width: 100%;
     padding: 7px 9px;
     background: rgba(15, 23, 42, 0.8);
@@ -243,10 +245,19 @@
     transition: all 0.3s ease;
   }
 
-  input:focus {
+  input:focus, select:focus {
     outline: none;
     border-color: #3b82f6;
     box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  }
+
+  select {
+    cursor: pointer;
+  }
+
+  select option {
+    background: #1e293b;
+    color: white;
   }
 
   button {
@@ -349,6 +360,27 @@
   .phase-2 {
     background: rgba(16, 185, 129, 0.2);
     color: #10b981;
+  }
+
+  .edit-btn {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: none;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .edit-btn:hover {
+    background: rgba(59, 130, 246, 0.4);
+    transform: scale(1.1);
   }
 
   .delete-btn {
@@ -567,10 +599,107 @@
 </style>
 
 <script is:inline>
+  // 74个固定的工程站数据
+  const FIXED_PROJECTS = [
+    { "project": "1381401建工1", "alliance": "999" },
+    { "project": "137957生产1", "alliance": "erc" },
+    { "project": "137869武器2", "alliance": "erc" },
+    { "project": "137747训练2", "alliance": "sov" },
+    { "project": "86666采集1", "alliance": "sov" },
+    { "project": "137667", "alliance": "sov" },
+    { "project": "137538防御2", "alliance": "wqg" },
+    { "project": "137438武器2", "alliance": "gwq" },
+    { "project": "137328生产1", "alliance": "wqg" },
+    { "project": "137237采集1", "alliance": "wqg" },
+    { "project": "137138建工1", "alliance": "wqg" },
+    { "project": "236138生产1", "alliance": "aaa" },
+    { "project": "236239科技1", "alliance": "wqg" },
+    { "project": "365139武器2", "alliance": "wqg" },
+    { "project": "437268防御2", "alliance": "zuv" },
+    { "project": "485328建工3", "alliance": "wqg" },
+    { "project": "326327科技3", "alliance": "wqg" },
+    { "project": "386487武器4", "alliance": "wqg" },
+    { "project": "236487训练2", "alliance": "wqg" },
+    { "project": "266538科技1", "alliance": "gwq" },
+    { "project": "386718防御4", "alliance": "999" },
+    { "project": "236769防御2", "alliance": "erc" },
+    { "project": "326868科技3", "alliance": "sov" },
+    { "project": "236958科技1", "alliance": "erc" },
+    { "project": "2661069采集1", "alliance": "999" },
+    { "project": "3261039生产1", "alliance": "999" },
+    { "project": "4371068武器2", "alliance": "999" },
+    { "project": "5361040防御2", "alliance": "999" },
+    { "project": "536937科技1", "alliance": "999" },
+    { "project": "485958训练2", "alliance": "999" },
+    { "project": "485868远征3", "alliance": "999" },
+    { "project": "587868武器4", "alliance": "joy" },
+    { "project": "6351138采集1", "alliance": "joy" },
+    { "project": "6651069建工1", "alliance": "joy" },
+    { "project": "7671039训练2", "alliance": "joy" },
+    { "project": "737958防御2", "alliance": "joy" },
+    { "project": "767867建工3", "alliance": "joy" },
+    { "project": "866868科技3", "alliance": "joy" },
+    { "project": "8661069武器2", "alliance": "joy" },
+    { "project": "9561070生产1", "alliance": "joy" },
+    { "project": "956957科技1", "alliance": "joy" },
+    { "project": "10671069建工1", "alliance": "ttg" },
+    { "project": "1067937采集1", "alliance": "ttg" },
+    { "project": "1067868武器2", "alliance": "ttg" },
+    { "project": "956748训练2", "alliance": "ttg" },
+    { "project": "1136568采集1", "alliance": "doy" },
+    { "project": "1067487训练2", "alliance": "doy" },
+    { "project": "935539科技1", "alliance": "003" },
+    { "project": "956440防御2", "alliance": "doy" },
+    { "project": "1067239生产1", "alliance": "doy" },
+    { "project": "1067140建工1", "alliance": "erc" },
+    { "project": "956140采集1", "alliance": "erc" },
+    { "project": "956240科技1", "alliance": "doy" },
+    { "project": "866140武器2", "alliance": "003" },
+    { "project": "767140生产1", "alliance": "003" },
+    { "project": "767239训练2", "alliance": "erc" },
+    { "project": "767329远征3", "alliance": "sov" },
+    { "project": "866329科技3", "alliance": "erc" },
+    { "project": "665269科技1", "alliance": "sov" },
+    { "project": "665140防御2", "alliance": "003" },
+    { "project": "53689采集1", "alliance": "003" },
+    { "project": "536140建工1", "alliance": "003" },
+    { "project": "485140训练2", "alliance": "003" },
+    { "project": "587329防御4", "alliance": "sov" },
+    { "project": "815488武器4", "alliance": "sov" },
+    { "project": "866569建工3", "alliance": "sov" },
+    { "project": "866668远征3", "alliance": "joy" },
+    { "project": "815719防御4", "alliance": "joy" },
+    { "project": "326568远征3", "alliance": "wqg" },
+    { "project": "1067747生产1", "alliance": "ttg" },
+    { "project": "1067667防御2", "alliance": "ttg" },
+    { "project": "1067328武器2", "alliance": "dov" },
+    { "project": "326667建工3", "alliance": "999" },
+    { "project": "1067568建工1", "alliance": "doy" }
+  ];
+
   // 存储所有倒计时的数组
   let timers = [];
   let timerElements = {}; // 存储DOM元素的引用
   let currentFilter = 'all'; // 当前筛选状态
+
+  // 初始化工程站下拉选择框
+  function initProjectSelect() {
+    const projectSelect = document.getElementById('projectName');
+    FIXED_PROJECTS.forEach((proj) => {
+      const option = document.createElement('option');
+      option.value = proj.project;
+      option.textContent = proj.project;
+      projectSelect.appendChild(option);
+    });
+    
+    // 当选择工程站时，自动填充联盟名称
+    projectSelect.addEventListener('change', function() {
+      const selectedProject = FIXED_PROJECTS.find(p => p.project === this.value);
+      if (selectedProject) {
+        document.getElementById('allianceName').value = selectedProject.alliance;
+      }
+    });
+  }
 
   // 从本地存储加载倒计时
   function loadTimers() {
@@ -794,6 +923,7 @@
                         }">${
       remaining.currentPhase === 1 ? '可争夺阶段' : '保护阶段'
     }</div>
+                        <button class="edit-btn" data-index="${index}" title="重新设置时间">✎</button>
                         <button class="delete-btn" data-index="${index}">×</button>
                     </div>
                 </div>
@@ -827,6 +957,12 @@
                     </div>
                 </div>
             `;
+
+    // 添加编辑功能
+    const editBtn = card.querySelector('.edit-btn');
+    editBtn.addEventListener('click', function () {
+      editTimer(index);
+    });
 
     // 添加删除功能
     const deleteBtn = card.querySelector('.delete-btn');
@@ -949,7 +1085,26 @@
     return startTime;
   }
 
-  // 添加新倒计时
+  // 更新已存在的工程站时间
+  function updateTimerTime(project, days, hours, minutes) {
+    const timerIndex = timers.findIndex((timer) => timer.project === project);
+    if (timerIndex === -1) return false;
+
+    // 计算开始时间（基于剩余时间）
+    const startTime = calculateStartTimeFromRemainingTime(
+      days,
+      hours,
+      minutes
+    );
+
+    // 更新时间
+    timers[timerIndex].startTime = startTime.toISOString();
+    timers[timerIndex].createdAt = new Date().toISOString();
+
+    return true;
+  }
+
+  // 添加或更新倒计时
   function addTimer() {
     const projectInput = document.getElementById('projectName');
     const allianceInput = document.getElementById('allianceName');
@@ -964,7 +1119,7 @@
     const minutes = parseInt(minutesInput.value) || 0;
 
     if (!project) {
-      alert('请输入工程站名称');
+      alert('请选择工程站名称');
       projectInput.focus();
       return;
     }
@@ -985,13 +1140,6 @@
       return;
     }
 
-    // 检查是否已存在相同工程站名称的倒计时
-    const exists = timers.some((timer) => timer.project === project);
-    if (exists) {
-      alert('已存在相同工程站名称的倒计时，请使用不同的名称');
-      return;
-    }
-
     // 计算开始时间（基于剩余时间）
     const startTime = calculateStartTimeFromRemainingTime(
       days,
@@ -999,13 +1147,22 @@
       minutes
     );
 
-    // 添加到数组 (固定从阶段1开始)
-    timers.push({
-      project: project,
-      alliance: alliance,
-      startTime: startTime.toISOString(),
-      createdAt: new Date().toISOString(),
-    });
+    // 检查是否已存在相同工程站名称的倒计时
+    const existingIndex = timers.findIndex((timer) => timer.project === project);
+    if (existingIndex !== -1) {
+      // 如果已存在，更新时间和联盟
+      timers[existingIndex].startTime = startTime.toISOString();
+      timers[existingIndex].alliance = alliance;
+      timers[existingIndex].createdAt = new Date().toISOString();
+    } else {
+      // 如果不存在，添加新的
+      timers.push({
+        project: project,
+        alliance: alliance,
+        startTime: startTime.toISOString(),
+        createdAt: new Date().toISOString(),
+      });
+    }
 
     // 清空表单
     projectInput.value = '';
@@ -1017,6 +1174,31 @@
     // 保存并更新显示
     saveTimers();
     updateDisplay();
+  }
+
+  // 编辑倒计时（重新设置时间）
+  function editTimer(index) {
+    const timer = timers[index];
+    if (!timer) return;
+
+    // 填充表单
+    document.getElementById('projectName').value = timer.project;
+    document.getElementById('allianceName').value = timer.alliance;
+
+    // 计算当前剩余时间并填充
+    const remaining = calculateRemainingTime(timer.startTime);
+    document.getElementById('days').value = remaining.days;
+    document.getElementById('hours').value = remaining.hours;
+    document.getElementById('minutes').value = remaining.minutes;
+
+    // 滚动到表单位置
+    document.querySelector('.form-container').scrollIntoView({ 
+      behavior: 'smooth', 
+      block: 'center' 
+    });
+
+    // 聚焦到时间输入框
+    document.getElementById('hours').focus();
   }
 
   // 删除倒计时
@@ -1102,6 +1284,9 @@
 
   // 初始化
   function init() {
+    // 初始化工程站下拉选择框
+    initProjectSelect();
+    
     // 加载已有倒计时
     loadTimers();
 
@@ -1139,20 +1324,21 @@
 
     // 允许按Enter键添加倒计时
     document
-      .getElementById('projectName')
-      .addEventListener('keypress', function (e) {
-        if (e.key === 'Enter') {
-          addTimer();
-        }
-      });
-
-    document
       .getElementById('allianceName')
       .addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
           addTimer();
         }
       });
+
+    // 时间输入框也支持Enter键
+    ['days', 'hours', 'minutes'].forEach(id => {
+      document.getElementById(id).addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          addTimer();
+        }
+      });
+    });
   }
 
   // 页面加载完成后初始化（兼容 Astro 可能在 DOMContentLoaded 之后再执行脚本的情况）
