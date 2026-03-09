@@ -186,8 +186,8 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
     .blog-post-category {
       display: inline-block;
       padding: 4px 12px;
-      background: #00a8e8;
-      color: #fff;
+      background: #85dcff;
+      color: #fae9e9;
       border-radius: 12px;
       font-size: 0.75rem;
       font-weight: 500;
@@ -303,7 +303,7 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
             type="text"
             id="searchInput"
             class="blog-search-box"
-            placeholder="🔍 搜索文章标题..."
+            placeholder=" 搜索文章标题..."
           />
           <div class="blog-posts-count" id="postsCount">
             显示 {allPosts.length} 篇文章
@@ -327,13 +327,11 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
               <div class="blog-post-meta">
                 {post.pubdate && (
                   <div class="post-date">
-                    <span>📅</span>
                     <time>{post.pubdate}</time>
                   </div>
                 )}
                 <div class="post-reading-time">
-                  <span>⏱️</span>
-                  <span>{post.readingTime} 分钟阅读</span>
+                  <span>需要{post.readingTime} 分钟阅读</span>
                 </div>
               </div>
             </li>
@@ -342,7 +340,6 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
 
         <div class="blog-empty-wrapper">
           <div class="blog-empty-state hidden" id="emptyState">
-            <div class="blog-empty-state-icon">🔍</div>
             <div class="blog-empty-state-text">没有找到匹配的文章</div>
           </div>
         </div>
