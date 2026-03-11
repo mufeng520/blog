@@ -718,14 +718,12 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
           )}
           {frontmatter.pubdate && (
             <div class="post-date">
-              <span>📅</span>
               <time>{frontmatter.pubdate}</time>
             </div>
           )}
           <div class="post-reading-time" id="post-reading-time">
             {readingTimeMinutes !== null ? (
               <>
-                <span>⏱️</span>
                 <span>{readingTimeMinutes} 分钟阅读</span>
               </>
             ) : (
