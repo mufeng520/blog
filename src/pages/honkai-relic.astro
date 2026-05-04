@@ -1,0 +1,25 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StarRailRelicDashboard from '../components/StarRailRelicDashboard';
+import { getCollection } from 'astro:content';
+
+const ruleEntries = await getCollection('starRailRelicRules');
+const characterRules = ruleEntries.map((e) => ({
+  entryId: e.id,
+  characterId: e.data.characterId,
+  displayName: e.data.displayName,
+  loadouts: e.data.loadouts,
+}));
+---
+
+<BaseLayout title="星穹铁道遗器看板 - 木风">
+  <style is:global>
+    .honkai-relic-page main {
+      background: #020617 !important;
+      min-height: calc(100vh - 120px);
+    }
+  </style>
+  <div class="honkai-relic-page">
+    <StarRailRelicDashboard client:load characterRules={characterRules} />
+  </div>
+</BaseLayout>

@@ -1,0 +1,45 @@
+[
+  {
+    "id": "加拉赫",
+    "characterId": "1301",
+    "displayName": "加拉赫",
+    "note": "characterId：打开 Archiver 导出 JSON，在 characters 里找到该角色，复制其 id 字段（一串数字）。隧洞/位面：填游戏里的简中套装全名，或用「死水套」「信使套」等简称（见 src/lib/star-rail-relic/i18n.ts 里 RELIC_SET_ALIAS_ZH，可自行加）。有效词条：填中文即可。",
+    "loadouts": [
+      {
+        "id": "击破向",
+        "name": "击破 / 盗贼方向",
+        "cavernSets": ["流星追迹的怪盗", "骇域漫游的信使"],
+        "planarSets": ["折断的龙骨", "不老者的仙舟"],
+        "effectiveSubstats": ["击破特攻", "速度", "攻击力", "暴击率", "暴击伤害"]
+      },
+      {
+        "id": "治疗向",
+        "name": "治疗向",
+        "cavernSets": ["云无留迹的过客", "骇域漫游的信使"],
+        "planarSets": ["不老者的仙舟", "生命的翁瓦克"],
+        "effectiveSubstats": ["生命值", "治疗量加成", "速度", "能量恢复效率", "击破特攻"]
+      }
+    ]
+  },
+  {
+    "id": "阮梅",
+    "characterId": "1303",
+    "displayName": "阮·梅",
+    "loadouts": [
+      {
+        "id": "辅助击破",
+        "name": "辅助击破",
+        "cavernSets": ["骇域漫游的信使", "流星追迹的怪盗"],
+        "planarSets": ["折断的龙骨", "不老者的仙舟"],
+        "effectiveSubstats": ["击破特攻", "速度", "效果命中", "防御力", "生命值"]
+      },
+      {
+        "id": "速度击破",
+        "name": "速度击破",
+        "cavernSets": ["荡涤妖邪的铁骑", "骇域漫游的信使"],
+        "planarSets": ["盗贼公国塔利亚", "生命的翁瓦克"],
+        "effectiveSubstats": ["击破特攻", "速度", "攻击力"]
+      }
+    ]
+  }
+]
