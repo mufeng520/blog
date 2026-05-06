@@ -22,24 +22,458 @@
     ]
   },
   {
-    "id": "阮梅",
+    "id": "March 7th",
+    "characterId": "1001",
+    "displayName": "三月七",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Dan Heng",
+    "characterId": "1002",
+    "displayName": "丹恒",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Himeko",
+    "characterId": "1003",
+    "displayName": "姬子",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Welt",
+    "characterId": "1004",
+    "displayName": "瓦尔特",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Kafka",
+    "characterId": "1005",
+    "displayName": "卡芙卡",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Silver Wolf",
+    "characterId": "1006",
+    "displayName": "银狼",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Arlan",
+    "characterId": "1008",
+    "displayName": "阿兰",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Asta",
+    "characterId": "1009",
+    "displayName": "艾丝妲",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Herta",
+    "characterId": "1013",
+    "displayName": "黑塔",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Archer",
+    "characterId": "1015",
+    "displayName": "Archer",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Bronya",
+    "characterId": "1101",
+    "displayName": "布洛妮娅",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Seele",
+    "characterId": "1102",
+    "displayName": "希儿",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Serval",
+    "characterId": "1103",
+    "displayName": "希露瓦",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Gepard",
+    "characterId": "1104",
+    "displayName": "杰帕德",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Natasha",
+    "characterId": "1105",
+    "displayName": "娜塔莎",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Pela",
+    "characterId": "1106",
+    "displayName": "佩拉",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Clara",
+    "characterId": "1107",
+    "displayName": "克拉拉",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Sampo",
+    "characterId": "1108",
+    "displayName": "桑博",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Hook",
+    "characterId": "1109",
+    "displayName": "虎克",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Lynx",
+    "characterId": "1110",
+    "displayName": "玲可",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Luka",
+    "characterId": "1111",
+    "displayName": "卢卡",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Qingque",
+    "characterId": "1201",
+    "displayName": "青雀",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Tingyun",
+    "characterId": "1202",
+    "displayName": "停云",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Luocha",
+    "characterId": "1203",
+    "displayName": "罗刹",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Jing Yuan",
+    "characterId": "1204",
+    "displayName": "景元",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Blade",
+    "characterId": "1205",
+    "displayName": "刃",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Sushang",
+    "characterId": "1206",
+    "displayName": "素裳",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Yukong",
+    "characterId": "1207",
+    "displayName": "驭空",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Fu Xuan",
+    "characterId": "1208",
+    "displayName": "符玄",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Yanqing",
+    "characterId": "1209",
+    "displayName": "彦卿",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Guinaifen",
+    "characterId": "1210",
+    "displayName": "桂乃芬",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Bailu",
+    "characterId": "1211",
+    "displayName": "白露",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Jingliu",
+    "characterId": "1212",
+    "displayName": "镜流",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Dan Heng • Imbibitor Lunae",
+    "characterId": "1213",
+    "displayName": "丹恒·饮月",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Xueyi",
+    "characterId": "1214",
+    "displayName": "雪衣",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Hanya",
+    "characterId": "1215",
+    "displayName": "寒鸦",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Huohuo",
+    "characterId": "1217",
+    "displayName": "藿藿",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Jiaoqiu",
+    "characterId": "1218",
+    "displayName": "椒丘",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Feixiao",
+    "characterId": "1220",
+    "displayName": "飞霄",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Yunli",
+    "characterId": "1221",
+    "displayName": "云璃",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Moze",
+    "characterId": "1223",
+    "displayName": "貊泽",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "March 7th",
+    "characterId": "1224",
+    "displayName": "三月七",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Gallagher",
+    "characterId": "1301",
+    "displayName": "加拉赫",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Ruan Mei",
     "characterId": "1303",
     "displayName": "阮·梅",
     "loadouts": [
-      {
-        "id": "辅助击破",
-        "name": "辅助击破",
-        "cavernSets": ["骇域漫游的信使", "流星追迹的怪盗"],
-        "planarSets": ["折断的龙骨", "不老者的仙舟"],
-        "effectiveSubstats": ["击破特攻", "速度", "效果命中", "防御力", "生命值"]
-      },
-      {
-        "id": "速度击破",
-        "name": "速度击破",
-        "cavernSets": ["荡涤妖邪的铁骑", "骇域漫游的信使"],
-        "planarSets": ["盗贼公国塔利亚", "生命的翁瓦克"],
-        "effectiveSubstats": ["击破特攻", "速度", "攻击力"]
-      }
+    ]
+  },
+  {
+    "id": "Aventurine",
+    "characterId": "1304",
+    "displayName": "砂金",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Dr. Ratio",
+    "characterId": "1305",
+    "displayName": "真理医生",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Sparkle",
+    "characterId": "1306",
+    "displayName": "花火",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Acheron",
+    "characterId": "1308",
+    "displayName": "黄泉",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Robin",
+    "characterId": "1309",
+    "displayName": "知更鸟",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Firefly",
+    "characterId": "1310",
+    "displayName": "流萤",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Misha",
+    "characterId": "1312",
+    "displayName": "米沙",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Sunday",
+    "characterId": "1313",
+    "displayName": "星期日",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Jade",
+    "characterId": "1314",
+    "displayName": "翡翠",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Castorice",
+    "characterId": "1407",
+    "displayName": "遐蝶",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Phainon",
+    "characterId": "1408",
+    "displayName": "白厄",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Hyacine",
+    "characterId": "1409",
+    "displayName": "风堇",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Dan Heng • Permansor Terrae",
+    "characterId": "1414",
+    "displayName": "丹恒·腾荒",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Cyrene",
+    "characterId": "1415",
+    "displayName": "昔涟",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Yao Guang",
+    "characterId": "1502",
+    "displayName": "爻光",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Silver Wolf LV.<unbreak>999</unbreak>",
+    "characterId": "1506",
+    "displayName": "银狼 LV.999",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Trailblazer",
+    "characterId": "8001",
+    "displayName": "开拓者·毁灭",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Trailblazer",
+    "characterId": "8003",
+    "displayName": "开拓者·存护",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Trailblazer",
+    "characterId": "8005",
+    "displayName": "开拓者·同谐",
+    "loadouts": [
+    ]
+  },
+  {
+    "id": "Trailblazer",
+    "characterId": "8007",
+    "displayName": "开拓者·记忆",
+    "loadouts": [
+    ]
+  },  
+  {
+    "id": "Trailblazer",
+    "characterId": "8009",
+    "displayName": "开拓者·欢愉",
+    "loadouts": [
     ]
   }
 ]
