@@ -470,68 +470,71 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
         <code style={{ color: '#fbbf24' }}>count</code> 之和。
       </p>
 
-      <div style={styles.panelTight}>
-        <div style={{ ...styles.row, justifyContent: 'space-between', marginBottom: 8 }}>
-          <span style={{ ...styles.cardTitle, marginBottom: 0 }}>内容规则</span>
-          <span style={styles.muted}>{characterRules.length ? `${characterRules.length} 名角色` : '未配置'}</span>
-        </div>
-        {characterRules.length === 0 ? (
-          <p style={styles.hint}>编辑 src/data/star-rail-relic-rules.json（数组里每项一名角色）后重新构建。</p>
-        ) : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
-            {characterRules.map((r) => (
-              <span key={r.entryId} style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
-                <strong style={{ color: '#e2e8f0' }}>{r.displayName ?? r.characterId}</strong>
-                <span style={styles.muted}> #{r.characterId}</span>
-                {r.loadouts.map((lo) => (
-                  <span key={lo.id} style={styles.ruleChip}>
-                    {lo.name}
-                  </span>
-                ))}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
+      <div style={{display: 'grid',gridTemplateColumns: '1fr 1fr 1fr 1fr',gap: '8px',}}> 
 
-      <div style={styles.panelTight}>
-        <div style={{ ...styles.row, justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={styles.row}>
-            <label style={styles.btn}>
-              选择文件
-              <input type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onFile} />
-            </label>
-            <button type="button" style={styles.btnGhost} onClick={runParse}>
-              解析刷新
-            </button>
-            <button
-              type="button"
-              style={styles.btnGhost}
-              onClick={() =>
-                setText(characterRules.length > 0 ? '{"source":"reliquary_archiver","version":4,"relics":[]}' : SAMPLE_JSON)
-              }
-            >
-              清空
+        <div style={{...styles.panelTight,gridColumn: 1}}>
+          <div style={{ ...styles.row, justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={styles.row}>
+              <label style={styles.btn}>
+                选择文件
+                <input type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onFile} />
+              </label>
+              <button type="button" style={styles.btnGhost} onClick={runParse}>
+                解析刷新
+              </button>
+              <button
+                type="button"
+                style={styles.btnGhost}
+                onClick={() =>
+                  setText(characterRules.length > 0 ? '{"source":"reliquary_archiver","version":4,"relics":[]}' : SAMPLE_JSON)
+                }
+              >
+                清空
+              </button>
+            </div>
+            <button type="button" style={styles.btnLink} onClick={() => setJsonEditorOpen((o) => !o)}>
+              {jsonEditorOpen ? '收起 JSON' : `展开粘贴 JSON（${jsonSnippetLen} 字）`}
             </button>
           </div>
-          <button type="button" style={styles.btnLink} onClick={() => setJsonEditorOpen((o) => !o)}>
-            {jsonEditorOpen ? '收起 JSON' : `展开粘贴 JSON（${jsonSnippetLen} 字）`}
-          </button>
+          {jsonEditorOpen ? (
+            <textarea
+              style={{ ...styles.textareaSm, marginTop: 8 }}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              spellCheck={false}
+            />
+          ) : null}
+          {error ? <div style={styles.err}>{error}</div> : null}
+          {!jsonEditorOpen ? (
+            <p style={styles.hint}>装：已装备；仓：仓库匹配；库：未绑定。六列对应六部位。</p>
+          ) : null}
         </div>
-        {jsonEditorOpen ? (
-          <textarea
-            style={{ ...styles.textareaSm, marginTop: 8 }}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            spellCheck={false}
-          />
-        ) : null}
-        {error ? <div style={styles.err}>{error}</div> : null}
-        {!jsonEditorOpen ? (
-          <p style={styles.hint}>装：已装备；仓：仓库匹配；库：未绑定。六列对应六部位。</p>
-        ) : null}
-      </div>
 
+        <div style={{...styles.panelTight,gridColumn: "2/5"}}>
+          <div style={{ ...styles.row, justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ ...styles.cardTitle, marginBottom: 0 }}>内容规则</span>
+            <span style={styles.muted}>{characterRules.length ? `${characterRules.length} 名角色` : '未配置'}</span>
+          </div>
+          {characterRules.length === 0 ? (
+            <p style={styles.hint}>编辑 src/data/star-rail-relic-rules.json（数组里每项一名角色）后重新构建。</p>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
+              {characterRules.map((r) => (
+                <span key={r.entryId} style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
+                  <strong style={{ color: '#e2e8f0' }}>{r.displayName ?? r.characterId}</strong>
+                  {/* <span style={styles.muted}> #{r.characterId}</span> */}
+                  {r.loadouts.map((lo) => (
+                    <span key={lo.id} style={styles.ruleChip}>
+                      {lo.name}
+                    </span>
+                  ))}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+      </div>
       <div style={styles.panel}>
         <h2 style={{ ...styles.cardTitle, marginBottom: 10 }}>集体刷取参考</h2>
         <div style={{ overflowX: 'auto' }}>

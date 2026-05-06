@@ -4,6 +4,7 @@ import { getCollection } from 'astro:content';
 
 // 获取所有 quotes
 const allQuotes = await getCollection('quotes');
+const ruleEntries = await getCollection('starRailRelicRules');
 
 // 随机选择一条
 const randomQuote = allQuotes[Math.floor(Math.random() * allQuotes.length)];
@@ -70,5 +71,6 @@ const randomQuote = allQuotes[Math.floor(Math.random() * allQuotes.length)];
 				<div class="quote-text">"{randomQuote.data.text}"</div>
 				<div class="quote-author">—— {randomQuote.data.author}</div>
 			</div>
+			{ruleEntries}
 		</div>
 </BaseLayout>

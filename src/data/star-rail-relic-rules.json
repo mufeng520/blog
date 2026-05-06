@@ -1,31 +1,16 @@
 [
   {
-    "id": "加拉赫",
-    "characterId": "1301",
-    "displayName": "加拉赫",
-    "note": "characterId：打开 Archiver 导出 JSON，在 characters 里找到该角色，复制其 id 字段（一串数字）。隧洞/位面：填游戏里的简中套装全名，或用「死水套」「信使套」等简称（见 src/lib/star-rail-relic/i18n.ts 里 RELIC_SET_ALIAS_ZH，可自行加）。有效词条：填中文即可。",
-    "loadouts": [
-      {
-        "id": "击破向",
-        "name": "击破 / 盗贼方向",
-        "cavernSets": ["流星追迹的怪盗", "骇域漫游的信使"],
-        "planarSets": ["折断的龙骨", "不老者的仙舟"],
-        "effectiveSubstats": ["击破特攻", "速度", "攻击力", "暴击率", "暴击伤害"]
-      },
-      {
-        "id": "治疗向",
-        "name": "治疗向",
-        "cavernSets": ["云无留迹的过客", "骇域漫游的信使"],
-        "planarSets": ["不老者的仙舟", "生命的翁瓦克"],
-        "effectiveSubstats": ["生命值", "治疗量加成", "速度", "能量恢复效率", "击破特攻"]
-      }
-    ]
-  },
-  {
-    "id": "March 7th",
+    "id": "March 7th1",
     "characterId": "1001",
-    "displayName": "三月七",
+    "displayName": "三月七~存护",
     "loadouts": [
+      {
+        "id": "隐士+贝洛伯格",
+        "name": "防御",
+        "cavernSets": ["自匿星芒的隐士"],
+        "planarSets": ["筑城者的贝洛伯格"],
+        "effectiveSubstats": ["防御", "速度", "效果命中", "效果抵抗"]
+      }
     ]
   },
   {
@@ -292,6 +277,13 @@
     "characterId": "1220",
     "displayName": "飞霄",
     "loadouts": [
+      {
+        "id": "勇烈+都蓝",
+        "name": "输出",
+        "cavernSets": ["风举云飞的勇烈"],
+        "planarSets": ["奔狼的都蓝王朝"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -309,9 +301,9 @@
     ]
   },
   {
-    "id": "March 7th",
+    "id": "March 7th2",
     "characterId": "1224",
-    "displayName": "三月七",
+    "displayName": "三月七~巡猎",
     "loadouts": [
     ]
   },
@@ -442,35 +434,35 @@
     ]
   },
   {
-    "id": "Trailblazer",
+    "id": "Trailblazer1",
     "characterId": "8001",
     "displayName": "开拓者·毁灭",
     "loadouts": [
     ]
   },
   {
-    "id": "Trailblazer",
+    "id": "Trailblazer2",
     "characterId": "8003",
     "displayName": "开拓者·存护",
     "loadouts": [
     ]
   },
   {
-    "id": "Trailblazer",
+    "id": "Trailblazer3",
     "characterId": "8005",
     "displayName": "开拓者·同谐",
     "loadouts": [
     ]
   },
   {
-    "id": "Trailblazer",
+    "id": "Trailblazer4",
     "characterId": "8007",
     "displayName": "开拓者·记忆",
     "loadouts": [
     ]
   },  
   {
-    "id": "Trailblazer",
+    "id": "Trailblazer5",
     "characterId": "8009",
     "displayName": "开拓者·欢愉",
     "loadouts": [

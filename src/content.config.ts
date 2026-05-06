@@ -48,7 +48,7 @@ const starRailRelicRules = defineCollection({
     displayName: z.string().optional(),
     /** 可选：写给自己看的说明，不参与逻辑 */
     note: z.string().optional(),
-    loadouts: z.array(relicLoadoutSchema).min(1),
+    loadouts: z.array(relicLoadoutSchema),
   }),
 });
 
