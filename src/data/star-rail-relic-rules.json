@@ -18,6 +18,13 @@
     "characterId": "1002",
     "displayName": "丹恒",
     "loadouts": [
+      {
+        "id": "风套+繁星",
+        "name": "输出",
+        "cavernSets": ["晨昏交界的翔鹰"],
+        "planarSets": ["繁星竞技场"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -25,6 +32,13 @@
     "characterId": "1003",
     "displayName": "姬子",
     "loadouts": [
+      {
+        "id": "大公+萨尔所图",
+        "name": "输出",
+        "cavernSets": ["毁烬焚骨的大公"],
+        "planarSets": ["停转的萨尔索图"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -32,6 +46,13 @@
     "characterId": "1004",
     "displayName": "瓦尔特",
     "loadouts": [
+    {
+      "id": "风套+繁星",
+      "name": "输出",
+      "cavernSets": ["晨昏交界的翔鹰"],
+      "planarSets": ["繁星竞技场"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","效果命中"]
+    }
     ]
   },
   {
@@ -39,6 +60,13 @@
     "characterId": "1005",
     "displayName": "卡芙卡",
     "loadouts": [
+    {
+      "id": "系囚+海隅",
+      "name": "dot",
+      "cavernSets": ["幽锁深牢的系囚"],
+      "planarSets": ["沉欢醉饮的海隅"],
+      "effectiveSubstats": ["攻击力", "速度", "效果命中"]
+    }
     ]
   },
   {
@@ -46,6 +74,13 @@
     "characterId": "1006",
     "displayName": "银狼",
     "loadouts": [
+    {
+      "id": "风套+泛银河",
+      "name": "输出",
+      "cavernSets": ["晨昏交界的翔鹰"],
+      "planarSets": ["泛银河商业公司"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","效果命中"]
+    }
     ]
   },
   {
@@ -53,6 +88,13 @@
     "characterId": "1008",
     "displayName": "阿兰",
     "loadouts": [
+      {
+        "id": "学者+繁星",
+        "name": "输出",
+        "cavernSets": ["识海迷坠的学者"],
+        "planarSets": ["繁星竞技场"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -60,6 +102,13 @@
     "characterId": "1009",
     "displayName": "艾丝妲",
     "loadouts": [
+      {
+        "id": "速度+翁瓦克",
+        "name": "输出",
+        "cavernSets": ["骇域漫游的信使"],
+        "planarSets": ["生命的翁瓦克"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -67,6 +116,13 @@
     "characterId": "1013",
     "displayName": "黑塔",
     "loadouts": [
+    {
+      "id": "大公+萨尔所图",
+      "name": "输出",
+      "cavernSets": ["毁烬焚骨的大公"],
+      "planarSets": ["停转的萨尔索图"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+    }
     ]
   },
   {
@@ -74,6 +130,13 @@
     "characterId": "1015",
     "displayName": "Archer",
     "loadouts": [
+    {
+      "id": "天才+繁星",
+      "name": "输出",
+      "cavernSets": ["繁星璀璨的天才"],
+      "planarSets": ["繁星竞技场"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+    }
     ]
   },
   {
@@ -95,6 +158,13 @@
     "characterId": "1102",
     "displayName": "希儿",
     "loadouts": [
+    {
+      "id": "天才+繁星",
+      "name": "输出",
+      "cavernSets": ["繁星璀璨的天才"],
+      "planarSets": ["繁星竞技场"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+    }
     ]
   },
   {
@@ -102,6 +172,13 @@
     "characterId": "1103",
     "displayName": "希露瓦",
     "loadouts": [
+      {
+        "id": "风套+翁瓦克",
+        "name": "输出",
+        "cavernSets": ["晨昏交界的翔鹰"],
+        "planarSets": ["生命的翁瓦克"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -109,6 +186,13 @@
     "characterId": "1104",
     "displayName": "杰帕德",
     "loadouts": [
+    {
+      "id": "圣骑士+贝洛伯格",
+      "name": "防御",
+      "cavernSets": ["净庭教宗的圣骑士"],
+      "planarSets": ["筑城者的贝洛伯格"],
+      "effectiveSubstats": ["防御力", "速度", "效果命中", "效果抵抗"]
+    }
     ]
   },
   {
@@ -116,6 +200,13 @@
     "characterId": "1105",
     "displayName": "娜塔莎",
     "loadouts": [
+      {
+        "id": "过客+仙舟",
+        "name": "治疗",
+        "cavernSets": ["云无留迹的过客"],
+        "planarSets": ["不老者的仙舟"],
+        "effectiveSubstats": ["生命值", "速度", "效果抵抗"]
+      }
     ]
   },
   {
@@ -123,6 +214,13 @@
     "characterId": "1106",
     "displayName": "佩拉",
     "loadouts": [
+    {
+      "id": "风套+龙骨",
+      "name": "输出",
+      "cavernSets": ["晨昏交界的翔鹰"],
+      "planarSets": ["折断的龙骨"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","效果命中"]
+    }
     ]
   },
   {
@@ -130,6 +228,13 @@
     "characterId": "1107",
     "displayName": "克拉拉",
     "loadouts": [
+    {
+      "id": "诗人+萨尔所图",
+      "name": "输出",
+      "cavernSets": ["哀歌覆国的诗人"],
+      "planarSets": ["停转的萨尔索图"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+    }
     ]
   },
   {
@@ -137,6 +242,13 @@
     "characterId": "1108",
     "displayName": "桑博",
     "loadouts": [
+      {
+        "id": "系囚+封印站",
+        "name": "dot",
+        "cavernSets": ["幽锁深牢的系囚"],
+        "planarSets": ["太空封印站"],
+        "effectiveSubstats": ["攻击力", "速度", "效果命中"]
+      }
     ]
   },
   {
@@ -144,6 +256,13 @@
     "characterId": "1109",
     "displayName": "虎克",
     "loadouts": [
+    {
+      "id": "学者+繁星",
+      "name": "输出",
+      "cavernSets": ["识海迷坠的学者"],
+      "planarSets": ["繁星竞技场"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+    }
     ]
   },
   {
@@ -151,6 +270,13 @@
     "characterId": "1110",
     "displayName": "玲可",
     "loadouts": [
+      {
+        "id": "过客+仙舟",
+        "name": "治疗",
+        "cavernSets": ["云无留迹的过客"],
+        "planarSets": ["不老者的仙舟"],
+        "effectiveSubstats": ["生命值", "速度", "效果抵抗"]
+      }
     ]
   },
   {
@@ -158,6 +284,13 @@
     "characterId": "1111",
     "displayName": "卢卡",
     "loadouts": [
+    {
+      "id": "系囚+海隅",
+      "name": "输出",
+      "cavernSets": ["幽锁深牢的系囚"],
+      "planarSets": ["沉欢醉饮的海隅"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+    }
     ]
   },
   {
@@ -165,6 +298,13 @@
     "characterId": "1201",
     "displayName": "青雀",
     "loadouts": [
+      {
+        "id": "天才+繁星",
+        "name": "输出",
+        "cavernSets": ["繁星璀璨的天才"],
+        "planarSets": ["繁星竞技场"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -172,6 +312,13 @@
     "characterId": "1202",
     "displayName": "停云",
     "loadouts": [
+      {
+        "id": "快枪手+翁瓦克",
+        "name": "辅助",
+        "cavernSets": ["野穗伴行的快枪手"],
+        "planarSets": ["生命的翁瓦克"],
+        "effectiveSubstats": ["攻击力", "速度", "效果抵抗"]
+      }
     ]
   },
   {
@@ -179,6 +326,13 @@
     "characterId": "1203",
     "displayName": "罗刹",
     "loadouts": [
+      {
+        "id": "过客+快枪手+龙骨",
+        "name": "治疗",
+        "cavernSets": ["野穗伴行的快枪手","云无留迹的过客"],
+        "planarSets": ["折断的龙骨"],
+        "effectiveSubstats": ["攻击力", "速度", "效果抵抗"]
+      }
     ]
   },
   {
@@ -186,6 +340,13 @@
     "characterId": "1204",
     "displayName": "景元",
     "loadouts": [
+      {
+        "id": "大公+萨尔所图",
+        "name": "输出",
+        "cavernSets": ["毁烬焚骨的大公"],
+        "planarSets": ["停转的萨尔索图"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -193,6 +354,13 @@
     "characterId": "1205",
     "displayName": "刃",
     "loadouts": [
+      {
+        "id": "莳者+繁星",
+        "name": "输出",
+        "cavernSets": ["宝命长存的莳者"],
+        "planarSets": ["繁星竞技场"],
+        "effectiveSubstats": ["生命值", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -200,6 +368,13 @@
     "characterId": "1206",
     "displayName": "素裳",
     "loadouts": [
+    {
+      "id": "学者+萨尔所图",
+      "name": "输出",
+      "cavernSets": ["识海迷坠的学者"],
+      "planarSets": ["停转的萨尔索图"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+    }
     ]
   },
   {
@@ -207,6 +382,13 @@
     "characterId": "1207",
     "displayName": "驭空",
     "loadouts": [
+      {
+        "id": "快枪手+龙骨",
+        "name": "输出",
+        "cavernSets": ["野穗伴行的快枪手"],
+        "planarSets": ["折断的龙骨"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -214,6 +396,13 @@
     "characterId": "1208",
     "displayName": "符玄",
     "loadouts": [
+      {
+        "id": "铁卫+莳者+龙骨",
+        "name": "防御",
+        "cavernSets": ["戍卫风雪的铁卫","宝命长存的莳者"],
+        "planarSets": ["折断的龙骨"],
+        "effectiveSubstats": ["生命值", "速度", "防御力", "效果抵抗"]
+      }
     ]
   },
   {
@@ -221,6 +410,13 @@
     "characterId": "1209",
     "displayName": "彦卿",
     "loadouts": [
+      {
+        "id": "猎人+萨尔所图",
+        "name": "输出",
+        "cavernSets": ["密林卧雪的猎人"],
+        "planarSets": ["停转的萨尔索图"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -228,6 +424,13 @@
     "characterId": "1210",
     "displayName": "桂乃芬",
     "loadouts": [
+      {
+        "id": "系囚+封印站",
+        "name": "dot",
+        "cavernSets": ["幽锁深牢的系囚"],
+        "planarSets": ["太空封印站"],
+        "effectiveSubstats": ["攻击力", "速度", "效果命中"]
+      }
     ]
   },
   {
@@ -235,6 +438,13 @@
     "characterId": "1211",
     "displayName": "白露",
     "loadouts": [
+      {
+        "id": "过客+仙舟",
+        "name": "治疗",
+        "cavernSets": ["云无留迹的过客"],
+        "planarSets": ["不老者的仙舟"],
+        "effectiveSubstats": ["生命值", "速度", "效果抵抗"]
+      }
     ]
   },
   {
@@ -242,6 +452,13 @@
     "characterId": "1212",
     "displayName": "镜流",
     "loadouts": [
+      {
+        "id": "学者+拾骨地",
+        "name": "输出",
+        "cavernSets": ["识海迷坠的学者"],
+        "planarSets": ["谧宁拾骨地"],
+        "effectiveSubstats": ["生命值", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -249,6 +466,13 @@
     "characterId": "1213",
     "displayName": "丹恒·饮月",
     "loadouts": [
+    {
+      "id": "快枪手+繁星",
+      "name": "输出",
+      "cavernSets": ["野穗伴行的快枪手"],
+      "planarSets": ["繁星竞技场"],
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+    }
     ]
   },
   {
@@ -256,6 +480,13 @@
     "characterId": "1214",
     "displayName": "雪衣",
     "loadouts": [
+      {
+        "id": "天才+萨尔所图",
+        "name": "输出",
+        "cavernSets": ["繁星璀璨的天才"],
+        "planarSets": ["停转的萨尔索图"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","击破特攻"]
+      }
     ]
   },
   {
@@ -263,6 +494,13 @@
     "characterId": "1215",
     "displayName": "寒鸦",
     "loadouts": [
+      {
+        "id": "速度+龙骨",
+        "name": "辅助",
+        "cavernSets": ["骇域漫游的信使"],
+        "planarSets": ["折断的龙骨"],
+        "effectiveSubstats": ["速度", "效果抵抗"]
+      }
     ]
   },
   {
@@ -270,6 +508,13 @@
     "characterId": "1217",
     "displayName": "藿藿",
     "loadouts": [
+      {
+        "id": "过客+仙舟",
+        "name": "治疗",
+        "cavernSets": ["云无留迹的过客"],
+        "planarSets": ["不老者的仙舟"],
+        "effectiveSubstats": ["生命值", "速度", "效果抵抗"]
+      }
     ]
   },
   {
@@ -277,6 +522,13 @@
     "characterId": "1218",
     "displayName": "椒丘",
     "loadouts": [
+      {
+        "id": "风套+翁瓦克",
+        "name": "输出",
+        "cavernSets": ["晨昏交界的翔鹰"],
+        "planarSets": ["生命的翁瓦克"],
+        "effectiveSubstats": ["攻击力", "速度", "效果命中"]
+      }
     ]
   },
   {
@@ -312,6 +564,13 @@
     "characterId": "1223",
     "displayName": "貊泽",
     "loadouts": [
+      {
+        "id": "死水+都蓝",
+        "name": "输出",
+        "cavernSets": ["死水深潜的先驱"],
+        "planarSets": ["奔狼的都蓝王朝"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -319,6 +578,13 @@
     "characterId": "1224",
     "displayName": "三月七~巡猎",
     "loadouts": [
+      {
+        "id": "快枪手+繁星",
+        "name": "输出",
+        "cavernSets": ["野穗伴行的快枪手"],
+        "planarSets": ["繁星竞技场"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -326,6 +592,13 @@
     "characterId": "1301",
     "displayName": "加拉赫",
     "loadouts": [
+      {
+        "id": "怪盗+龙骨",
+        "name": "击破治疗",
+        "cavernSets": ["流星追迹的怪盗"],
+        "planarSets": ["折断的龙骨"],
+        "effectiveSubstats": ["速度", "击破特攻", "效果抵抗"]
+      }
     ]
   },
   {
@@ -431,6 +704,13 @@
     "characterId": "1312",
     "displayName": "米沙",
     "loadouts": [
+      {
+        "id": "猎人+萨尔所图",
+        "name": "输出",
+        "cavernSets": ["密林卧雪的猎人"],
+        "planarSets": ["停转的萨尔索图"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击伤害","暴击率"]
+      }
     ]
   },
   {
@@ -438,6 +718,13 @@
     "characterId": "1313",
     "displayName": "星期日",
     "loadouts": [
+      {
+        "id": "司铎+露莎卡",
+        "name": "辅助",
+        "cavernSets": ["重循苦旅的司铎"],
+        "planarSets": ["沉陆海域露莎卡"],
+        "effectiveSubstats": ["速度", "暴击伤害","效果抵抗"]
+      }
     ]
   },
   {
@@ -445,6 +732,13 @@
     "characterId": "1314",
     "displayName": "翡翠",
     "loadouts": [
+      {
+        "id": "大公+都蓝",
+        "name": "输出",
+        "cavernSets": ["毁烬焚骨的大公"],
+        "planarSets": ["奔狼的都蓝王朝"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击伤害","暴击率"]
+      }
     ]
   },
   {
@@ -452,6 +746,13 @@
     "characterId": "1407",
     "displayName": "遐蝶",
     "loadouts": [
+      {
+        "id": "诗人+拾骨地",
+        "name": "输出",
+        "cavernSets": ["哀歌覆国的诗人"],
+        "planarSets": ["谧宁拾骨地"],
+        "effectiveSubstats": ["生命值", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -459,6 +760,13 @@
     "characterId": "1408",
     "displayName": "白厄",
     "loadouts": [
+      {
+        "id": "船长+乐园",
+        "name": "输出",
+        "cavernSets": ["恶海逐波的船长"],
+        "planarSets": ["妖精织梦的乐园"],
+        "effectiveSubstats": ["攻击力", "暴击伤害","暴击率"]
+      }
     ]
   },
   {
@@ -466,6 +774,13 @@
     "characterId": "1409",
     "displayName": "风堇",
     "loadouts": [
+      {
+        "id": "女武神+巨树",
+        "name": "辅助",
+        "cavernSets": ["烈阳惊雷的女武神"],
+        "planarSets": ["渊思寂虑的巨树"],
+        "effectiveSubstats": ["生命值", "速度", "暴击伤害","效果抵抗"]
+      }
     ]
   },
   {
@@ -473,6 +788,13 @@
     "characterId": "1414",
     "displayName": "丹恒·腾荒",
     "loadouts": [
+    {
+      "id": "隐士+露莎卡",
+      "name": "防御",
+      "cavernSets": ["自匿星芒的隐士"],
+      "planarSets": ["沉陆海域露莎卡"],
+      "effectiveSubstats": ["攻击力", "速度"]
+    }
     ]
   },
   {
@@ -480,6 +802,13 @@
     "characterId": "1415",
     "displayName": "昔涟",
     "loadouts": [
+    {
+      "id": "救世主+翁法罗斯",
+      "name": "辅助",
+      "cavernSets": ["再创天地的救世主"],
+      "planarSets": ["永恒之地翁法罗斯"],
+      "effectiveSubstats": ["暴击率", "速度", "暴击伤害"]
+    }
     ]
   },
   {
@@ -487,6 +816,13 @@
     "characterId": "1502",
     "displayName": "爻光",
     "loadouts": [
+      {
+        "id": "卜者+露莎卡",
+        "name": "辅助",
+        "cavernSets": ["应天涉远的卜者"],
+        "planarSets": ["沉陆海域露莎卡"],
+        "effectiveSubstats": ["暴击率", "速度", "暴击伤害"]
+      }
     ]
   },
   {
@@ -494,6 +830,13 @@
     "characterId": "1506",
     "displayName": "银狼 LV.999",
     "loadouts": [
+      {
+        "id": "魔法少女+零号关卡",
+        "name": "输出",
+        "cavernSets": ["闪耀功勋的魔法少女"],
+        "planarSets": ["零号关卡朋克洛德"],
+        "effectiveSubstats": ["暴击率", "速度", "暴击伤害"]
+      }
     ]
   },
   {

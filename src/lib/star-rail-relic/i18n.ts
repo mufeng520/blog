@@ -3,6 +3,8 @@
  * 未命中映射时回退原文，避免空白。
  */
 
+
+
 /** 隧洞 / 位面套装英文名 → 简中（与游戏内常用译名对齐） */
 export const RELIC_SET_ZH: Record<string, string> = {
   'Musketeer of Wild Wheat': '野穗伴行的快枪手',
@@ -24,9 +26,8 @@ export const RELIC_SET_ZH: Record<string, string> = {
   'Iron Cavalry Against the Scourge': '荡除蠹灾的铁骑',
   'The Wind-Soaring Valorous': '风举云飞的勇烈',
   "Sacerdos' Relived Ordeal": '重循苦旅的司铎',
-  'Scholar Lost in Erudition': '识海迷途的学者',
+  'Scholar Lost in Erudition': '识海迷坠的学者',
   'Hero of Triumphant Song': '凯歌祝捷的英豪',
-  'Warrior of Wilderness Wind': '荒墟的访客',
   'Fleet of the Ageless': '不老者的仙舟',
   'Space Sealing Station': '太空封印站',
   'Inert Salsotto': '停转的萨尔索图',
@@ -42,6 +43,26 @@ export const RELIC_SET_ZH: Record<string, string> = {
   'Duran, Dynasty of Running Wolves': '奔狼的都蓝王朝',
   'Forge of the Kalpagni Lantern': '劫火莲灯铸炼宫',
   'Lushaka, the Sunken Seas': '沉陆海域露莎卡',
+  'City of Converging Stars':'千星荟萃之城',
+  'Punklorde Stage Zero':'零号关卡朋克洛德',
+  'Tengoku@Livestream':'天国@直播间',
+  'Amphoreus, The Eternal Land':'永恒之地翁法罗斯',
+  'Revelry by the Sea':'沉欢醉饮的海隅',
+  'Arcadia of Woven Dreams':'妖精织梦的乐园',
+  'Giant Tree of Rapt Brooding':'渊思寂虑的巨树',
+  "Bone Collection's Serene Demesne":'谧宁拾骨地',
+  'The Wondrous BananAmusement Park':'奇想蕉乐园',
+  'Rutilant Arena':'繁星竞技场',
+  'Belobog of the Architects':'筑城者的贝洛伯格',
+  'Diviner of Distant Reach':'应天涉远的卜者',
+  'Ever-Glorious Magical Girl':'闪耀功勋的魔法少女',
+  'Self-Enshrouded Recluse':'自匿星芒的隐士',
+  'World-Remaking Deliverer':'再创天地的救世主',
+  'Wavestrider Captain':'恶海逐波的船长',
+  'Warrior Goddess of Sun and Thunder':'烈阳惊雷的女武神',
+  'Poet of Mourning Collapse':'哀歌覆国的诗人',
+  'Watchmaker, Master of Dream Machinations':'机心戏梦的钟表匠',
+  'Firesmith of Lava-Forging':'熔岩锻铸的火匠',
 };
 
 export function translateRelicSet(en: string): string {
