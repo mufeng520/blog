@@ -81,6 +81,13 @@
     "characterId": "1101",
     "displayName": "布洛妮娅",
     "loadouts": [
+      {
+        "id": "速度+龙骨",
+        "name": "辅助",
+        "cavernSets": ["骇域漫游的信使"],
+        "planarSets": ["折断的龙骨"],
+        "effectiveSubstats": ["速度", "暴击伤害", "效果抵抗"]
+      }
     ]
   },
   {
@@ -326,6 +333,13 @@
     "characterId": "1303",
     "displayName": "阮·梅",
     "loadouts": [
+      {
+        "id": "怪盗+翁瓦克",
+        "name": "击破",
+        "cavernSets": ["流星追迹的怪盗"],
+        "planarSets": ["生命的翁瓦克"],
+        "effectiveSubstats": ["速度", "击破特攻", "效果抵抗"]
+      }
     ]
   },
   {
@@ -333,6 +347,13 @@
     "characterId": "1304",
     "displayName": "砂金",
     "loadouts": [
+      {
+        "id": "圣骑士+龙骨",
+        "name": "防御",
+        "cavernSets": ["净庭教宗的圣骑士"],
+        "planarSets": ["折断的龙骨"],
+        "effectiveSubstats": ["防御", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {
@@ -354,6 +375,13 @@
     "characterId": "1306",
     "displayName": "花火",
     "loadouts": [
+      {
+        "id": "速度+龙骨",
+        "name": "辅助",
+        "cavernSets": ["骇域漫游的信使"],
+        "planarSets": ["折断的龙骨"],
+        "effectiveSubstats": ["速度", "暴击伤害", "效果抵抗"]
+      }
     ]
   },
   {
@@ -375,6 +403,13 @@
     "characterId": "1309",
     "displayName": "知更鸟",
     "loadouts": [
+      {
+        "id": "快枪手+系囚+翁瓦克",
+        "name": "辅助",
+        "cavernSets": ["野穗伴行的快枪手","幽锁深牢的系囚"],
+        "planarSets": ["生命的翁瓦克"],
+        "effectiveSubstats": ["攻击力", "速度"]
+      }
     ]
   },
   {
@@ -382,6 +417,13 @@
     "characterId": "1310",
     "displayName": "流萤",
     "loadouts": [
+      {
+        "id": "铁骑+铸炼宫",
+        "name": "击破",
+        "cavernSets": ["荡除蠹灾的铁骑"],
+        "planarSets": ["劫火莲灯铸炼宫"],
+        "effectiveSubstats": ["攻击力", "速度", "击破特攻"]
+      }
     ]
   },
   {

@@ -21,7 +21,7 @@ export const RELIC_SET_ZH: Record<string, string> = {
   'Ashblazing Grand Duke': '毁烬焚骨的大公',
   'Prisoner in Deep Confinement': '幽锁深牢的系囚',
   'Pioneer Diver of Dead Waters': '死水深潜的先驱',
-  'Iron Cavalry Against the Scourge': '荡涤妖邪的铁骑',
+  'Iron Cavalry Against the Scourge': '荡除蠹灾的铁骑',
   'The Wind-Soaring Valorous': '风举云飞的勇烈',
   "Sacerdos' Relived Ordeal": '重循苦旅的司铎',
   'Scholar Lost in Erudition': '识海迷途的学者',
@@ -36,12 +36,12 @@ export const RELIC_SET_ZH: Record<string, string> = {
   'Celestial Differentiator': '星体差分机',
   'Broken Keel': '折断的龙骨',
   'Firmament Frontline: Glamoth': '苍穹战线格拉默',
-  'Penacony, Land of the Dreams': '匹诺康尼',
+  'Penacony, Land of the Dreams': '梦想之地匹诺康尼',
   'Sigonia, the Unclaimed Desolation': '无主荒星茨冈尼亚',
   'Izumo Gensei and Takama Divine Realm': '出云显世与高天神国',
   'Duran, Dynasty of Running Wolves': '奔狼的都蓝王朝',
   'Forge of the Kalpagni Lantern': '劫火莲灯铸炼宫',
-  'Lushaka, the Sunken Seas': '沉海露莎卡',
+  'Lushaka, the Sunken Seas': '沉陆海域露莎卡',
 };
 
 export function translateRelicSet(en: string): string {
