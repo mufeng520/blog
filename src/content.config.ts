@@ -35,6 +35,8 @@ const relicLoadoutSchema = z.object({
   planarSets: z.array(z.string()).default([]),
   /** 有效副词条：Archiver 的 key（如 CRIT Rate_）或中文简称（如 暴击率），用于标注与「有效 count」统计 */
   effectiveSubstats: z.array(z.string()).default([]),
+  /** 按部位限定主词条，key 可写 Head/Body/Feet/Planar Sphere/Link Rope 或中文部位 */
+  mainStatTargets: z.record(z.string(), z.array(z.string())).default({}),
 });
 
 /** 单一配置文件：src/data/star-rail-relic-rules.json（根为数组，每项一名角色） */

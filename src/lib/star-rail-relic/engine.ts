@@ -2,7 +2,14 @@
  * 崩坏：星穹铁道遗器看板 — Reliquary Archiver 导出、内容集合规则、匹配与集体套装分析
  */
 
-import { resolveRelicSetNameForArchiver } from './i18n';
+import {
+  effectiveSubstatRollSum,
+  mainStatMatchesTarget,
+  normalizeRelicSlotColumn,
+  resolveRelicSetNameForArchiver,
+  translateMainStatTarget,
+  translateSlot,
+} from './i18n';
 
 /** 将规则里的隧洞/位面套装名统一为 Archiver 英文名（配置可写简中） */
 export function normalizeCharacterRules(rules: CharacterRule[]): CharacterRule[] {
@@ -12,8 +19,172 @@ export function normalizeCharacterRules(rules: CharacterRule[]): CharacterRule[]
       ...lo,
       cavernSets: lo.cavernSets.map((s) => resolveRelicSetNameForArchiver(s)),
       planarSets: lo.planarSets.map((s) => resolveRelicSetNameForArchiver(s)),
+      mainStatTargets: {
+        ...inferMainStatTargets(lo),
+        ...normalizeMainStatTargets(lo.mainStatTargets),
+      },
     })),
   }));
+}
+
+function normalizeMainStatTargets(
+  input?: Record<string, string[]>
+): Record<string, string[]> {
+  if (!input) return {};
+  const out: Record<string, string[]> = {};
+  for (const [slot, targets] of Object.entries(input)) {
+    const normalizedSlot = normalizeSlotKey(slot);
+    if (!normalizedSlot) continue;
+    const values = Array.isArray(targets)
+      ? targets.map((x) => String(x).trim()).filter(Boolean)
+      : [];
+    if (values.length) out[normalizedSlot] = values;
+  }
+  return out;
+}
+
+function inferMainStatTargets(loadout: RelicLoadoutRule): Record<string, string[]> {
+  const tokens = new Set((loadout.effectiveSubstats ?? []).map((token) => token.trim()).filter(Boolean));
+  const nameText = `${loadout.name} ${loadout.id}`.toLowerCase();
+
+  const hasAny = (...needles: string[]) => needles.some((needle) => tokens.has(needle));
+  const mentionsAny = (...needles: string[]) => needles.some((needle) => nameText.includes(needle));
+
+  const isHealing = mentionsAny('治疗') || hasAny('治疗', '治疗量加成');
+  const isShield = mentionsAny('防御', '存护') || hasAny('防御', '防御力');
+  const isDot = mentionsAny('dot', '持续') || (hasAny('效果命中') && !hasAny('暴击率', '暴击伤害'));
+  const isBreak = mentionsAny('击破') || hasAny('击破', '击破特攻');
+  const isCrit = hasAny('暴击率', '暴击伤害');
+  const isSupport = mentionsAny('辅助') || (hasAny('效果抵抗') && !isCrit && !isDot && !isHealing);
+  const prefersSpeed = hasAny('速度');
+
+  const dominantStat = hasAny('防御', '防御力')
+    ? 'DEF_'
+    : hasAny('生命', '生命值')
+      ? 'HP_'
+      : 'ATK_';
+
+  const bodyTargets: string[] = [];
+  if (isHealing) bodyTargets.push('Outgoing Healing Boost', 'HP_');
+  if (isCrit) bodyTargets.push('CRIT Rate_', 'CRIT DMG_');
+  if (hasAny('效果命中')) bodyTargets.push('Effect Hit Rate_');
+  if (!bodyTargets.length) bodyTargets.push(dominantStat);
+
+  const feetTargets = prefersSpeed ? ['SPD'] : [dominantStat];
+
+  const sphereTargets: string[] = [];
+  if (isHealing) sphereTargets.push('HP_');
+  else if (isShield) sphereTargets.push('DEF_');
+  else if (isSupport) sphereTargets.push(dominantStat);
+  else sphereTargets.push('属性球', 'ATK_');
+
+  const ropeTargets: string[] = [];
+  if (isBreak) ropeTargets.push('Break Effect');
+  if (isHealing || isSupport || hasAny('效果命中')) ropeTargets.push('Energy Regeneration Rate');
+  if (!ropeTargets.length || isDot || isCrit) ropeTargets.push(dominantStat);
+
+  return {
+    Head: ['HP'],
+    Hands: ['ATK'],
+    Body: [...new Set(bodyTargets)],
+    Feet: [...new Set(feetTargets)],
+    'Planar Sphere': [...new Set(sphereTargets)],
+    'Link Rope': [...new Set(ropeTargets)],
+  };
+}
+
+function normalizeSlotKey(slot: string): string | null {
+  const trimmed = slot.trim();
+  if (!trimmed) return null;
+  const normalized = normalizeRelicSlotColumn(trimmed);
+  switch (normalized) {
+    case 'head':
+      return 'Head';
+    case 'hands':
+      return 'Hands';
+    case 'body':
+      return 'Body';
+    case 'feet':
+      return 'Feet';
+    case 'planar_sphere':
+      return 'Planar Sphere';
+    case 'link_rope':
+      return 'Link Rope';
+    default:
+      return null;
+  }
+}
+
+function slotPriority(slot: string): number {
+  const normalized = normalizeSlotKey(slot);
+  switch (normalized) {
+    case 'Head':
+      return 0;
+    case 'Hands':
+      return 1;
+    case 'Body':
+      return 2;
+    case 'Feet':
+      return 3;
+    case 'Planar Sphere':
+      return 4;
+    case 'Link Rope':
+      return 5;
+    default:
+      return 99;
+  }
+}
+
+function slotBelongsToKind(slot: string, kind: 'cavern' | 'planar'): boolean {
+  const normalized = normalizeSlotKey(slot);
+  if (!normalized) return false;
+  const isPlanar = normalized === 'Planar Sphere' || normalized === 'Link Rope';
+  return kind === 'planar' ? isPlanar : !isPlanar;
+}
+
+function buildLoadoutDemands(rules: CharacterRule[]): LoadoutDemand[] {
+  const demands: LoadoutDemand[] = [];
+  for (const rule of rules) {
+    const characterLabel = rule.displayName?.trim() || rule.characterId;
+    for (const loadout of rule.loadouts) {
+      const allSets = [
+        ...loadout.cavernSets.map((setName) => ({ kind: 'cavern' as const, setName })),
+        ...loadout.planarSets.map((setName) => ({ kind: 'planar' as const, setName })),
+      ];
+      for (const [slot, mainStatTargets] of Object.entries(loadout.mainStatTargets ?? {})) {
+        const normalizedSlot = normalizeSlotKey(slot);
+        if (!normalizedSlot) continue;
+        const kind =
+          normalizedSlot === 'Planar Sphere' || normalizedSlot === 'Link Rope' ? 'planar' : 'cavern';
+        const acceptedSets = allSets
+          .filter((item) => item.kind === kind)
+          .map((item) => item.setName);
+        if (!acceptedSets.length) continue;
+        demands.push({
+          key: `${rule.entryId}::${loadout.id}::${normalizedSlot}`,
+          loadoutKey: `${rule.entryId}::${loadout.id}`,
+          entryId: rule.entryId,
+          characterId: rule.characterId,
+          characterLabel,
+          loadoutId: loadout.id,
+          loadoutName: loadout.name,
+          kind,
+          setName: acceptedSets[0],
+          acceptedSets,
+          slot: normalizedSlot,
+          slotLabel: translateSlot(normalizedSlot),
+          mainStatTargets: [...mainStatTargets],
+          effectiveSubstats: [...(loadout.effectiveSubstats ?? [])],
+        });
+      }
+    }
+  }
+  return demands;
+}
+
+function effectiveHitScoreForDemand(relic: RelicInput, effectiveSubstats: string[]): number {
+  if (!effectiveSubstats.length) return relic.hitCount;
+  return effectiveSubstatRollSum(relic, effectiveSubstats);
 }
 
 /** 与 `src/content.config.ts` 中 starRailRelicRules 集合 schema 一致 */
@@ -24,6 +195,8 @@ export interface RelicLoadoutRule {
   planarSets: string[];
   /** 本方案有效副词条（与 Archiver substats[].key 或中文别名匹配） */
   effectiveSubstats?: string[];
+  /** 按部位限制主词条，key 可写 Head/Body/Feet/Planar Sphere/Link Rope 或中文部位 */
+  mainStatTargets?: Record<string, string[]>;
 }
 
 export interface CharacterRule {
@@ -63,6 +236,7 @@ export interface LoadoutBoxRelic extends RelicInput {
   duplicate?: boolean;
   ownerCharacterId?: string | null;
   ownerCharacterLabel?: string;
+  mainStatMatched?: boolean;
 }
 
 export interface LoadoutBoxPayload {
@@ -74,6 +248,7 @@ export interface LoadoutBoxPayload {
   cavernSets: string[];
   planarSets: string[];
   effectiveSubstats: string[];
+  mainStatTargets: Record<string, string[]>;
   relics: LoadoutBoxRelic[];
 }
 
@@ -90,7 +265,12 @@ export interface SetFarmRow {
   demandCharacters: number;
   /** 引用该套装的方案（loadout）条数 */
   demandLoadouts: number;
+  requiredCount: number;
+  matchedCount: number;
+  shortageCount: number;
+  shortageCharacters: string[];
   ownedCount: number;
+  qualifiedCount: number;
   minHit: number | null;
   avgHit: number | null;
   maxHit: number | null;
@@ -98,6 +278,54 @@ export interface SetFarmRow {
   effectiveSubstats: string[];
   label: string;
 }
+
+export interface SlotFarmRow {
+  setName: string;
+  kind: 'cavern' | 'planar';
+  slot: string;
+  slotLabel: string;
+  demandCharacters: number;
+  demandLoadouts: number;
+  requiredCount: number;
+  matchedCount: number;
+  shortageCount: number;
+  shortageCharacters: string[];
+  groupedCharacterLabels: string[];
+  recommendedMainStats: string[];
+  effectiveSubstats: string[];
+  ownedCount: number;
+  matchedMainStatCount: number;
+  minHit: number | null;
+  avgHit: number | null;
+  maxHit: number | null;
+  farmScore: number;
+  label: string;
+}
+
+interface LoadoutDemand {
+  key: string;
+  loadoutKey: string;
+  entryId: string;
+  characterId: string;
+  characterLabel: string;
+  loadoutId: string;
+  loadoutName: string;
+  kind: 'cavern' | 'planar';
+  setName: string;
+  acceptedSets: string[];
+  slot: string;
+  slotLabel: string;
+  mainStatTargets: string[];
+  effectiveSubstats: string[];
+}
+
+interface DemandCandidate {
+  relicId: string;
+  qualityScore: number;
+  priority: number;
+}
+
+const QUALIFIED_HIT_THRESHOLD = 7;
 
 const PLANAR_SLOT_KEYWORDS = [
   '位面',
@@ -303,6 +531,13 @@ export function buildLoadoutBoxes(rules: CharacterRule[], relics: RelicInput[]):
       for (const r of relics) {
         const cat = inferCategory(r.slot, r.category);
         if (!setMatchesLoadout(r.set, cat, loadout)) continue;
+        const normalizedSlot = normalizeSlotKey(r.slot);
+        const mainStatTargets =
+          normalizedSlot && loadout.mainStatTargets ? loadout.mainStatTargets[normalizedSlot] ?? [] : [];
+        const mainStatMatched =
+          mainStatTargets.length === 0
+            ? true
+            : !!r.mainStat && mainStatTargets.some((target) => mainStatMatchesTarget(r.mainStat as string, target));
 
         const loc = r.characterId;
         if (loc === rule.characterId) {
@@ -312,6 +547,7 @@ export function buildLoadoutBoxes(rules: CharacterRule[], relics: RelicInput[]):
             matchReason: 'equipped',
             ownerCharacterId: loc,
             ownerCharacterLabel: charLabel,
+            mainStatMatched,
           });
         } else if (loc) {
           matched.push({
@@ -320,6 +556,7 @@ export function buildLoadoutBoxes(rules: CharacterRule[], relics: RelicInput[]):
             matchReason: 'other_equipped',
             ownerCharacterId: loc,
             ownerCharacterLabel: characterLabelById.get(loc) ?? loc,
+            mainStatMatched,
           });
         } else if (!loc) {
           matched.push({
@@ -327,6 +564,7 @@ export function buildLoadoutBoxes(rules: CharacterRule[], relics: RelicInput[]):
             category: cat,
             matchReason: 'rule',
             duplicate: true,
+            mainStatMatched,
           });
         }
       }
@@ -341,6 +579,7 @@ export function buildLoadoutBoxes(rules: CharacterRule[], relics: RelicInput[]):
         cavernSets: [...loadout.cavernSets],
         planarSets: [...loadout.planarSets],
         effectiveSubstats: [...(loadout.effectiveSubstats ?? [])],
+        mainStatTargets: { ...(loadout.mainStatTargets ?? {}) },
         relics: matched,
       });
     }
@@ -391,6 +630,7 @@ function collectDemandFromRules(rules: CharacterRule[]): Map<
     charIds: Set<string>;
     loadoutKeys: Set<string>;
     effectiveSubstats: Set<string>;
+    mainStatTargets: Map<string, Set<string>>;
   }
 > {
   const setMeta = new Map<
@@ -401,6 +641,7 @@ function collectDemandFromRules(rules: CharacterRule[]): Map<
       charIds: Set<string>;
       loadoutKeys: Set<string>;
       effectiveSubstats: Set<string>;
+      mainStatTargets: Map<string, Set<string>>;
     }
   >();
 
@@ -416,11 +657,20 @@ function collectDemandFromRules(rules: CharacterRule[]): Map<
             charIds: new Set(),
             loadoutKeys: new Set(),
             effectiveSubstats: new Set(),
+            mainStatTargets: new Map(),
           });
         setMeta.get(k)!.charIds.add(rule.characterId);
         setMeta.get(k)!.loadoutKeys.add(lk);
         for (const token of lo.effectiveSubstats ?? []) {
           if (token.trim()) setMeta.get(k)!.effectiveSubstats.add(token);
+        }
+        for (const [slot, targets] of Object.entries(lo.mainStatTargets ?? {})) {
+          if (!slotBelongsToKind(slot, 'cavern')) continue;
+          const bucket = setMeta.get(k)!.mainStatTargets.get(slot) ?? new Set<string>();
+          targets.forEach((target) => {
+            if (target.trim()) bucket.add(target);
+          });
+          if (bucket.size) setMeta.get(k)!.mainStatTargets.set(slot, bucket);
         }
       }
       for (const s of lo.planarSets) {
@@ -432,11 +682,20 @@ function collectDemandFromRules(rules: CharacterRule[]): Map<
             charIds: new Set(),
             loadoutKeys: new Set(),
             effectiveSubstats: new Set(),
+            mainStatTargets: new Map(),
           });
         setMeta.get(k)!.charIds.add(rule.characterId);
         setMeta.get(k)!.loadoutKeys.add(lk);
         for (const token of lo.effectiveSubstats ?? []) {
           if (token.trim()) setMeta.get(k)!.effectiveSubstats.add(token);
+        }
+        for (const [slot, targets] of Object.entries(lo.mainStatTargets ?? {})) {
+          if (!slotBelongsToKind(slot, 'planar')) continue;
+          const bucket = setMeta.get(k)!.mainStatTargets.get(slot) ?? new Set<string>();
+          targets.forEach((target) => {
+            if (target.trim()) bucket.add(target);
+          });
+          if (bucket.size) setMeta.get(k)!.mainStatTargets.set(slot, bucket);
         }
       }
     }
@@ -444,26 +703,127 @@ function collectDemandFromRules(rules: CharacterRule[]): Map<
   return setMeta;
 }
 
+function dedupeStrings(values: string[]): string[] {
+  return [...new Set(values.filter(Boolean))];
+}
+
+function avgOrNull(values: number[]): number | null {
+  return values.length ? values.reduce((a, b) => a + b, 0) / values.length : null;
+}
+
+function minOrNull(values: number[]): number | null {
+  return values.length ? Math.min(...values) : null;
+}
+
+function maxOrNull(values: number[]): number | null {
+  return values.length ? Math.max(...values) : null;
+}
+
+function buildDemandCandidates(
+  demands: LoadoutDemand[],
+  relics: RelicInput[]
+): Map<string, DemandCandidate[]> {
+  const byDemand = new Map<string, DemandCandidate[]>();
+  for (const demand of demands) {
+    const candidates: DemandCandidate[] = [];
+    for (const relic of relics) {
+      const relicKind = inferCategory(relic.slot, relic.category);
+      if (relicKind !== demand.kind) continue;
+      const relicSlot = normalizeSlotKey(relic.slot);
+      if (relicSlot !== demand.slot) continue;
+      if (!demand.acceptedSets.includes(relic.set)) continue;
+      if (!relic.mainStat) continue;
+      if (!demand.mainStatTargets.some((target) => mainStatMatchesTarget(relic.mainStat as string, target))) continue;
+      const qualityScore = effectiveHitScoreForDemand(relic, demand.effectiveSubstats);
+      const priority =
+        relic.characterId === demand.characterId ? 0 : relic.characterId ? 1 : 2;
+      candidates.push({
+        relicId: relic.id,
+        qualityScore,
+        priority,
+      });
+    }
+    candidates.sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      return b.qualityScore - a.qualityScore;
+    });
+    byDemand.set(demand.key, candidates);
+  }
+  return byDemand;
+}
+
+function assignQualifiedDemands(
+  demands: LoadoutDemand[],
+  candidateMap: Map<string, DemandCandidate[]>
+): Map<string, DemandCandidate | null> {
+  const assignedRelics = new Set<string>();
+  const result = new Map<string, DemandCandidate | null>();
+  const orderedDemands = [...demands].sort((a, b) => {
+    const candA = candidateMap.get(a.key) ?? [];
+    const candB = candidateMap.get(b.key) ?? [];
+    return candA.length - candB.length;
+  });
+
+  for (const demand of orderedDemands) {
+    const candidates = (candidateMap.get(demand.key) ?? []).filter(
+      (candidate) =>
+        candidate.qualityScore >= QUALIFIED_HIT_THRESHOLD &&
+        !assignedRelics.has(candidate.relicId)
+    );
+    const chosen = candidates[0] ?? null;
+    if (chosen) assignedRelics.add(chosen.relicId);
+    result.set(demand.key, chosen);
+  }
+
+  return result;
+}
+
 /** 集体刷取：需求来自内容集合中全部方案的套装并集 */
-export function computeCollectiveFarmFromRules(rules: CharacterRule[], relics: RelicInput[]): SetFarmRow[] {
+export function computeCollectiveFarmFromRules(
+  rules: CharacterRule[],
+  relics: RelicInput[]
+): { overview: SetFarmRow[]; slotPlans: SlotFarmRow[] } {
   const norm = normalizeCharacterRules(rules);
   const setMeta = collectDemandFromRules(norm);
+  const demands = buildLoadoutDemands(norm);
+  const candidateMap = buildDemandCandidates(demands, relics);
+  const assignedMap = assignQualifiedDemands(demands, candidateMap);
   const bySetKind = new Map<string, number[]>();
+  const relicsBySetKindSlot = new Map<string, RelicInput[]>();
   for (const r of relics) {
     const kind = inferCategory(r.slot, r.category);
     const k = setRowKey(r.set, kind);
     const arr = bySetKind.get(k) ?? [];
     arr.push(r.hitCount);
     bySetKind.set(k, arr);
+
+    const slotKey = normalizeSlotKey(r.slot) ?? r.slot;
+    const slotBucketKey = `${k}\0${slotKey}`;
+    const slotArr = relicsBySetKindSlot.get(slotBucketKey) ?? [];
+    slotArr.push({ ...r, category: kind });
+    relicsBySetKindSlot.set(slotBucketKey, slotArr);
   }
 
   const rows: SetFarmRow[] = [];
+  const slotPlans: SlotFarmRow[] = [];
 
   for (const [, meta] of setMeta) {
     const k = setRowKey(meta.setName, meta.kind);
     const hits = bySetKind.get(k) ?? [];
+    const relatedDemands = demands.filter(
+      (demand) => demand.kind === meta.kind && demand.acceptedSets.includes(meta.setName)
+    );
     const setName = meta.setName;
     const ownedCount = hits.length;
+    const qualifiedCount = relatedDemands.reduce((sum, demand) => {
+      const qualified = (candidateMap.get(demand.key) ?? []).filter(
+        (candidate) => candidate.qualityScore >= QUALIFIED_HIT_THRESHOLD
+      ).length;
+      return sum + qualified;
+    }, 0);
+    const matchedDemands = relatedDemands.filter((demand) => assignedMap.get(demand.key)).length;
+    const shortageDemands = relatedDemands.filter((demand) => !assignedMap.get(demand.key));
+    const shortageCharacters = [...new Set(shortageDemands.map((demand) => demand.characterLabel))];
     let minHit: number | null = null;
     let avgHit: number | null = null;
     let maxHit: number | null = null;
@@ -476,21 +836,32 @@ export function computeCollectiveFarmFromRules(rules: CharacterRule[], relics: R
     const demandLoadouts = meta.loadoutKeys.size;
     const quality =
       ownedCount === 0 ? 0 : (avgHit as number) * 0.65 + (minHit as number) * 0.35;
+    const shortageCount = shortageDemands.length;
     const farmScore =
-      demandLoadouts * (ownedCount === 0 ? 1e6 : Math.max(0.01, 24 - quality));
+      shortageCount > 0
+        ? shortageCount * 1000 + demandLoadouts * Math.max(0.01, 12 - Math.min(quality, 12))
+        : demandLoadouts * Math.max(0.01, 12 - Math.min(quality, 12));
 
     let label: string;
-    if (ownedCount === 0) label = '背包中暂无该套装，建议优先刷取';
-    else if ((avgHit as number) < 4 || (minHit as number) < 2)
-      label = '整体词条命中偏低，可作为调整与替换重点';
-    else label = '相对饱和，可按方案盒内单品继续优化';
+    if (shortageCount > 0) {
+      label = `仍有 ${shortageCharacters.join('、')} 无法分配到 7 词条以上的合格件`;
+    } else if ((avgHit as number) < 4 || (minHit as number) < 2) {
+      label = '虽能分配，但整体有效词条质量偏低，可继续优化';
+    } else {
+      label = '当前角色层面可满足需求，暂不缺货';
+    }
 
     rows.push({
       setName,
       kind: meta.kind,
       demandCharacters,
       demandLoadouts,
+      requiredCount: relatedDemands.length,
+      matchedCount: matchedDemands,
+      shortageCount,
+      shortageCharacters,
       ownedCount,
+      qualifiedCount,
       minHit,
       avgHit,
       maxHit,
@@ -498,6 +869,67 @@ export function computeCollectiveFarmFromRules(rules: CharacterRule[], relics: R
       effectiveSubstats: [...meta.effectiveSubstats],
       label,
     });
+
+    const slotDemands = relatedDemands.filter((demand) => demand.slot);
+    for (const demand of slotDemands) {
+      const slotBucketKey = `${k}\0${demand.slot}`;
+      const slotRelics = relicsBySetKindSlot.get(slotBucketKey) ?? [];
+      const matchedMainStatRelics = slotRelics.filter(
+        (relic) =>
+          relic.mainStat &&
+          demand.mainStatTargets.some((target) => mainStatMatchesTarget(relic.mainStat as string, target))
+      );
+      const hits = matchedMainStatRelics.map((relic) => effectiveHitScoreForDemand(relic, demand.effectiveSubstats));
+      const ownedCount = slotRelics.length;
+      const matchedMainStatCount = matchedMainStatRelics.length;
+      const matchedCount = assignedMap.get(demand.key) ? 1 : 0;
+      const shortageCount = matchedCount === 1 ? 0 : 1;
+      const shortageCharacters = shortageCount ? [demand.characterLabel] : [];
+      const minHit = minOrNull(hits);
+      const maxHit = maxOrNull(hits);
+      const avgHit = avgOrNull(hits);
+      const quality =
+        matchedMainStatCount === 0 || avgHit == null || minHit == null
+          ? 0
+          : avgHit * 0.65 + minHit * 0.35;
+      const missingMainStatPenalty = matchedMainStatCount === 0 ? 36 : Math.max(0.01, 20 - quality);
+      const farmScore =
+        shortageCount > 0
+          ? 1000 + missingMainStatPenalty
+          : missingMainStatPenalty;
+
+      let slotLabel: string;
+      if (shortageCount > 0) {
+        slotLabel = `${demand.characterLabel} 还缺 7 词条以上的 ${translateSlot(demand.slot)}`;
+      } else if ((avgHit ?? 0) < 4 || (minHit ?? 0) < 2) {
+        slotLabel = `${demand.characterLabel} 已可分配，但 ${translateSlot(demand.slot)} 质量偏低`;
+      } else {
+        slotLabel = `${demand.characterLabel} 该部位已满足`;
+      }
+
+      slotPlans.push({
+        setName: demand.setName,
+        kind: demand.kind,
+        slot: demand.slot,
+        slotLabel: demand.slotLabel,
+        demandCharacters: 1,
+        demandLoadouts: 1,
+        requiredCount: 1,
+        matchedCount,
+        shortageCount,
+        shortageCharacters,
+        groupedCharacterLabels: [demand.characterLabel],
+        recommendedMainStats: demand.mainStatTargets.map((target) => translateMainStatTarget(target)),
+        effectiveSubstats: [...demand.effectiveSubstats],
+        ownedCount,
+        matchedMainStatCount,
+        minHit,
+        avgHit,
+        maxHit,
+        farmScore,
+        label: slotLabel,
+      });
+    }
   }
 
   rows.sort((a, b) => {
@@ -509,14 +941,23 @@ export function computeCollectiveFarmFromRules(rules: CharacterRule[], relics: R
     return (a.minHit ?? 999) - (b.minHit ?? 999);
   });
 
-  return rows;
+  slotPlans.sort((a, b) => {
+    if (a.matchedMainStatCount === 0 && b.matchedMainStatCount > 0) return -1;
+    if (b.matchedMainStatCount === 0 && a.matchedMainStatCount > 0) return 1;
+    if (a.farmScore !== b.farmScore) return b.farmScore - a.farmScore;
+    const setCmp = a.setName.localeCompare(b.setName, 'zh');
+    if (setCmp !== 0) return setCmp;
+    return slotPriority(a.slot) - slotPriority(b.slot);
+  });
+
+  return { overview: rows, slotPlans };
 }
 
 /** @deprecated 使用 computeCollectiveFarmFromRules */
 export function computeCollectiveFarmPriority(
   characters: CharacterInput[],
   relics: RelicInput[]
-): SetFarmRow[] {
+): { overview: SetFarmRow[]; slotPlans: SlotFarmRow[] } {
   const rules: CharacterRule[] = characters.map((c, idx) => ({
     entryId: `legacy-${c.id}-${idx}`,
     characterId: c.id,
@@ -528,6 +969,7 @@ export function computeCollectiveFarmPriority(
         cavernSets: c.cavernSets,
         planarSets: c.planarSets,
         effectiveSubstats: [],
+        mainStatTargets: {},
       },
     ],
   }));

@@ -187,6 +187,114 @@ export function translateStatKey(key: string): string {
   return trimmed;
 }
 
+const ELEMENTAL_DMG_KEYS = [
+  'Physical DMG Boost',
+  'Fire DMG Boost',
+  'Ice DMG Boost',
+  'Lightning DMG Boost',
+  'Wind DMG Boost',
+  'Quantum DMG Boost',
+  'Imaginary DMG Boost',
+] as const;
+
+const MAIN_STAT_TARGET_ALIAS: Record<string, string[]> = {
+  生命值: ['HP', 'HP_'],
+  生命值百分比: ['HP_'],
+  生命: ['HP', 'HP_'],
+  生命球: ['HP_'],
+  生命鞋: ['HP_'],
+  生命绳: ['HP_'],
+  攻击力: ['ATK', 'ATK_'],
+  攻击力百分比: ['ATK_'],
+  攻击: ['ATK', 'ATK_'],
+  攻击球: ['ATK_'],
+  攻击鞋: ['ATK_'],
+  攻击绳: ['ATK_'],
+  防御力: ['DEF', 'DEF_'],
+  防御力百分比: ['DEF_'],
+  防御: ['DEF', 'DEF_'],
+  防御球: ['DEF_'],
+  防御鞋: ['DEF_'],
+  防御绳: ['DEF_'],
+  暴击率: ['CRIT Rate_'],
+  暴击衣: ['CRIT Rate_'],
+  暴伤: ['CRIT DMG_'],
+  暴击伤害: ['CRIT DMG_'],
+  暴伤衣: ['CRIT DMG_'],
+  效果命中: ['Effect Hit Rate', 'Effect Hit Rate_'],
+  命中: ['Effect Hit Rate', 'Effect Hit Rate_'],
+  命中衣: ['Effect Hit Rate', 'Effect Hit Rate_'],
+  治疗: ['Outgoing Healing Boost'],
+  治疗量加成: ['Outgoing Healing Boost'],
+  治疗衣: ['Outgoing Healing Boost'],
+  速度: ['SPD'],
+  速度鞋: ['SPD'],
+  击破: ['Break Effect', 'Break Effect_'],
+  击破特攻: ['Break Effect', 'Break Effect_'],
+  击破绳: ['Break Effect', 'Break Effect_'],
+  充能: ['Energy Regeneration Rate'],
+  回能: ['Energy Regeneration Rate'],
+  能量恢复: ['Energy Regeneration Rate'],
+  能量恢复效率: ['Energy Regeneration Rate'],
+  充能绳: ['Energy Regeneration Rate'],
+  属性伤害: [...ELEMENTAL_DMG_KEYS],
+  属性球: [...ELEMENTAL_DMG_KEYS],
+  物伤: ['Physical DMG Boost'],
+  火伤: ['Fire DMG Boost'],
+  冰伤: ['Ice DMG Boost'],
+  雷伤: ['Lightning DMG Boost'],
+  风伤: ['Wind DMG Boost'],
+  量子伤: ['Quantum DMG Boost'],
+  虚数伤: ['Imaginary DMG Boost'],
+};
+
+function canonStatKey(input: string): string {
+  return input
+    .trim()
+    .replace(/_+$/g, '')
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+}
+
+export function expandMainStatTargets(tokens: string[]): string[] {
+  const out = new Set<string>();
+  for (const raw of tokens) {
+    const token = raw.trim();
+    if (!token) continue;
+    const aliasHits = MAIN_STAT_TARGET_ALIAS[token];
+    if (aliasHits) {
+      aliasHits.forEach((x) => out.add(x));
+      continue;
+    }
+
+    out.add(token);
+
+    const noTrail = token.replace(/_+$/, '');
+    if (STAT_ZH[token]) out.add(token);
+    if (STAT_ZH[noTrail]) out.add(noTrail);
+
+    for (const [statKey, zh] of Object.entries(STAT_ZH)) {
+      if (zh === token || canonStatKey(statKey) === canonStatKey(token)) {
+        out.add(statKey);
+      }
+    }
+  }
+  return [...out];
+}
+
+export function mainStatMatchesTarget(mainStat: string, target: string): boolean {
+  const main = canonStatKey(mainStat);
+  if (!main) return false;
+  return expandMainStatTargets([target]).some((candidate) => canonStatKey(candidate) === main);
+}
+
+export function translateMainStatTarget(target: string): string {
+  const trimmed = target.trim();
+  if (!trimmed) return trimmed;
+  if (trimmed in MAIN_STAT_TARGET_ALIAS) return trimmed;
+  return translateStatKey(trimmed);
+}
+
 /** 中文常用叫法 → Archiver 可能出现的 key 变体（用于有效词条匹配） */
 const ZH_EFFECTIVE_TO_KEYS: Record<string, string[]> = {
   暴击率: ['CRIT Rate', 'CRIT Rate_'],
@@ -196,19 +304,19 @@ const ZH_EFFECTIVE_TO_KEYS: Record<string, string[]> = {
   速度: ['SPD'],
   击破: ['Break Effect', 'Break Effect_'],
   击破特攻: ['Break Effect', 'Break Effect_'],
-  攻击: ['ATK', 'ATK_'],
-  攻击力: ['ATK', 'ATK_'],
+  攻击: ['ATK_'],
+  攻击力: ['ATK_'],
   大攻击: ['ATK_'],
-  生命: ['HP', 'HP_'],
-  防御: ['DEF', 'DEF_'],
+  生命: ['HP_'],
+  防御: ['DEF_'],
   效果命中: ['Effect Hit Rate', 'Effect Hit Rate_'],
   命中: ['Effect Hit Rate', 'Effect Hit Rate_'],
   充能: ['Energy Regeneration Rate'],
   能量恢复: ['Energy Regeneration Rate'],
   治疗: ['Outgoing Healing Boost'],
   治疗量加成: ['Outgoing Healing Boost'],
-  防御力: ['DEF', 'DEF_'],
-  生命值: ['HP', 'HP_'],
+  防御力: ['DEF_'],
+  生命值: ['HP_'],
 };
 
 function normStat(s: string): string {

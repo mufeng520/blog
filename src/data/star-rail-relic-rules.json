@@ -9,7 +9,13 @@
         "name": "防御",
         "cavernSets": ["自匿星芒的隐士"],
         "planarSets": ["筑城者的贝洛伯格"],
-        "effectiveSubstats": ["防御", "速度", "效果命中", "效果抵抗"]
+        "effectiveSubstats": ["防御", "速度", "效果命中", "效果抵抗"],
+        "mainStatTargets": {
+          "Body": ["防御力", "效果命中"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["防御力"],
+          "Link Rope": ["防御力"]
+        }
       }
     ]
   },
@@ -23,7 +29,13 @@
         "name": "输出",
         "cavernSets": ["晨昏交界的翔鹰"],
         "planarSets": ["繁星竞技场"],
-        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["暴击率"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["风属性伤害提高"],
+          "Link Rope": ["攻击力"]
+        }
       }
     ]
   },
@@ -37,7 +49,13 @@
         "name": "输出",
         "cavernSets": ["毁烬焚骨的大公"],
         "planarSets": ["停转的萨尔索图"],
-        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -51,7 +69,13 @@
       "name": "输出",
       "cavernSets": ["晨昏交界的翔鹰"],
       "planarSets": ["繁星竞技场"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","效果命中"]
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","效果命中"],
+      "mainStatTargets": {
+        "Body": ["暴击率", "暴击伤害"],
+        "Feet": ["攻击力"],
+        "Planar Sphere": ["虚数属性伤害提高"],
+        "Link Rope": ["攻击力"]
+      }
     }
     ]
   },
@@ -65,7 +89,13 @@
       "name": "dot",
       "cavernSets": ["幽锁深牢的系囚"],
       "planarSets": ["沉欢醉饮的海隅"],
-      "effectiveSubstats": ["攻击力", "速度", "效果命中"]
+      "effectiveSubstats": ["攻击力", "速度", "效果命中"],
+      "mainStatTargets": {
+        "Body": ["效果命中"],
+        "Feet": ["速度"],
+        "Planar Sphere": ["雷属性伤害提高"],
+        "Link Rope": ["攻击力"]
+      }
     }
     ]
   },
@@ -79,7 +109,13 @@
       "name": "输出",
       "cavernSets": ["晨昏交界的翔鹰"],
       "planarSets": ["泛银河商业公司"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","效果命中"]
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","效果命中"],
+      "mainStatTargets": {
+        "Body": ["暴击率"],
+        "Feet": ["速度"],
+        "Planar Sphere": ["攻击力"],
+        "Link Rope": ["攻击力"]
+      }
     }
     ]
   },
@@ -93,7 +129,13 @@
         "name": "输出",
         "cavernSets": ["识海迷坠的学者"],
         "planarSets": ["繁星竞技场"],
-        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","雷属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -107,7 +149,13 @@
         "name": "输出",
         "cavernSets": ["骇域漫游的信使"],
         "planarSets": ["生命的翁瓦克"],
-        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["生命值"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["生命值"],
+          "Link Rope": ["能量恢复效率"]
+        }
       }
     ]
   },
@@ -121,7 +169,13 @@
       "name": "输出",
       "cavernSets": ["毁烬焚骨的大公"],
       "planarSets": ["停转的萨尔索图"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+      "mainStatTargets": {
+        "Body": ["暴击率", "暴击伤害"],
+        "Feet": ["速度"],
+        "Planar Sphere": ["冰属性伤害提高"],
+        "Link Rope": ["攻击力"]
+      }
     }
     ]
   },
@@ -135,7 +189,13 @@
       "name": "输出",
       "cavernSets": ["繁星璀璨的天才"],
       "planarSets": ["繁星竞技场"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+      "mainStatTargets": {
+        "Body": ["暴击率"],
+        "Feet": ["攻击力"],
+        "Planar Sphere": ["攻击力"],
+        "Link Rope": ["攻击力"]
+      }
     }
     ]
   },
@@ -149,7 +209,13 @@
         "name": "辅助",
         "cavernSets": ["骇域漫游的信使"],
         "planarSets": ["折断的龙骨"],
-        "effectiveSubstats": ["速度", "暴击伤害", "效果抵抗"]
+        "effectiveSubstats": ["速度", "暴击伤害", "效果抵抗"],
+        "mainStatTargets": {
+          "Body": ["暴击伤害"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["生命值","防御力"],
+          "Link Rope": ["能量恢复效率"]
+        }
       }
     ]
   },
@@ -163,7 +229,13 @@
       "name": "输出",
       "cavernSets": ["繁星璀璨的天才"],
       "planarSets": ["繁星竞技场"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+      "mainStatTargets": {
+        "Body": ["暴击率", "暴击伤害"],
+        "Feet": ["速度","攻击力"],
+        "Planar Sphere": ["攻击力","量子属性伤害提高"],
+        "Link Rope": ["攻击力","能量恢复效率"]
+      }
     }
     ]
   },
@@ -177,7 +249,13 @@
         "name": "输出",
         "cavernSets": ["晨昏交界的翔鹰"],
         "planarSets": ["生命的翁瓦克"],
-        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["雷属性伤害提高"],
+          "Link Rope": ["攻击力"]
+        }
       }
     ]
   },
@@ -191,7 +269,13 @@
       "name": "防御",
       "cavernSets": ["净庭教宗的圣骑士"],
       "planarSets": ["筑城者的贝洛伯格"],
-      "effectiveSubstats": ["防御力", "速度", "效果命中", "效果抵抗"]
+      "effectiveSubstats": ["防御力", "速度", "效果命中", "效果抵抗"],
+      "mainStatTargets": {
+        "Body": ["暴击率", "暴击伤害"],
+        "Feet": ["速度","攻击力"],
+        "Planar Sphere": ["攻击力","火属性伤害提高"],
+        "Link Rope": ["攻击力","能量恢复效率"]
+      }
     }
     ]
   },
@@ -205,7 +289,13 @@
         "name": "治疗",
         "cavernSets": ["云无留迹的过客"],
         "planarSets": ["不老者的仙舟"],
-        "effectiveSubstats": ["生命值", "速度", "效果抵抗"]
+        "effectiveSubstats": ["生命值", "速度", "效果抵抗"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -219,7 +309,13 @@
       "name": "输出",
       "cavernSets": ["晨昏交界的翔鹰"],
       "planarSets": ["折断的龙骨"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","效果命中"]
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","效果命中"],
+      "mainStatTargets": {
+        "Body": ["暴击率", "暴击伤害"],
+        "Feet": ["速度","攻击力"],
+        "Planar Sphere": ["攻击力","火属性伤害提高"],
+        "Link Rope": ["攻击力","能量恢复效率"]
+      }
     }
     ]
   },
@@ -233,7 +329,13 @@
       "name": "输出",
       "cavernSets": ["哀歌覆国的诗人"],
       "planarSets": ["停转的萨尔索图"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+      "mainStatTargets": {
+        "Body": ["暴击率", "暴击伤害"],
+        "Feet": ["速度","攻击力"],
+        "Planar Sphere": ["攻击力","火属性伤害提高"],
+        "Link Rope": ["攻击力","能量恢复效率"]
+      }
     }
     ]
   },
@@ -247,7 +349,13 @@
         "name": "dot",
         "cavernSets": ["幽锁深牢的系囚"],
         "planarSets": ["太空封印站"],
-        "effectiveSubstats": ["攻击力", "速度", "效果命中"]
+        "effectiveSubstats": ["攻击力", "速度", "效果命中"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -261,7 +369,13 @@
       "name": "输出",
       "cavernSets": ["识海迷坠的学者"],
       "planarSets": ["繁星竞技场"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+      "mainStatTargets": {
+        "Body": ["暴击率", "暴击伤害"],
+        "Feet": ["速度","攻击力"],
+        "Planar Sphere": ["攻击力","火属性伤害提高"],
+        "Link Rope": ["攻击力","能量恢复效率"]
+      }
     }
     ]
   },
@@ -275,7 +389,13 @@
         "name": "治疗",
         "cavernSets": ["云无留迹的过客"],
         "planarSets": ["不老者的仙舟"],
-        "effectiveSubstats": ["生命值", "速度", "效果抵抗"]
+        "effectiveSubstats": ["生命值", "速度", "效果抵抗"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -289,7 +409,13 @@
       "name": "输出",
       "cavernSets": ["幽锁深牢的系囚"],
       "planarSets": ["沉欢醉饮的海隅"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+      "mainStatTargets": {
+        "Body": ["暴击率", "暴击伤害"],
+        "Feet": ["速度","攻击力"],
+        "Planar Sphere": ["攻击力","火属性伤害提高"],
+        "Link Rope": ["攻击力","能量恢复效率"]
+      }
     }
     ]
   },
@@ -303,7 +429,13 @@
         "name": "输出",
         "cavernSets": ["繁星璀璨的天才"],
         "planarSets": ["繁星竞技场"],
-        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -317,7 +449,13 @@
         "name": "辅助",
         "cavernSets": ["野穗伴行的快枪手"],
         "planarSets": ["生命的翁瓦克"],
-        "effectiveSubstats": ["攻击力", "速度", "效果抵抗"]
+        "effectiveSubstats": ["攻击力", "速度", "效果抵抗"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -331,7 +469,13 @@
         "name": "治疗",
         "cavernSets": ["野穗伴行的快枪手","云无留迹的过客"],
         "planarSets": ["折断的龙骨"],
-        "effectiveSubstats": ["攻击力", "速度", "效果抵抗"]
+        "effectiveSubstats": ["攻击力", "速度", "效果抵抗"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -345,7 +489,13 @@
         "name": "输出",
         "cavernSets": ["毁烬焚骨的大公"],
         "planarSets": ["停转的萨尔索图"],
-        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -359,7 +509,13 @@
         "name": "输出",
         "cavernSets": ["宝命长存的莳者"],
         "planarSets": ["繁星竞技场"],
-        "effectiveSubstats": ["生命值", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["生命值", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -373,7 +529,13 @@
       "name": "输出",
       "cavernSets": ["识海迷坠的学者"],
       "planarSets": ["停转的萨尔索图"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+      "mainStatTargets": {
+        "Body": ["暴击率", "暴击伤害"],
+        "Feet": ["速度","攻击力"],
+        "Planar Sphere": ["攻击力","火属性伤害提高"],
+        "Link Rope": ["攻击力","能量恢复效率"]
+      }
     }
     ]
   },
@@ -387,7 +549,13 @@
         "name": "输出",
         "cavernSets": ["野穗伴行的快枪手"],
         "planarSets": ["折断的龙骨"],
-        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -401,7 +569,13 @@
         "name": "防御",
         "cavernSets": ["戍卫风雪的铁卫","宝命长存的莳者"],
         "planarSets": ["折断的龙骨"],
-        "effectiveSubstats": ["生命值", "速度", "防御力", "效果抵抗"]
+        "effectiveSubstats": ["生命值", "速度", "防御力", "效果抵抗"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -415,7 +589,13 @@
         "name": "输出",
         "cavernSets": ["密林卧雪的猎人"],
         "planarSets": ["停转的萨尔索图"],
-        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -429,7 +609,13 @@
         "name": "dot",
         "cavernSets": ["幽锁深牢的系囚"],
         "planarSets": ["太空封印站"],
-        "effectiveSubstats": ["攻击力", "速度", "效果命中"]
+        "effectiveSubstats": ["攻击力", "速度", "效果命中"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -443,7 +629,13 @@
         "name": "治疗",
         "cavernSets": ["云无留迹的过客"],
         "planarSets": ["不老者的仙舟"],
-        "effectiveSubstats": ["生命值", "速度", "效果抵抗"]
+        "effectiveSubstats": ["生命值", "速度", "效果抵抗"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },
@@ -457,7 +649,13 @@
         "name": "输出",
         "cavernSets": ["识海迷坠的学者"],
         "planarSets": ["谧宁拾骨地"],
-        "effectiveSubstats": ["生命值", "速度", "暴击率", "暴击伤害"]
+        "effectiveSubstats": ["生命值", "速度", "暴击率", "暴击伤害"],
+        "mainStatTargets": {
+          "Body": ["暴击率", "暴击伤害"],
+          "Feet": ["速度","攻击力"],
+          "Planar Sphere": ["攻击力","火属性伤害提高"],
+          "Link Rope": ["攻击力","能量恢复效率"]
+        }
       }
     ]
   },

@@ -5,6 +5,7 @@ import {
   computeCollectiveFarmFromRules,
   isArchiverReliquaryExport,
   type SetFarmRow,
+  type SlotFarmRow,
   parsePayload,
   type CharacterRule,
   type LoadoutBoxPayload,
@@ -16,6 +17,7 @@ import {
   effectiveSubstatRollSum,
   normalizeRelicSlotColumn,
   substatMatchesEffective,
+  translateMainStatTarget,
   translateRelicSet,
   translateStatKey,
   type RelicSlotColumnId,
@@ -349,6 +351,135 @@ const styles: Record<string, React.CSSProperties> = {
     gap: 4,
     marginTop: 4,
   },
+  tableSection: {
+    marginTop: 10,
+  },
+  tableSectionTitle: {
+    fontSize: '0.8rem',
+    fontWeight: 600,
+    color: '#e2e8f0',
+    marginBottom: 6,
+  },
+  overviewGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+    gap: 8,
+  },
+  overviewCard: {
+    background: 'rgba(15,23,42,0.45)',
+    border: '1px solid rgba(51,65,85,0.5)',
+    borderRadius: 8,
+    padding: '8px 9px',
+    minWidth: 0,
+  },
+  overviewTop: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 8,
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  overviewTitle: {
+    fontSize: '0.78rem',
+    fontWeight: 600,
+    color: '#e2e8f0',
+    lineHeight: 1.35,
+  },
+  overviewType: {
+    flexShrink: 0,
+    fontSize: '0.68rem',
+    color: '#94a3b8',
+    padding: '1px 6px',
+    borderRadius: 999,
+    background: 'rgba(51,65,85,0.55)',
+  },
+  overviewStats: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: '4px 10px',
+    fontSize: '0.72rem',
+    color: '#cbd5e1',
+    marginBottom: 6,
+  },
+  overviewLabel: {
+    color: '#64748b',
+    marginRight: 4,
+  },
+  overviewDescription: {
+    marginTop: 6,
+    fontSize: '0.7rem',
+    lineHeight: 1.45,
+    color: '#94a3b8',
+  },
+  slotPlanGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    gap: 6,
+    marginTop: 8,
+  },
+  slotPlanCard: {
+    background: 'rgba(2,6,23,0.38)',
+    border: '1px solid rgba(51,65,85,0.42)',
+    borderRadius: 7,
+    padding: '6px 7px',
+    minWidth: 0,
+  },
+  slotPlanHead: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    gap: 6,
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  slotPlanTitle: {
+    fontSize: '0.72rem',
+    fontWeight: 600,
+    color: '#e2e8f0',
+  },
+  slotPlanBadge: {
+    flexShrink: 0,
+    fontSize: '0.64rem',
+    padding: '1px 5px',
+    borderRadius: 999,
+    background: 'rgba(51,65,85,0.55)',
+    color: '#94a3b8',
+  },
+  slotPlanBadgeWarn: {
+    background: 'rgba(248,113,113,0.12)',
+    color: '#fca5a5',
+  },
+  slotPlanBadgeOk: {
+    background: 'rgba(52,211,153,0.12)',
+    color: '#6ee7b7',
+  },
+  slotPlanMeta: {
+    fontSize: '0.68rem',
+    lineHeight: 1.4,
+    color: '#cbd5e1',
+  },
+  slotPlanLabel: {
+    color: '#64748b',
+    marginRight: 4,
+  },
+  slotPlanDescription: {
+    marginTop: 5,
+    fontSize: '0.66rem',
+    lineHeight: 1.4,
+    color: '#94a3b8',
+  },
+  slotPlanCharacters: {
+    marginTop: 5,
+    fontSize: '0.66rem',
+    lineHeight: 1.4,
+    color: '#cbd5e1',
+  },
+  switchLabel: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 6,
+    fontSize: '0.74rem',
+    color: '#cbd5e1',
+  },
 };
 
 function boxKey(box: LoadoutBoxPayload): string {
@@ -371,6 +502,7 @@ function buildEffectiveRules(
         cavernSets: c.cavernSets,
         planarSets: c.planarSets,
         effectiveSubstats: [],
+        mainStatTargets: {},
       },
     ],
   }));
@@ -475,10 +607,12 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
   const [error, setError] = useState<string | null>(null);
   const [boxes, setBoxes] = useState<LoadoutBoxPayload[] | null>(null);
   const [farmRows, setFarmRows] = useState<SetFarmRow[] | null>(null);
+  const [slotPlans, setSlotPlans] = useState<SlotFarmRow[] | null>(null);
   const [selectedKey, setSelectedKey] = useState<string>('');
   const [jsonEditorOpen, setJsonEditorOpen] = useState(false);
   const [activeTopTab, setActiveTopTab] = useState<'import' | 'farm' | 'rules'>('import');
   const [activeRuleGroup, setActiveRuleGroup] = useState<string>('');
+  const [hideNonMatchingMainStat, setHideNonMatchingMainStat] = useState(true);
 
   const runParse = useCallback(() => {
     setError(null);
@@ -497,12 +631,15 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
       if (!rules.length) throw new Error('无任何角色方案：请配置内容集合或在 JSON 中提供 characters。');
 
       const nextBoxes = buildLoadoutBoxes(rules, parsed.relics);
+      const farmPlan = computeCollectiveFarmFromRules(rules, parsed.relics);
       setBoxes(nextBoxes);
-      setFarmRows(computeCollectiveFarmFromRules(rules, parsed.relics));
+      setFarmRows(farmPlan.overview);
+      setSlotPlans(farmPlan.slotPlans);
       if (nextBoxes.length) setSelectedKey(boxKey(nextBoxes[0]));
     } catch (e) {
       setBoxes(null);
       setFarmRows(null);
+      setSlotPlans(null);
       setError(e instanceof Error ? e.message : String(e));
     }
   }, [text, characterRules]);
@@ -516,18 +653,30 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
       ) as unknown;
       const parsed = parsePayload(raw);
       const rules = buildEffectiveRules(characterRules, parsed);
-      if (!rules.length) return { boxes: [] as LoadoutBoxPayload[], farmRows: [] as SetFarmRow[] };
+      if (!rules.length)
+        return {
+          boxes: [] as LoadoutBoxPayload[],
+          farmRows: [] as SetFarmRow[],
+          slotPlans: [] as SlotFarmRow[],
+        };
+      const farmPlan = computeCollectiveFarmFromRules(rules, parsed.relics);
       return {
         boxes: buildLoadoutBoxes(rules, parsed.relics),
-        farmRows: computeCollectiveFarmFromRules(rules, parsed.relics),
+        farmRows: farmPlan.overview,
+        slotPlans: farmPlan.slotPlans,
       };
     } catch {
-      return { boxes: [] as LoadoutBoxPayload[], farmRows: [] as SetFarmRow[] };
+      return {
+        boxes: [] as LoadoutBoxPayload[],
+        farmRows: [] as SetFarmRow[],
+        slotPlans: [] as SlotFarmRow[],
+      };
     }
   }, [characterRules]);
 
   const displayBoxes = boxes ?? initial.boxes;
   const displayFarm = farmRows ?? initial.farmRows;
+  const displaySlotPlans = slotPlans ?? initial.slotPlans;
 
   useEffect(() => {
     setSelectedKey((prev) => {
@@ -544,10 +693,16 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
     return displayBoxes.find((b) => boxKey(b) === selectedKey) ?? displayBoxes[0];
   }, [displayBoxes, selectedKey]);
 
+  const filteredSelectedRelics = useMemo(() => {
+    if (!selectedBox) return [];
+    if (!hideNonMatchingMainStat) return selectedBox.relics;
+    return selectedBox.relics.filter((relic) => relic.mainStatMatched !== false);
+  }, [selectedBox, hideNonMatchingMainStat]);
+
   const grouped = useMemo(() => {
     if (!selectedBox) return null;
-    return groupRelicsBySlot(selectedBox.relics);
-  }, [selectedBox]);
+    return groupRelicsBySlot(filteredSelectedRelics);
+  }, [selectedBox, filteredSelectedRelics]);
 
   const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
@@ -585,6 +740,66 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
   const jsonSnippetLen = text.length;
   const selectedBoxKey = selectedBox ? boxKey(selectedBox) : selectedKey;
   const selectedEntryId = selectedBox?.entryId ?? selectedKey.split('::')[0] ?? '';
+  const slotPlansBySet = useMemo(() => {
+    const grouped = new Map<string, SlotFarmRow[]>();
+    for (const plan of displaySlotPlans) {
+      const setKey = `${plan.kind}\0${plan.setName}`;
+      const list = grouped.get(setKey) ?? [];
+      list.push(plan);
+      grouped.set(setKey, list);
+    }
+
+    const mergedBySet = new Map<string, SlotFarmRow[]>();
+    for (const [setKey, list] of grouped) {
+      const merged = new Map<string, SlotFarmRow>();
+      for (const plan of list) {
+        const demandKey = [
+          plan.slot,
+          plan.recommendedMainStats.join('|'),
+          plan.effectiveSubstats.join('|'),
+        ].join('::');
+        const existing = merged.get(demandKey);
+        if (!existing) {
+          merged.set(demandKey, {
+            ...plan,
+            groupedCharacterLabels: [...plan.groupedCharacterLabels],
+            shortageCharacters: [...plan.shortageCharacters],
+          });
+          continue;
+        }
+
+        existing.demandCharacters += plan.demandCharacters;
+        existing.demandLoadouts += plan.demandLoadouts;
+        existing.requiredCount += plan.requiredCount;
+        existing.matchedCount += plan.matchedCount;
+        existing.shortageCount += plan.shortageCount;
+        existing.groupedCharacterLabels = [...new Set([...existing.groupedCharacterLabels, ...plan.groupedCharacterLabels])];
+        existing.shortageCharacters = [...new Set([...existing.shortageCharacters, ...plan.shortageCharacters])];
+        existing.ownedCount = Math.max(existing.ownedCount, plan.ownedCount);
+        existing.matchedMainStatCount = Math.max(existing.matchedMainStatCount, plan.matchedMainStatCount);
+        if (existing.minHit == null || (plan.minHit != null && plan.minHit < existing.minHit)) existing.minHit = plan.minHit;
+        if (existing.maxHit == null || (plan.maxHit != null && plan.maxHit > existing.maxHit)) existing.maxHit = plan.maxHit;
+        if (plan.avgHit != null) {
+          existing.avgHit =
+            existing.avgHit == null ? plan.avgHit : (existing.avgHit + plan.avgHit) / 2;
+        }
+        existing.farmScore = Math.max(existing.farmScore, plan.farmScore);
+        existing.label = existing.shortageCount > 0
+          ? `缺少 ${existing.shortageCharacters.join('、')} 所需遗器`
+          : existing.label;
+      }
+
+      const mergedList = [...merged.values()];
+      mergedList.sort((a, b) => {
+        const slotCmp = a.slot.localeCompare(b.slot, 'zh');
+        if (slotCmp !== 0) return slotCmp;
+        return b.shortageCount - a.shortageCount;
+      });
+      mergedBySet.set(setKey, mergedList);
+    }
+
+    return mergedBySet;
+  }, [displaySlotPlans]);
 
   useEffect(() => {
     if (!selectedEntryId) return;
@@ -682,65 +897,120 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
           ) : activeTopTab === 'farm' ? (
             <>
               <div style={{ ...styles.row, justifyContent: 'space-between', marginBottom: 6 }}>
-                <span style={styles.hint}>按套装聚合需求、库存质量和建议词条。</span>
-                <span style={styles.panelMeta}>{displayFarm.length} 条记录</span>
+                <span style={styles.hint}>先看套装总览，再看每个部位应该补什么主词条和副词条。</span>
+                <span style={styles.panelMeta}>
+                  {displayFarm.length} 套装 / {displaySlotPlans.length} 部位计划
+                </span>
               </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={styles.table}>
-                  <thead>
-                    <tr>
-                      <th style={styles.th}>套装</th>
-                      <th style={styles.th}>类型</th>
-                      <th style={styles.th}>角色数</th>
-                      <th style={styles.th}>方案数</th>
-                      <th style={styles.th}>件数</th>
-                      <th style={styles.th}>低/均/高</th>
-                      <th style={styles.th}>建议词条</th>
-                      <th style={styles.th}>说明</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayFarm.map((r) => (
-                      <tr key={`${r.kind}-${r.setName}`}>
-                        <td style={styles.td}>
-                          {translateRelicSet(r.setName)}
-                          <div style={{ ...styles.muted, fontSize: '0.68rem', marginTop: 2 }}>{r.setName}</div>
-                        </td>
-                        <td style={styles.td}>{r.kind === 'planar' ? '位面' : '隧洞'}</td>
-                        <td style={styles.td}>{r.demandCharacters}</td>
-                        <td style={styles.td}>{r.demandLoadouts}</td>
-                        <td style={styles.td}>{r.ownedCount}</td>
-                        <td style={styles.td}>
-                          {r.ownedCount === 0 ? (
-                            <span style={{ color: '#fca5a5' }}>—</span>
+              <div style={styles.tableSection}>
+                <div style={styles.tableSectionTitle}>套装总览</div>
+                <div style={styles.overviewGrid}>
+                  {displayFarm.map((r) => (
+                    <div key={`${r.kind}-${r.setName}`} style={styles.overviewCard}>
+                      <div style={styles.overviewTop}>
+                        <div>
+                          <div style={styles.overviewTitle}>{translateRelicSet(r.setName)}</div>
+                          <div style={{ ...styles.muted, fontSize: '0.66rem', marginTop: 2 }}>{r.setName}</div>
+                        </div>
+                        <span style={styles.overviewType}>{r.kind === 'planar' ? '位面' : '隧洞'}</span>
+                      </div>
+                      <div style={styles.overviewStats}>
+                        <div>
+                          <span style={styles.overviewLabel}>需求</span>
+                          {r.demandCharacters} 角色
+                        </div>
+                        <div>
+                          <span style={styles.overviewLabel}>方案</span>
+                          {r.demandLoadouts} 套
+                        </div>
+                        <div>
+                          <span style={styles.overviewLabel}>库存</span>
+                          {r.ownedCount} 件 / 合格 {r.qualifiedCount}
+                        </div>
+                        <div>
+                          <span style={styles.overviewLabel}>满足</span>
+                          {r.shortageCount > 0 ? (
+                            <span style={{ color: '#fca5a5' }}>
+                              缺 {r.shortageCount} 位
+                            </span>
                           ) : (
-                            <>
-                              <span style={styles.hit}>{r.minHit}</span>
-                              <span style={styles.muted}> / </span>
-                              <span style={styles.hit}>{r.avgHit != null ? r.avgHit.toFixed(1) : '—'}</span>
-                              <span style={styles.muted}> / </span>
-                              <span style={styles.hit}>{r.maxHit}</span>
-                            </>
+                            <span style={{ color: '#6ee7b7' }}>已满足</span>
                           )}
-                        </td>
-                        <td style={styles.td}>
-                          {r.effectiveSubstats.length ? (
-                            <div style={styles.effectiveList}>
-                              {r.effectiveSubstats.map((token) => (
-                                <span key={`${r.kind}-${r.setName}-${token}`} style={styles.effTag}>
-                                  {translateStatKey(token)}
-                                </span>
-                              ))}
-                            </div>
-                          ) : (
-                            <span style={styles.muted}>—</span>
-                          )}
-                        </td>
-                        <td style={styles.td}>{r.label}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        </div>
+                      </div>
+                      {r.effectiveSubstats.length ? (
+                        <div style={styles.effectiveList}>
+                          {r.effectiveSubstats.map((token) => (
+                            <span key={`${r.kind}-${r.setName}-${token}`} style={styles.effTag}>
+                              {translateStatKey(token)}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                      <div style={styles.overviewDescription}>{r.label}</div>
+                      {(() => {
+                        const plans = slotPlansBySet.get(`${r.kind}\0${r.setName}`) ?? [];
+                        if (!plans.length) return null;
+                        return (
+                          <div style={styles.slotPlanGrid}>
+                            {plans.map((plan) => {
+                              const statusStyle =
+                                plan.shortageCount > 0
+                                  ? styles.slotPlanBadgeWarn
+                                  : (plan.avgHit ?? 0) >= 4 && (plan.minHit ?? 0) >= 2
+                                    ? styles.slotPlanBadgeOk
+                                    : undefined;
+                              const statusText =
+                                plan.shortageCount > 0
+                                  ? `缺 ${plan.shortageCount}`
+                                  : (plan.avgHit ?? 0) >= 4 && (plan.minHit ?? 0) >= 2
+                                    ? '可用'
+                                    : '待优化';
+                              return (
+                                <div key={`${plan.kind}-${plan.setName}-${plan.slot}`} style={styles.slotPlanCard}>
+                                  <div style={styles.slotPlanHead}>
+                                    <div style={styles.slotPlanTitle}>{plan.slotLabel}</div>
+                                    <span
+                                      style={{
+                                        ...styles.slotPlanBadge,
+                                        ...(statusStyle ?? {}),
+                                      }}
+                                    >
+                                      {statusText}
+                                    </span>
+                                  </div>
+                                  <div style={styles.slotPlanMeta}>
+                                    <div>
+                                      <span style={styles.slotPlanLabel}>主词条</span>
+                                      {plan.recommendedMainStats.join(' / ') || '未配置'}
+                                    </div>
+                                    <div>
+                                      <span style={styles.slotPlanLabel}>库存</span>
+                                      {plan.ownedCount} 件 / 主词条符合 {plan.matchedMainStatCount} 件
+                                    </div>
+                                    <div>
+                                      <span style={styles.slotPlanLabel}>满足</span>
+                                      {plan.matchedCount}/{plan.requiredCount} 需求已分配
+                                    </div>
+                                    <div>
+                                      <span style={styles.slotPlanLabel}>副词条</span>
+                                      {plan.effectiveSubstats.map((token) => translateStatKey(token)).join(' / ') || '—'}
+                                    </div>
+                                  </div>
+                                  <div style={styles.slotPlanCharacters}>
+                                    <span style={styles.slotPlanLabel}>角色</span>
+                                    {plan.groupedCharacterLabels.join('、')}
+                                  </div>
+                                  <div style={styles.slotPlanDescription}>{plan.label}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ))}
+                </div>
               </div>
             </>
           ) : (
@@ -810,18 +1080,28 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
             <div style={styles.card}>
               <div style={{ ...styles.row, justifyContent: 'space-between', marginBottom: 10 }}>
                 <div style={styles.cardTitle}>当前方案</div>
-                <select
-                  style={{ ...styles.select, maxWidth: 280 }}
-                  value={selectedKey}
-                  onChange={(e) => setSelectedKey(e.target.value)}
-                  aria-label="选择角色与遗器方案"
-                >
-                  {selectOptions.map((o) => (
-                    <option key={o.key} value={o.key}>
-                      {o.label}
-                    </option>
-                  ))}
-                </select>
+                <div style={{ ...styles.row, justifyContent: 'flex-end' }}>
+                  <label style={styles.switchLabel}>
+                    <input
+                      type="checkbox"
+                      checked={hideNonMatchingMainStat}
+                      onChange={(e) => setHideNonMatchingMainStat(e.target.checked)}
+                    />
+                    隐藏主属性不匹配
+                  </label>
+                  <select
+                    style={{ ...styles.select, maxWidth: 280 }}
+                    value={selectedKey}
+                    onChange={(e) => setSelectedKey(e.target.value)}
+                    aria-label="选择角色与遗器方案"
+                  >
+                    {selectOptions.map((o) => (
+                      <option key={o.key} value={o.key}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div style={styles.summaryGrid}>
                 <div>
@@ -844,6 +1124,18 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
                     : '—'}
                 </div>
                 <div style={{ gridColumn: '1 / -1' }}>
+                  <span style={styles.summaryStrong}>主词条限定</span>{' '}
+                  {Object.keys(selectedBox.mainStatTargets).length ? (
+                    Object.entries(selectedBox.mainStatTargets).map(([slot, targets]) => (
+                      <span key={slot} style={styles.effTag}>
+                        {slot}: {targets.map((target) => translateMainStatTarget(target)).join('/')}
+                      </span>
+                    ))
+                  ) : (
+                    <span style={styles.muted}>未配置 mainStatTargets</span>
+                  )}
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <span style={styles.summaryStrong}>有效词条</span>{' '}
                   {selectedBox.effectiveSubstats.length ? (
                     selectedBox.effectiveSubstats.map((t) => (
@@ -857,7 +1149,7 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
                 </div>
               </div>
 
-              {selectedBox.relics.length === 0 ? (
+              {filteredSelectedRelics.length === 0 ? (
                 <div style={styles.muted}>暂无匹配遗器</div>
               ) : (
                 <>
