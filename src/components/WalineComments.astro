@@ -1,0 +1,163 @@
+---
+const walineConfig = {
+  serverURL: 'https://comment-nu-blue.vercel.app/',
+  lang: 'zh-CN',
+  pageSize: 10,
+  login: 'disable',
+  meta: ['nick', 'mail', 'link'],
+  requiredMeta: ['nick'],
+  wordLimit: [2, 500],
+  commentSorting: 'latest',
+  search: false,
+  reaction: false,
+  dark: 'auto',
+};
+
+const isConfigured = !walineConfig.serverURL.includes('PASTE_');
+---
+
+<div class="waline-wrap">
+  {
+    isConfigured ? (
+      <section class="waline-card">
+        <div id="walineStatus" class="waline-status">评论区加载中…</div>
+        <div id="waline"></div>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@waline/client@v3/dist/waline.css" />
+        <script type="module" define:vars={{ walineConfig }}>
+          const statusEl = document.getElementById('walineStatus');
+          const container = document.getElementById('waline');
+
+          const setStatus = (message) => {
+            if (!statusEl) return;
+            statusEl.textContent = message;
+            statusEl.style.display = 'block';
+          };
+
+          try {
+            const pingURL = new URL('comment', walineConfig.serverURL);
+            pingURL.searchParams.set('type', 'recent');
+            pingURL.searchParams.set('path', window.location.pathname);
+            pingURL.searchParams.set('pageSize', '1');
+
+            const ping = await fetch(pingURL.toString(), {
+              method: 'GET',
+              mode: 'cors',
+            });
+
+            if (!ping.ok) {
+              setStatus(`评论服务返回异常：HTTP ${ping.status}。请检查 Waline 服务端日志和数据库配置。`);
+              throw new Error(`Waline API responded with ${ping.status}`);
+            }
+
+            const { init } = await import('https://cdn.jsdelivr.net/npm/@waline/client@v3/dist/waline.js');
+
+            init({
+              el: '#waline',
+              path: window.location.pathname,
+              ...walineConfig,
+            });
+
+            window.setTimeout(() => {
+              if (!container) return;
+              const hasContent = container.childElementCount > 0 || container.textContent?.trim();
+              if (hasContent) {
+                if (statusEl) statusEl.style.display = 'none';
+              } else {
+                setStatus('评论接口已返回数据，但评论组件没有挂载成功。优先检查外部脚本/CDN 是否被浏览器或网络环境拦截。');
+              }
+            }, 2500);
+          } catch (error) {
+            console.error('Waline init failed:', error);
+            if (!statusEl?.textContent) {
+              setStatus('评论区脚本加载失败。请检查 Waline 服务地址和浏览器控制台报错。');
+            }
+          }
+        </script>
+      </section>
+    ) : (
+      <section class="waline-card waline-placeholder">
+        <h3>Waline 还没配置完成</h3>
+        <p>先部署 Waline 服务端，再把 `serverURL` 填到这个组件顶部。当前已设置成免登录评论模式。</p>
+        <pre><code>{`src/components/WalineComments.astro
+serverURL: 'https://your-waline-domain.vercel.app'
+login: 'disable'`}</code></pre>
+      </section>
+    )
+  }
+</div>
+
+<style>
+  .waline-wrap {
+    width: 100%;
+  }
+
+  .waline-card {
+    padding: 18px;
+    border-radius: 22px;
+    background: rgba(248, 252, 249, 0.84);
+    border: 1px solid rgba(142, 175, 156, 0.16);
+  }
+
+  .waline-status {
+    margin-bottom: 12px;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 248, 235, 0.88);
+    border: 1px solid rgba(229, 193, 123, 0.28);
+    color: #7a6540;
+    font-size: 0.84rem;
+    line-height: 1.7;
+  }
+
+  .waline-placeholder h3 {
+    margin: 0 0 8px;
+    color: #24332d;
+    font-size: 1rem;
+  }
+
+  .waline-placeholder p {
+    margin: 0;
+    color: #5c6f65;
+    line-height: 1.8;
+    font-size: 0.9rem;
+  }
+
+  .waline-placeholder pre {
+    margin-top: 14px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(142, 175, 156, 0.14);
+  }
+
+  .waline-placeholder code {
+    font-size: 0.82rem;
+    color: #416d58;
+  }
+
+  :global(.wl-panel) {
+    background: rgba(255, 255, 255, 0.88);
+    border: 1px solid rgba(142, 175, 156, 0.18);
+    border-radius: 18px;
+  }
+
+  :global(.wl-editor),
+  :global(.wl-input),
+  :global(.wl-card) {
+    font-family: "Outfit", "PingFang SC", "Microsoft YaHei", sans-serif;
+  }
+
+  :global(.wl-card) {
+    border-radius: 18px;
+    background: rgba(255,255,255,0.72);
+    border: 1px solid rgba(142, 175, 156, 0.12);
+    padding: 14px 16px;
+  }
+
+  :global(.wl-btn.primary) {
+    border-radius: 999px;
+    background: linear-gradient(135deg, #72bc97, #4d9273);
+    border: none;
+  }
+</style>

@@ -1,0 +1,264 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import WalineComments from '../components/WalineComments.astro';
+import thoughts from '../data/thoughts.json';
+
+type ThoughtItem = {
+  id: string;
+  date: string;
+  title: string;
+  content: string;
+  tags?: string[];
+};
+
+const items = [...(thoughts as ThoughtItem[])].sort(
+  (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+);
+---
+
+<BaseLayout title="碎碎念 - 木风">
+  <style>
+    .thoughts-page {
+      display: grid;
+      gap: 24px;
+      padding: 8px 0 28px;
+    }
+
+    .hero-card,
+    .thoughts-card,
+    .comments-card {
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(142, 175, 156, 0.18);
+      border-radius: 28px;
+      box-shadow: 0 22px 54px rgba(89, 124, 106, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .hero-card {
+      padding: 34px 30px 28px;
+      background:
+        radial-gradient(circle at top right, rgba(176, 219, 193, 0.42), transparent 28%),
+        linear-gradient(155deg, rgba(255,255,255,0.82), rgba(248,252,249,0.72));
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(105, 179, 143, 0.12);
+      color: #4d9273;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+    }
+
+    .hero-title {
+      margin-top: 16px;
+      font-family: "Noto Serif SC", serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.25;
+      color: #24332d;
+    }
+
+    .hero-desc {
+      margin-top: 14px;
+      max-width: 720px;
+      color: #6c7f75;
+      font-size: 0.98rem;
+      line-height: 1.9;
+    }
+
+    .hero-meta {
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .hero-chip {
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.76);
+      border: 1px solid rgba(142, 175, 156, 0.16);
+      color: #6c7f75;
+      font-size: 0.82rem;
+    }
+
+    .thoughts-card {
+      padding: 18px;
+    }
+
+    .section-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #24332d;
+      margin-bottom: 12px;
+      padding: 0 6px;
+    }
+
+    .thoughts-list {
+      display: grid;
+      gap: 14px;
+    }
+
+    .thought-item {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 14px;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(248, 252, 249, 0.82);
+      border: 1px solid rgba(142, 175, 156, 0.16);
+    }
+
+    .thought-date {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      align-items: flex-start;
+    }
+
+    .thought-day {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #4d9273;
+      line-height: 1;
+    }
+
+    .thought-month {
+      color: #90a59a;
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+    }
+
+    .thought-year {
+      color: #b0c0b7;
+      font-size: 0.76rem;
+    }
+
+    .thought-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #24332d;
+      margin-bottom: 8px;
+    }
+
+    .thought-content {
+      color: #4f6258;
+      font-size: 0.95rem;
+      line-height: 1.9;
+      white-space: pre-wrap;
+    }
+
+    .thought-tags {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .thought-tag {
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(105, 179, 143, 0.1);
+      color: #4d9273;
+      font-size: 0.74rem;
+    }
+
+    .comments-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .comments-desc {
+      color: #6c7f75;
+      font-size: 0.88rem;
+      line-height: 1.7;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 768px) {
+      .hero-card {
+        padding: 28px 20px 24px;
+      }
+
+      .thought-item {
+        grid-template-columns: 1fr;
+      }
+
+      .thought-date {
+        flex-direction: row;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .comments-head {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+
+  <div class="thoughts-page">
+    <section class="hero-card">
+      <div class="eyebrow">Thoughts · 碎碎念</div>
+      <h1 class="hero-title">写一些不必长成文章的话</h1>
+      <p class="hero-desc">
+        这里像是博客侧边的小口袋，装一些日常、灵感、情绪和一闪而过的想法。它们不一定完整，但都真实。
+      </p>
+      <div class="hero-meta">
+        <span class="hero-chip">共 {items.length} 条记录</span>
+        <span class="hero-chip">缓慢更新中</span>
+        <span class="hero-chip">欢迎在下面留言</span>
+      </div>
+    </section>
+
+    <section class="thoughts-card">
+      <div class="section-title">最近的念头</div>
+      <div class="thoughts-list">
+        {items.map((item) => {
+          const date = new Date(item.date);
+          const day = String(date.getDate()).padStart(2, '0');
+          const month = `${date.getMonth() + 1} 月`;
+          const year = `${date.getFullYear()}`;
+          return (
+            <article class="thought-item">
+              <div class="thought-date">
+                <div class="thought-day">{day}</div>
+                <div class="thought-month">{month}</div>
+                <div class="thought-year">{year}</div>
+              </div>
+              <div>
+                <h2 class="thought-title">{item.title}</h2>
+                <div class="thought-content">{item.content}</div>
+                {item.tags?.length ? (
+                  <div class="thought-tags">
+                    {item.tags.map((tag) => (
+                      <span class="thought-tag">#{tag}</span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    </section>
+
+    <section class="thoughts-card">
+      <div class="comments-head">
+        <div>
+          <div class="section-title" style="padding: 0; margin-bottom: 0;">评论区</div>
+          <p class="comments-desc">
+            想聊聊这些碎碎念，也可以只是留下今天的心情。评论区已经切成免登录方案，填昵称后就可以直接留言。
+          </p>
+        </div>
+        <div class="hero-chip">免登录评论</div>
+      </div>
+      <WalineComments />
+    </section>
+  </div>
+</BaseLayout>

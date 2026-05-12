@@ -1,0 +1,100 @@
+---
+const giscusConfig = {
+  repo: 'mufeng520/mufeng520.github.io',
+  repoId: 'R_kgDOJBZiaA',
+  category: 'General',
+  categoryId: 'DIC_kwDOJBZiaM4C83Po',
+  mapping: 'pathname',
+  strict: '0',
+  reactionsEnabled: '1',
+  emitMetadata: '0',
+  inputPosition: 'bottom',
+  theme: 'preferred_color_scheme',
+  lang: 'zh-CN',
+  loading: 'lazy',
+};
+
+const isConfigured =
+  !giscusConfig.repoId.includes('PASTE_') &&
+  !giscusConfig.categoryId.includes('PASTE_');
+---
+
+<div class="giscus-wrap">
+  {
+    isConfigured ? (
+      <section class="giscus-card">
+        <div class="giscus" data-repo={giscusConfig.repo}></div>
+        <script
+          src="https://giscus.app/client.js"
+          data-repo={giscusConfig.repo}
+          data-repo-id={giscusConfig.repoId}
+          data-category={giscusConfig.category}
+          data-category-id={giscusConfig.categoryId}
+          data-mapping={giscusConfig.mapping}
+          data-strict={giscusConfig.strict}
+          data-reactions-enabled={giscusConfig.reactionsEnabled}
+          data-emit-metadata={giscusConfig.emitMetadata}
+          data-input-position={giscusConfig.inputPosition}
+          data-theme={giscusConfig.theme}
+          data-lang={giscusConfig.lang}
+          data-loading={giscusConfig.loading}
+          crossorigin="anonymous"
+          async
+        ></script>
+      </section>
+    ) : (
+      <section class="giscus-card giscus-placeholder">
+        <h3>Giscus 还没配置完成</h3>
+        <p>打开 giscus.app，选择你的仓库和讨论分类后，把生成的 `repo-id` 和 `category-id` 填到这个组件顶部的 `giscusConfig` 里。</p>
+        <pre><code>{`src/components/GiscusComments.astro
+repoId = "PASTE_REPO_ID_HERE"
+categoryId = "PASTE_CATEGORY_ID_HERE"`}</code></pre>
+      </section>
+    )
+  }
+</div>
+
+<style>
+  .giscus-wrap {
+    width: 100%;
+  }
+
+  .giscus-card {
+    padding: 18px;
+    border-radius: 22px;
+    background: rgba(248, 252, 249, 0.84);
+    border: 1px solid rgba(142, 175, 156, 0.16);
+  }
+
+  .giscus-placeholder h3 {
+    margin: 0 0 8px;
+    color: #24332d;
+    font-size: 1rem;
+  }
+
+  .giscus-placeholder p {
+    margin: 0;
+    color: #5c6f65;
+    line-height: 1.8;
+    font-size: 0.9rem;
+  }
+
+  .giscus-placeholder pre {
+    margin-top: 14px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(142, 175, 156, 0.14);
+  }
+
+  .giscus-placeholder code {
+    font-size: 0.82rem;
+    color: #416d58;
+  }
+
+  :global(.giscus),
+  :global(.giscus-frame) {
+    width: 100%;
+  }
+</style>
