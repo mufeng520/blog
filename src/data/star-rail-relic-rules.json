@@ -271,10 +271,10 @@
       "planarSets": ["筑城者的贝洛伯格"],
       "effectiveSubstats": ["防御力", "速度", "效果命中", "效果抵抗"],
       "mainStatTargets": {
-        "Body": ["暴击率", "暴击伤害"],
-        "Feet": ["速度","攻击力"],
-        "Planar Sphere": ["攻击力","火属性伤害提高"],
-        "Link Rope": ["攻击力","能量恢复效率"]
+        "Body": ["效果命中", "防御力"],
+        "Feet": ["速度"],
+        "Planar Sphere": ["防御力"],
+        "Link Rope": ["防御力"]
       }
     }
     ]
@@ -291,10 +291,10 @@
         "planarSets": ["不老者的仙舟"],
         "effectiveSubstats": ["生命值", "速度", "效果抵抗"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["治疗量加成", "生命值"],
+          "Feet": ["速度","生命值"],
+          "Planar Sphere": ["生命值"],
+          "Link Rope": ["生命值","能量恢复效率"]
         }
       }
     ]
@@ -311,9 +311,9 @@
       "planarSets": ["折断的龙骨"],
       "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害","效果命中"],
       "mainStatTargets": {
-        "Body": ["暴击率", "暴击伤害"],
-        "Feet": ["速度","攻击力"],
-        "Planar Sphere": ["攻击力","火属性伤害提高"],
+        "Body": ["暴击率", "攻击力"],
+        "Feet": ["速度"],
+        "Planar Sphere": ["攻击力","冰属性伤害提高"],
         "Link Rope": ["攻击力","能量恢复效率"]
       }
     }
@@ -331,10 +331,10 @@
       "planarSets": ["停转的萨尔索图"],
       "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
       "mainStatTargets": {
-        "Body": ["暴击率", "暴击伤害"],
-        "Feet": ["速度","攻击力"],
-        "Planar Sphere": ["攻击力","火属性伤害提高"],
-        "Link Rope": ["攻击力","能量恢复效率"]
+        "Body": ["暴击率"],
+        "Feet": ["攻击力"],
+        "Planar Sphere": ["物理属性伤害提高"],
+        "Link Rope": ["攻击力"]
       }
     }
     ]
@@ -351,10 +351,10 @@
         "planarSets": ["太空封印站"],
         "effectiveSubstats": ["攻击力", "速度", "效果命中"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["攻击力"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["攻击力"],
+          "Link Rope": ["能量恢复效率"]
         }
       }
     ]
@@ -371,10 +371,10 @@
       "planarSets": ["繁星竞技场"],
       "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
       "mainStatTargets": {
-        "Body": ["暴击率", "暴击伤害"],
-        "Feet": ["速度","攻击力"],
-        "Planar Sphere": ["攻击力","火属性伤害提高"],
-        "Link Rope": ["攻击力","能量恢复效率"]
+        "Body": ["暴击率"],
+        "Feet": ["攻击力"],
+        "Planar Sphere": ["火属性伤害提高"],
+        "Link Rope": ["攻击力"]
       }
     }
     ]
@@ -391,10 +391,10 @@
         "planarSets": ["不老者的仙舟"],
         "effectiveSubstats": ["生命值", "速度", "效果抵抗"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
+          "Body": ["生命值"],
           "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Planar Sphere": ["生命值"],
+          "Link Rope": ["能量恢复效率"]
         }
       }
     ]
@@ -409,12 +409,12 @@
       "name": "输出",
       "cavernSets": ["幽锁深牢的系囚"],
       "planarSets": ["沉欢醉饮的海隅"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
+      "effectiveSubstats": ["攻击力", "击破特攻", "速度", "暴击率", "暴击伤害"],
       "mainStatTargets": {
-        "Body": ["暴击率", "暴击伤害"],
-        "Feet": ["速度","攻击力"],
-        "Planar Sphere": ["攻击力","火属性伤害提高"],
-        "Link Rope": ["攻击力","能量恢复效率"]
+        "Body": ["攻击力"],
+        "Feet": ["速度"],
+        "Planar Sphere": ["攻击力"],
+        "Link Rope": ["击破特攻"]
       }
     }
     ]
@@ -431,10 +431,10 @@
         "planarSets": ["繁星竞技场"],
         "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["暴击伤害"],
+          "Feet": ["攻击力"],
+          "Planar Sphere": ["攻击力"],
+          "Link Rope": ["攻击力"]
         }
       }
     ]
@@ -451,10 +451,10 @@
         "planarSets": ["生命的翁瓦克"],
         "effectiveSubstats": ["攻击力", "速度", "效果抵抗"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["攻击力", "生命值"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["攻击力","生命值"],
+          "Link Rope": ["能量恢复效率"]
         }
       }
     ]
@@ -471,10 +471,10 @@
         "planarSets": ["折断的龙骨"],
         "effectiveSubstats": ["攻击力", "速度", "效果抵抗"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["治疗量加成", "攻击力"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["攻击力","生命值"],
+          "Link Rope": ["能量恢复效率"]
         }
       }
     ]
@@ -493,8 +493,8 @@
         "mainStatTargets": {
           "Body": ["暴击率", "暴击伤害"],
           "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Planar Sphere": ["攻击力","雷属性伤害提高"],
+          "Link Rope": ["攻击力"]
         }
       }
     ]
@@ -512,9 +512,9 @@
         "effectiveSubstats": ["生命值", "速度", "暴击率", "暴击伤害"],
         "mainStatTargets": {
           "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Feet": ["速度","生命值"],
+          "Planar Sphere": ["生命值","风属性伤害提高"],
+          "Link Rope": ["生命值","能量恢复效率"]
         }
       }
     ]
@@ -531,10 +531,10 @@
       "planarSets": ["停转的萨尔索图"],
       "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
       "mainStatTargets": {
-        "Body": ["暴击率", "暴击伤害"],
-        "Feet": ["速度","攻击力"],
-        "Planar Sphere": ["攻击力","火属性伤害提高"],
-        "Link Rope": ["攻击力","能量恢复效率"]
+        "Body": ["暴击率"],
+        "Feet": ["攻击力"],
+        "Planar Sphere": ["物理属性伤害提高"],
+        "Link Rope": ["攻击力"]
       }
     }
     ]
@@ -551,10 +551,10 @@
         "planarSets": ["折断的龙骨"],
         "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["生命值"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["生命值"],
+          "Link Rope": ["能量恢复效率"]
         }
       }
     ]
@@ -571,10 +571,10 @@
         "planarSets": ["折断的龙骨"],
         "effectiveSubstats": ["生命值", "速度", "防御力", "效果抵抗"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["生命值", "防御力"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["生命值","防御力"],
+          "Link Rope": ["能量恢复效率"]
         }
       }
     ]
@@ -591,10 +591,10 @@
         "planarSets": ["停转的萨尔索图"],
         "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["暴击伤害"],
+          "Feet": ["攻击力"],
+          "Planar Sphere": ["冰属性伤害提高"],
+          "Link Rope": ["攻击力"]
         }
       }
     ]
@@ -611,10 +611,10 @@
         "planarSets": ["太空封印站"],
         "effectiveSubstats": ["攻击力", "速度", "效果命中"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["攻击力", "效果命中"],
+          "Feet": ["速度"],
+          "Planar Sphere": ["火属性伤害提高"],
+          "Link Rope": ["攻击力"]
         }
       }
     ]
@@ -631,10 +631,10 @@
         "planarSets": ["不老者的仙舟"],
         "effectiveSubstats": ["生命值", "速度", "效果抵抗"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["治疗量加成", "生命值"],
+          "Feet": ["速度","生命值"],
+          "Planar Sphere": ["生命值"],
+          "Link Rope": ["生命值","能量恢复效率"]
         }
       }
     ]
@@ -651,10 +651,10 @@
         "planarSets": ["谧宁拾骨地"],
         "effectiveSubstats": ["生命值", "速度", "暴击率", "暴击伤害"],
         "mainStatTargets": {
-          "Body": ["暴击率", "暴击伤害"],
-          "Feet": ["速度","攻击力"],
-          "Planar Sphere": ["攻击力","火属性伤害提高"],
-          "Link Rope": ["攻击力","能量恢复效率"]
+          "Body": ["生命值"],
+          "Feet": ["速度","生命值"],
+          "Planar Sphere": ["生命值","冰属性伤害提高"],
+          "Link Rope": ["生命值","能量恢复效率"]
         }
       }
     ]
@@ -664,13 +664,13 @@
     "characterId": "1213",
     "displayName": "丹恒·饮月",
     "loadouts": [
-    {
-      "id": "快枪手+繁星",
-      "name": "输出",
-      "cavernSets": ["野穗伴行的快枪手"],
-      "planarSets": ["繁星竞技场"],
-      "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
-    }
+      {
+        "id": "快枪手+繁星",
+        "name": "输出",
+        "cavernSets": ["野穗伴行的快枪手"],
+        "planarSets": ["繁星竞技场"],
+        "effectiveSubstats": ["攻击力", "速度", "暴击率", "暴击伤害"]
+      }
     ]
   },
   {

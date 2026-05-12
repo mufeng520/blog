@@ -33,74 +33,84 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
 
 <BaseLayout title="博客 - 木风">
   <style>
-    /* PV 风格布局 */
     .blog-main-wrap {
-      padding: 40px 0 60px;
-      background: #fafafa;
+      padding: 8px 0 28px;
     }
     .blog-wrapper {
       max-width: 1200px;
       margin: 0 auto;
-      padding: 0 20px;
+      padding: 0;
       display: flex;
-      gap: 40px;
+      gap: 28px;
     }
     .blog-main-left {
-      flex: 0 0 220px;
+      flex: 0 0 248px;
     }
     .blog-main-right {
       flex: 1;
       min-width: 0;
     }
 
-    /* 侧边栏 */
+    .blog-slideBar {
+      position: sticky;
+      top: 16px;
+      padding: 22px 20px;
+      border-radius: 26px;
+      background: rgba(255, 255, 255, 0.78);
+      border: 1px solid rgba(142, 175, 156, 0.18);
+      box-shadow: 0 22px 52px rgba(89, 124, 106, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
     .blog-slideBar .title {
-      margin-bottom: 30px;
+      margin-bottom: 24px;
     }
     .blog-slideBar .title h4 {
-      font-size: 24px;
-      font-weight: 300;
-      letter-spacing: 2px;
-      margin-bottom: 8px;
-      color: #333;
+      font-family: "Noto Serif SC", serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 6px;
+      color: #24332d;
     }
     .blog-slideBar .title p {
-      font-size: 14px;
-      color: #666;
+      font-size: 0.84rem;
+      color: #6c7f75;
     }
     .blog-slideBar .title p i {
-      color: #00a8e8;
+      color: #69b38f;
       margin: 0 4px;
     }
 
     .blog-filter dl {
-      margin-bottom: 25px;
+      margin-bottom: 20px;
     }
     .blog-filter dt {
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
     .blog-filter dt .t1 {
-      font-size: 12px;
-      color: #999;
-      letter-spacing: 1px;
+      font-size: 0.7rem;
+      color: #90a59a;
+      letter-spacing: 0.14em;
     }
     .blog-filter dt .t2 {
-      font-size: 13px;
-      color: #555;
+      font-size: 0.84rem;
+      color: #506258;
     }
     .blog-filter dd {
-      margin: 8px 0;
+      margin: 6px 0;
     }
     .blog-filter dd a,
     .blog-filter dd button {
-      color: #666;
+      color: #6c7f75;
       text-decoration: none;
-      font-size: 14px;
-      transition: color 0.3s;
+      font-size: 0.88rem;
+      transition: color 0.28s ease, background 0.28s ease;
       cursor: pointer;
       background: none;
       border: none;
-      padding: 0;
+      padding: 8px 10px;
+      border-radius: 12px;
       font-family: inherit;
       text-align: left;
       width: 100%;
@@ -109,60 +119,66 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
     .blog-filter dd button:hover,
     .blog-filter dd.active a,
     .blog-filter dd.active button {
-      color: #00a8e8;
+      color: #4d9273;
+      background: rgba(105, 179, 143, 0.1);
     }
 
-    /* 右侧内容区 */
     .blog-content-header {
-      margin-bottom: 24px;
+      margin-bottom: 18px;
+      padding: 18px 20px;
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.74);
+      border: 1px solid rgba(142, 175, 156, 0.18);
+      box-shadow: 0 18px 44px rgba(89, 124, 106, 0.08);
+      backdrop-filter: blur(18px);
     }
     .blog-search-box {
       width: 100%;
-      padding: 12px 16px;
+      padding: 14px 16px;
       font-size: 1rem;
-      border: 2px solid #eee;
-      border-radius: 12px;
-      background: #fff;
-      color: #333;
+      border: 1px solid rgba(142, 175, 156, 0.22);
+      border-radius: 16px;
+      background: rgba(250, 253, 251, 0.9);
+      color: #24332d;
       transition: all 0.3s ease;
     }
     .blog-search-box:focus {
       outline: none;
-      border-color: #00a8e8;
-      box-shadow: 0 0 0 3px rgba(0, 168, 232, 0.15);
+      border-color: #69b38f;
+      box-shadow: 0 0 0 4px rgba(105, 179, 143, 0.14);
     }
     .blog-search-box::placeholder {
-      color: #999;
+      color: #91a69a;
     }
     .blog-posts-count {
-      margin-top: 12px;
-      font-size: 0.9rem;
-      color: #666;
+      margin-top: 10px;
+      font-size: 0.84rem;
+      color: #6c7f75;
     }
 
-    /* 文章列表 */
     .blog-posts-list {
       list-style: none;
       display: grid;
-      gap: 20px;
+      gap: 16px;
     }
     .blog-posts-list.hidden {
       display: none !important;
     }
     .blog-post-item {
-      background: #fff;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      background: rgba(255, 255, 255, 0.78);
+      border-radius: 22px;
+      padding: 22px;
+      box-shadow: 0 18px 44px rgba(89, 124, 106, 0.08);
       transition: all 0.3s ease;
-      border: 1px solid #eee;
+      border: 1px solid rgba(142, 175, 156, 0.18);
+      backdrop-filter: blur(16px);
     }
     .blog-post-item.hidden {
       display: none !important;
     }
     .blog-post-item:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 8px 24px rgba(0, 168, 232, 0.15);
+      transform: translateY(-3px);
+      box-shadow: 0 24px 50px rgba(105, 179, 143, 0.14);
     }
     .blog-post-header {
       display: flex;
@@ -173,36 +189,35 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
     }
     .blog-post-title-link {
       text-decoration: none;
-      color: #333;
-      font-size: 1.3rem;
+      color: #24332d;
+      font-size: 1.28rem;
       font-weight: 600;
       display: block;
       transition: color 0.3s ease;
       flex: 1;
     }
     .blog-post-title-link:hover {
-      color: #00a8e8;
+      color: #4d9273;
     }
     .blog-post-category {
       display: inline-block;
-      padding: 4px 12px;
-      background: #85dcff;
-      color: #fae9e9;
-      border-radius: 12px;
-      font-size: 0.75rem;
+      padding: 6px 12px;
+      background: rgba(105, 179, 143, 0.12);
+      color: #4d9273;
+      border-radius: 999px;
+      font-size: 0.72rem;
       font-weight: 500;
       white-space: nowrap;
     }
     .blog-post-meta {
       display: flex;
       align-items: center;
-      gap: 15px;
-      color: #666;
-      font-size: 0.9rem;
+      gap: 14px;
+      color: #6c7f75;
+      font-size: 0.84rem;
       margin-top: 8px;
     }
 
-    /* 空状态 - 修复显示 */
     .blog-empty-wrapper {
       min-height: 300px;
       display: flex;
@@ -211,12 +226,12 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
     }
     .blog-empty-state {
       text-align: center;
-      padding: 60px 40px;
-      color: #999;
-      background: #fff;
-      border-radius: 16px;
-      border: 1px solid #eee;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+      padding: 54px 34px;
+      color: #90a59a;
+      background: rgba(255, 255, 255, 0.78);
+      border-radius: 24px;
+      border: 1px solid rgba(142, 175, 156, 0.18);
+      box-shadow: 0 18px 44px rgba(89, 124, 106, 0.08);
     }
     .blog-empty-state.hidden {
       display: none !important;
@@ -227,8 +242,8 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
       opacity: 0.6;
     }
     .blog-empty-state-text {
-      font-size: 1.1rem;
-      color: #666;
+      font-size: 1.02rem;
+      color: #6c7f75;
     }
 
     @media (max-width: 768px) {
@@ -237,6 +252,9 @@ const years = Array.from(new Set(allPosts.map((post: any) => post.year).filter(B
       }
       .blog-main-left {
         flex: none;
+      }
+      .blog-slideBar {
+        position: static;
       }
       .blog-post-header {
         flex-direction: column;

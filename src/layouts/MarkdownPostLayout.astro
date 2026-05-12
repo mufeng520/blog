@@ -18,23 +18,24 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
     /* 文章页面主容器 - 左侧目录 + 右侧文章内容 */
     .post-wrapper {
       display: flex;
-      max-width: 1400px;
+      max-width: 1160px;
       margin: 0 auto;
-      gap: 40px;
-      padding: 0 20px;
+      gap: 24px;
+      padding: 0;
       position: relative;
     }
 
     /* 文章内容容器 */
     .post-container {
       flex: 1;
-      max-width: 900px;
-      padding: 40px 30px;
-      background: #fff;
-      border-radius: 24px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-      border: 1px solid #eee;
-      margin-bottom: 40px;
+      max-width: 860px;
+      padding: 40px 34px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 30px;
+      box-shadow: 0 24px 56px rgba(89, 124, 106, 0.08);
+      border: 1px solid rgba(142, 175, 156, 0.18);
+      margin-bottom: 24px;
+      backdrop-filter: blur(18px);
     }
 
     /* ========================================
@@ -43,32 +44,32 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
 
     /* 目录侧边栏容器 */
     .toc-sidebar {
-      width: 260px;
+      width: 240px;
       position: sticky;
-      top: 80px;
-      max-height: calc(100vh - 100px);
+      top: 18px;
+      max-height: calc(100vh - 36px);
       overflow-y: auto;
       padding: 18px 16px;
-      background: linear-gradient(135deg, #fafbfc 0%, #f5f6f7 100%);
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-      border: 1px solid #e1e4e8;
+      background: rgba(255, 255, 255, 0.74);
+      border-radius: 24px;
+      box-shadow: 0 20px 44px rgba(89, 124, 106, 0.08);
+      border: 1px solid rgba(142, 175, 156, 0.18);
       align-self: flex-start;
+      backdrop-filter: blur(18px);
     }
 
     /* 目录标题 */
     .toc-title {
-      font-size: 1.05rem;
+      font-size: 0.98rem;
       font-weight: 700;
-      color: #24292e;
-      margin-bottom: 18px;
-      padding-bottom: 12px;
-      border-bottom: 2px solid #e1e4e8;
+      color: #24332d;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(142, 175, 156, 0.18);
       display: flex;
       align-items: center;
       gap: 8px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.04em;
     }
 
     /* 目录列表容器 */
@@ -90,31 +91,27 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
     /* 目录链接基础样式 - 使用多选择器覆盖浏览器默认样式 */
     :global(.toc-link){
       display: block !important;
-      padding: 10px 18px;
-      color: #73b8e3 !important;
+      padding: 8px 14px;
+      color: #6c7f75 !important;
       text-decoration: none !important;
-      border-radius: 10px;
+      border-radius: 14px;
       transition: all 0.25s ease;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-      letter-spacing: 0.4px;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      font-size: 0.88rem;
+      line-height: 1.5;
       position: relative;
       border-left: 3px solid transparent;
-      margin: 4px 0;
+      margin: 3px 0;
       background-color: transparent;
-      font-weight: 450;
+      font-weight: 500;
     }
 
     /* 目录链接悬停效果 */
     :global(.toc-link):hover{
-      background-color: #f6f8fa;
-      border-left-color: #0366d6;
-      color: #0366d6 !important;
-      transform: translateX(3px);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+      background-color: rgba(105, 179, 143, 0.1);
+      border-left-color: #69b38f;
+      color: #4d9273 !important;
+      transform: translateX(2px);
+      box-shadow: none;
     }
 
     /* 目录链接点击效果 */
@@ -126,9 +123,9 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
 
     /* 目录链接激活状态 - 当前章节 */
     :global(.toc-link).active{
-      border-left-color: #0366d6;
-      background-color: #f1f8ff;
-      color: #0366d6 !important;
+      border-left-color: #69b38f;
+      background-color: rgba(105, 179, 143, 0.14);
+      color: #4d9273 !important;
       font-weight: 500;
     }
 
@@ -271,29 +268,30 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
     /* 文章头部容器 */
     .post-header {
       text-align: center;
-      margin-bottom: 40px;
-      padding-bottom: 30px;
-      border-bottom: 2px solid #eee;
+      margin-bottom: 34px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid rgba(142, 175, 156, 0.18);
     }
 
     /* 文章标题 */
     .post-title {
-      font-size: 2.8rem;
-      font-weight: 600;
-      color: #333;
-      margin-bottom: 15px;
+      font-family: "Noto Serif SC", serif;
+      font-size: clamp(2rem, 4vw, 2.9rem);
+      font-weight: 700;
+      color: #24332d;
+      margin-bottom: 14px;
       line-height: 1.3;
-      letter-spacing: -0.5px;
+      letter-spacing: 0.02em;
     }
 
     /* 文章元信息（分类、日期、阅读时间） */
     .post-meta {
-      color: #666;
-      font-size: 0.95rem;
+      color: #6c7f75;
+      font-size: 0.9rem;
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 20px;
+      gap: 14px;
       flex-wrap: wrap;
     }
 
@@ -302,11 +300,11 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       display: flex;
       align-items: center;
       gap: 5px;
-      padding: 6px 14px;
-      background: #00a8e8;
-      color: #fff;
-      border-radius: 20px;
-      font-size: 0.85rem;
+      padding: 7px 14px;
+      background: rgba(105, 179, 143, 0.14);
+      color: #4d9273;
+      border-radius: 999px;
+      font-size: 0.8rem;
       font-weight: 500;
     }
 
@@ -324,31 +322,31 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
 
     /* 文章内容容器 */
     .post-content {
-      color: #333;
-      line-height: 1.8;
-      font-size: 1rem;
+      color: #31423a;
+      line-height: 1.9;
+      font-size: 1.02rem;
     }
 
     /* 文章内一级标题样式 */
     .post-content :global(h1) {
-      font-size: 2rem;
-      font-weight: 600;
-      color: #333;
-      margin-top: 40px;
-      margin-bottom: 20px;
+      font-size: 1.95rem;
+      font-weight: 700;
+      color: #24332d;
+      margin-top: 42px;
+      margin-bottom: 18px;
       padding-bottom: 10px;
-      border-bottom: 2px solid rgba(0, 168, 232, 0.3);
+      border-bottom: 1px solid rgba(105, 179, 143, 0.2);
     }
 
     /* 文章内二级标题样式 */
     .post-content :global(h2) {
-      font-size: 1.6rem;
-      font-weight: 600;
-      color: #333;
-      margin-top: 35px;
-      margin-bottom: 18px;
-      padding-bottom: 8px;
-      border-bottom: 1px solid rgba(0, 168, 232, 0.2);
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: #24332d;
+      margin-top: 34px;
+      margin-bottom: 16px;
+      padding-bottom: 0;
+      border-bottom: none;
     }
 
     /* 文章内三级标题样式 */
@@ -386,15 +384,15 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
 
     /* 链接样式 */
     .post-content :global(a) {
-      color: #0066cc;
+      color: #4d9273;
       text-decoration: none;
-      border-bottom: 1px solid rgba(0, 102, 204, 0.3);
+      border-bottom: 1px solid rgba(105, 179, 143, 0.32);
       transition: all 0.3s ease;
     }
 
     .post-content :global(a:hover) {
-      color: #004c99;
-      border-bottom-color: #004c99;
+      color: #3c7158;
+      border-bottom-color: #3c7158;
     }
 
     /* 列表样式 */
@@ -420,13 +418,12 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
 
     /* 引用样式 */
     .post-content :global(blockquote) {
-      border-left: 4px solid #00a8e8;
-      background: rgba(0, 168, 232, 0.06);
-      padding: 15px 20px;
+      border-left: 4px solid #8ec7aa;
+      background: rgba(142, 199, 170, 0.12);
+      padding: 18px 20px;
       margin: 20px 0;
-      border-radius: 0 8px 8px 0;
-      font-style: italic;
-      color: #555;
+      border-radius: 0 16px 16px 0;
+      color: #51655b;
     }
 
     /* 过期通知样式 */
@@ -478,20 +475,20 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
 
     /* 代码块样式 - 参考第一张图的浅色风格 */
     .post-content :global(pre) {
-      background: #f8f5e6;
-      border: 1px solid #e8e0c9;
-      border-radius: 12px;
-      padding: 20px;
+      background: #f3f8f4;
+      border: 1px solid rgba(142, 175, 156, 0.2);
+      border-radius: 18px;
+      padding: 18px 20px;
       overflow-x: auto;
       margin: 25px 0;
       font-size: 0.95rem;
       line-height: 1.6;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
     }
 
     .post-content :global(code) {
-      background: rgba(0, 168, 232, 0.1);
-      color: #0077b6;
+      background: rgba(105, 179, 143, 0.12);
+      color: #416d58;
       padding: 3px 8px;
       border-radius: 6px;
       font-size: 0.9em;
@@ -509,16 +506,16 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
     /* 参考figure代码块样式 */
     .post-content :global(figure.highlight) {
       margin: 25px 0;
-      border-radius: 12px;
+      border-radius: 18px;
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 18px 36px rgba(89, 124, 106, 0.08);
     }
 
     .post-content :global(figure.highlight table) {
       width: 100%;
       border-collapse: collapse;
       margin: 0;
-      background: #f8f5e6;
+      background: #f3f8f4;
     }
 
     .post-content :global(figure.highlight tbody) {
@@ -541,7 +538,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       border: none;
       border-radius: 0;
       box-shadow: none;
-      background: #f8f5e6;
+      background: #f3f8f4;
     }
 
     /* 代码高亮样式 - 参考第一张图 */
@@ -559,12 +556,12 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
 
     /* 浅色主题代码高亮 */
     .post-content :global(.astro-code) {
-      background: #f8f5e6 !important;
+      background: #f3f8f4 !important;
       color: #333 !important;
     }
 
     .post-content :global(.astro-code github-dark) {
-      background: #f8f5e6 !important;
+      background: #f3f8f4 !important;
       color: #333 !important;
     }
 
@@ -587,8 +584,8 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
     .post-content :global(img) {
       max-width: 100%;
       height: auto;
-      border-radius: 12px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+      border-radius: 18px;
+      box-shadow: 0 18px 36px rgba(89, 124, 106, 0.08);
       margin: 30px auto;
       display: block;
     }
@@ -654,14 +651,10 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
     }
 
     @media (max-width: 768px) {
-      .post-wrapper {
-        padding: 0 15px;
-      }
-
       .post-container {
-        padding: 30px 20px;
-        margin: 20px 0;
-        border-radius: 16px;
+        padding: 28px 20px;
+        margin: 12px 0;
+        border-radius: 24px;
       }
 
       .post-title {
