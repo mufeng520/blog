@@ -20,7 +20,7 @@ export const RELIC_SET_ZH: Record<string, string> = {
   'Messenger Traversing Hackerspace': '骇域漫游的信使',
   'Longevous Disciple': '宝命长存的莳者',
   'Wastelander of Banditry Desert': '盗匪荒漠的废土客',
-  'Ashblazing Grand Duke': '毁烬焚骨的大公',
+  'The Ashblazing Grand Duke': '毁烬焚骨的大公',
   'Prisoner in Deep Confinement': '幽锁深牢的系囚',
   'Pioneer Diver of Dead Waters': '死水深潜的先驱',
   'Iron Cavalry Against the Scourge': '荡除蠹灾的铁骑',

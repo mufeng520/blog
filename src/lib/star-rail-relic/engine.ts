@@ -56,6 +56,15 @@ export interface RelicInput {
   characterId?: string | null;
 }
 
+export type LoadoutBoxMatchReason = 'equipped' | 'other_equipped' | 'rule';
+
+export interface LoadoutBoxRelic extends RelicInput {
+  matchReason: LoadoutBoxMatchReason;
+  duplicate?: boolean;
+  ownerCharacterId?: string | null;
+  ownerCharacterLabel?: string;
+}
+
 export interface LoadoutBoxPayload {
   entryId: string;
   characterId: string;
@@ -65,7 +74,7 @@ export interface LoadoutBoxPayload {
   cavernSets: string[];
   planarSets: string[];
   effectiveSubstats: string[];
-  relics: (RelicInput & { matchReason: 'equipped' | 'rule'; duplicate?: boolean })[];
+  relics: LoadoutBoxRelic[];
 }
 
 /** @deprecated 旧版「每角色一盒」 */
@@ -86,6 +95,7 @@ export interface SetFarmRow {
   avgHit: number | null;
   maxHit: number | null;
   farmScore: number;
+  effectiveSubstats: string[];
   label: string;
 }
 
@@ -280,6 +290,9 @@ function sortRelicsByHit(a: RelicInput, b: RelicInput): number {
 /** 内容集合规则 + 背包遗器：每个角色 × 每套方案一盒 */
 export function buildLoadoutBoxes(rules: CharacterRule[], relics: RelicInput[]): LoadoutBoxPayload[] {
   const norm = normalizeCharacterRules(rules);
+  const characterLabelById = new Map(
+    norm.map((rule) => [rule.characterId, rule.displayName?.trim() || rule.characterId])
+  );
   const boxes: LoadoutBoxPayload[] = [];
 
   for (const rule of norm) {
@@ -292,12 +305,29 @@ export function buildLoadoutBoxes(rules: CharacterRule[], relics: RelicInput[]):
         if (!setMatchesLoadout(r.set, cat, loadout)) continue;
 
         const loc = r.characterId;
-        if (loc && loc !== rule.characterId) continue;
-
         if (loc === rule.characterId) {
-          matched.push({ ...r, category: cat, matchReason: 'equipped' });
+          matched.push({
+            ...r,
+            category: cat,
+            matchReason: 'equipped',
+            ownerCharacterId: loc,
+            ownerCharacterLabel: charLabel,
+          });
+        } else if (loc) {
+          matched.push({
+            ...r,
+            category: cat,
+            matchReason: 'other_equipped',
+            ownerCharacterId: loc,
+            ownerCharacterLabel: characterLabelById.get(loc) ?? loc,
+          });
         } else if (!loc) {
-          matched.push({ ...r, category: cat, matchReason: 'rule', duplicate: true });
+          matched.push({
+            ...r,
+            category: cat,
+            matchReason: 'rule',
+            duplicate: true,
+          });
         }
       }
 
@@ -355,9 +385,24 @@ function setRowKey(setName: string, kind: 'cavern' | 'planar'): string {
 
 function collectDemandFromRules(rules: CharacterRule[]): Map<
   string,
-  { setName: string; kind: 'cavern' | 'planar'; charIds: Set<string>; loadoutKeys: Set<string> }
+  {
+    setName: string;
+    kind: 'cavern' | 'planar';
+    charIds: Set<string>;
+    loadoutKeys: Set<string>;
+    effectiveSubstats: Set<string>;
+  }
 > {
-  const setMeta = new Map<string, { setName: string; kind: 'cavern' | 'planar'; charIds: Set<string>; loadoutKeys: Set<string> }>();
+  const setMeta = new Map<
+    string,
+    {
+      setName: string;
+      kind: 'cavern' | 'planar';
+      charIds: Set<string>;
+      loadoutKeys: Set<string>;
+      effectiveSubstats: Set<string>;
+    }
+  >();
 
   for (const rule of rules) {
     for (const lo of rule.loadouts) {
@@ -365,16 +410,34 @@ function collectDemandFromRules(rules: CharacterRule[]): Map<
       for (const s of lo.cavernSets) {
         const k = setRowKey(s, 'cavern');
         if (!setMeta.has(k))
-          setMeta.set(k, { setName: s, kind: 'cavern', charIds: new Set(), loadoutKeys: new Set() });
+          setMeta.set(k, {
+            setName: s,
+            kind: 'cavern',
+            charIds: new Set(),
+            loadoutKeys: new Set(),
+            effectiveSubstats: new Set(),
+          });
         setMeta.get(k)!.charIds.add(rule.characterId);
         setMeta.get(k)!.loadoutKeys.add(lk);
+        for (const token of lo.effectiveSubstats ?? []) {
+          if (token.trim()) setMeta.get(k)!.effectiveSubstats.add(token);
+        }
       }
       for (const s of lo.planarSets) {
         const k = setRowKey(s, 'planar');
         if (!setMeta.has(k))
-          setMeta.set(k, { setName: s, kind: 'planar', charIds: new Set(), loadoutKeys: new Set() });
+          setMeta.set(k, {
+            setName: s,
+            kind: 'planar',
+            charIds: new Set(),
+            loadoutKeys: new Set(),
+            effectiveSubstats: new Set(),
+          });
         setMeta.get(k)!.charIds.add(rule.characterId);
         setMeta.get(k)!.loadoutKeys.add(lk);
+        for (const token of lo.effectiveSubstats ?? []) {
+          if (token.trim()) setMeta.get(k)!.effectiveSubstats.add(token);
+        }
       }
     }
   }
@@ -432,6 +495,7 @@ export function computeCollectiveFarmFromRules(rules: CharacterRule[], relics: R
       avgHit,
       maxHit,
       farmScore,
+      effectiveSubstats: [...meta.effectiveSubstats],
       label,
     });
   }

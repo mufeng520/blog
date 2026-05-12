@@ -4,9 +4,11 @@ import {
   buildLoadoutBoxes,
   computeCollectiveFarmFromRules,
   isArchiverReliquaryExport,
+  type SetFarmRow,
   parsePayload,
   type CharacterRule,
   type LoadoutBoxPayload,
+  type LoadoutBoxRelic,
   type RelicInput,
 } from '../lib/star-rail-relic/engine';
 import {
@@ -19,13 +21,13 @@ import {
   type RelicSlotColumnId,
 } from '../lib/star-rail-relic/i18n';
 
-type BoxRelic = LoadoutBoxPayload['relics'][number];
+type BoxRelic = LoadoutBoxRelic;
 
 const styles: Record<string, React.CSSProperties> = {
   wrap: {
     maxWidth: 1320,
     margin: '0 auto',
-    padding: '20px 12px 40px',
+    padding: '14px 10px 28px',
     fontFamily: '"PingFang SC","Microsoft YaHei",system-ui,sans-serif',
     color: '#e8ecf4',
   },
@@ -38,41 +40,80 @@ const styles: Record<string, React.CSSProperties> = {
     WebkitBackgroundClip: 'text',
     color: 'transparent',
   },
-  sub: { color: '#94a3b8', fontSize: '0.82rem', marginBottom: 16, lineHeight: 1.55 },
+  sub: { color: '#94a3b8', fontSize: '0.8rem', marginBottom: 12, lineHeight: 1.5 },
+  topGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr',
+    marginBottom: 10,
+  },
+  tabBar: {
+    display: 'flex',
+    gap: 6,
+    flexWrap: 'wrap' as const,
+    justifyContent: 'flex-end',
+  },
+  tabButton: {
+    cursor: 'pointer',
+    border: '1px solid rgba(51,65,85,0.75)',
+    background: 'rgba(15,23,42,0.55)',
+    color: '#94a3b8',
+    padding: '4px 10px',
+    borderRadius: 999,
+    fontSize: '0.74rem',
+    lineHeight: 1.35,
+  },
+  tabButtonActive: {
+    border: '1px solid rgba(56,189,248,0.6)',
+    background: 'rgba(56,189,248,0.16)',
+    color: '#7dd3fc',
+  },
   panel: {
     background: 'linear-gradient(145deg,#1e293b 0%,#0f172a 100%)',
     border: '1px solid rgba(148,163,184,0.22)',
-    borderRadius: 12,
-    padding: '14px 16px',
-    marginBottom: 14,
+    borderRadius: 10,
+    padding: '12px 14px',
+    marginBottom: 10,
     boxShadow: '0 6px 24px rgba(0,0,0,0.28)',
   },
   panelTight: {
     background: 'linear-gradient(145deg,#1e293b 0%,#0f172a 100%)',
     border: '1px solid rgba(148,163,184,0.22)',
     borderRadius: 10,
-    padding: '10px 12px',
-    marginBottom: 14,
+    padding: '9px 10px',
+    marginBottom: 0,
     boxShadow: '0 4px 16px rgba(0,0,0,0.22)',
   },
-  row: { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' },
+  row: { display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' },
+  panelHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 8,
+  },
+  panelMeta: {
+    color: '#94a3b8',
+    fontSize: '0.72rem',
+    lineHeight: 1.4,
+    textAlign: 'right' as const,
+  },
   btn: {
     cursor: 'pointer',
     border: '1px solid rgba(56,189,248,0.45)',
     background: 'rgba(56,189,248,0.12)',
     color: '#7dd3fc',
-    padding: '6px 12px',
+    padding: '5px 10px',
     borderRadius: 8,
-    fontSize: '0.8rem',
+    fontSize: '0.76rem',
   },
   btnGhost: {
     cursor: 'pointer',
     border: '1px solid rgba(148,163,184,0.35)',
     background: 'transparent',
     color: '#cbd5e1',
-    padding: '6px 12px',
+    padding: '5px 10px',
     borderRadius: 8,
-    fontSize: '0.8rem',
+    fontSize: '0.76rem',
   },
   btnLink: {
     cursor: 'pointer',
@@ -97,18 +138,18 @@ const styles: Record<string, React.CSSProperties> = {
     fontFamily: 'ui-monospace,SFMono-Regular,Consolas,monospace',
     resize: 'vertical' as const,
   },
-  err: { color: '#fca5a5', fontSize: '0.8rem', marginTop: 6 },
-  table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: '0.82rem' },
+  err: { color: '#fca5a5', fontSize: '0.76rem', marginTop: 6 },
+  table: { width: '100%', borderCollapse: 'collapse' as const, fontSize: '0.78rem' },
   th: {
     textAlign: 'left' as const,
-    padding: '8px 6px',
+    padding: '6px 5px',
     borderBottom: '1px solid rgba(148,163,184,0.22)',
     color: '#94a3b8',
     fontWeight: 500,
-    fontSize: '0.78rem',
+    fontSize: '0.74rem',
   },
   td: {
-    padding: '8px 6px',
+    padding: '6px 5px',
     borderBottom: '1px solid rgba(30,41,59,0.85)',
     verticalAlign: 'top' as const,
   },
@@ -122,16 +163,68 @@ const styles: Record<string, React.CSSProperties> = {
     background: 'rgba(167,139,250,0.2)',
     color: '#ddd6fe',
   },
+  badgeOther: {
+    display: 'inline-block',
+    padding: '1px 6px',
+    borderRadius: 999,
+    fontSize: '0.65rem',
+    marginRight: 4,
+    marginBottom: 2,
+    background: 'rgba(248,113,113,0.12)',
+    color: '#fca5a5',
+  },
   hit: { fontVariantNumeric: 'tabular-nums' as const, fontWeight: 700, color: '#fbbf24' },
   card: {
     border: '1px solid rgba(148,163,184,0.18)',
-    borderRadius: 12,
-    padding: '12px 14px',
+    borderRadius: 10,
+    padding: '10px 12px',
     background: 'rgba(15,23,42,0.6)',
   },
   cardTitle: { fontSize: '0.95rem', fontWeight: 600, marginBottom: 2, color: '#f1f5f9' },
   muted: { color: '#64748b', fontSize: '0.75rem' },
-  hint: { color: '#64748b', fontSize: '0.72rem', marginTop: 6, lineHeight: 1.45 },
+  hint: { color: '#64748b', fontSize: '0.7rem', marginTop: 6, lineHeight: 1.4 },
+  rulesGrid: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: 8,
+  },
+  ruleTabs: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: 6,
+  },
+  ruleTabButton: {
+    cursor: 'pointer',
+    border: '1px solid rgba(51,65,85,0.75)',
+    background: 'rgba(15,23,42,0.55)',
+    color: '#94a3b8',
+    padding: '4px 10px',
+    borderRadius: 999,
+    fontSize: '0.74rem',
+    lineHeight: 1.35,
+  },
+  ruleTabButtonActive: {
+    border: '1px solid rgba(56,189,248,0.6)',
+    background: 'rgba(56,189,248,0.16)',
+    color: '#7dd3fc',
+  },
+  rulePanel: {
+    background: 'rgba(15,23,42,0.45)',
+    border: '1px solid rgba(51,65,85,0.5)',
+    borderRadius: 8,
+    padding: '8px 9px',
+  },
+  ruleTitle: {
+    fontSize: '0.76rem',
+    fontWeight: 600,
+    color: '#e2e8f0',
+    marginBottom: 6,
+  },
+  ruleChipRow: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: 5,
+  },
   ruleChip: {
     display: 'inline-block',
     margin: '2px 4px 2px 0',
@@ -141,25 +234,40 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: '0.72rem',
     color: '#cbd5e1',
   },
+  ruleChipButton: {
+    cursor: 'pointer',
+    border: '1px solid rgba(51,65,85,0.75)',
+    background: 'rgba(30,41,59,0.6)',
+    color: '#cbd5e1',
+    padding: '3px 8px',
+    borderRadius: 999,
+    fontSize: '0.72rem',
+    lineHeight: 1.35,
+  },
+  ruleChipButtonActive: {
+    border: '1px solid rgba(56,189,248,0.6)',
+    background: 'rgba(56,189,248,0.16)',
+    color: '#7dd3fc',
+  },
   select: {
     width: '100%',
     maxWidth: 420,
-    padding: '8px 10px',
+    padding: '6px 9px',
     borderRadius: 8,
     border: '1px solid rgba(148,163,184,0.32)',
     background: 'rgba(15,23,42,0.95)',
     color: '#e2e8f0',
-    fontSize: '0.88rem',
-    marginBottom: 10,
+    fontSize: '0.8rem',
+    marginBottom: 0,
   },
   summaryGrid: {
     display: 'grid',
     gridTemplateColumns: '1fr 1fr',
-    gap: '6px 16px',
-    fontSize: '0.8rem',
-    lineHeight: 1.55,
+    gap: '5px 12px',
+    fontSize: '0.78rem',
+    lineHeight: 1.45,
     color: '#cbd5e1',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   summaryStrong: { color: '#f1f5f9', fontWeight: 600 },
   effTag: {
@@ -178,10 +286,10 @@ const styles: Record<string, React.CSSProperties> = {
     border: '1px solid rgba(51,65,85,0.55)',
     borderRadius: 10,
     background: 'rgba(15,23,42,0.45)',
-    padding: '8px 6px',
+    padding: '7px 5px',
     display: 'flex',
     flexDirection: 'column' as const,
-    gap: 6,
+    gap: 5,
   },
   slotColHead: {
     fontSize: '0.72rem',
@@ -203,11 +311,11 @@ const styles: Record<string, React.CSSProperties> = {
   },
   relicCard: {
     borderRadius: 8,
-    padding: '6px 6px',
+    padding: '5px 6px',
     background: 'rgba(30,41,59,0.55)',
     border: '1px solid rgba(71,85,105,0.35)',
-    fontSize: '0.7rem',
-    lineHeight: 1.35,
+    fontSize: '0.68rem',
+    lineHeight: 1.32,
   },
   relicSet: {
     color: '#e2e8f0',
@@ -218,6 +326,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'block',
   },
   relicMeta: { color: '#64748b', marginTop: 2, fontSize: '0.65rem' },
+  relicOwner: { color: '#94a3b8', marginTop: 2, fontSize: '0.65rem' },
   relicHits: {
     marginTop: 4,
     display: 'flex',
@@ -233,6 +342,12 @@ const styles: Record<string, React.CSSProperties> = {
     maxHeight: '2.8em',
     overflow: 'hidden',
     lineHeight: 1.4,
+  },
+  effectiveList: {
+    display: 'flex',
+    flexWrap: 'wrap' as const,
+    gap: 4,
+    marginTop: 4,
   },
 };
 
@@ -293,6 +408,8 @@ function RelicSlotCard({
       <div>
         {rel.matchReason === 'rule' ? (
           <span style={{ ...styles.badge, background: 'rgba(56,189,248,0.12)', color: '#7dd3fc' }}>仓</span>
+        ) : rel.matchReason === 'other_equipped' ? (
+          <span style={styles.badgeOther}>他装</span>
         ) : (
           <span style={styles.badge}>装</span>
         )}
@@ -307,6 +424,9 @@ function RelicSlotCard({
         {rel.mainStat ? translateStatKey(rel.mainStat) : '—'}
         {rel.setId ? ` · #${rel.setId}` : ''}
       </div>
+      {rel.matchReason === 'other_equipped' && rel.ownerCharacterLabel ? (
+        <div style={styles.relicOwner}>当前装备：{rel.ownerCharacterLabel}</div>
+      ) : null}
       {rel.subStats?.length ? (
         <div style={styles.subWrap}>
           {rel.subStats.map((s, idx) => {
@@ -357,6 +477,8 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
   const [farmRows, setFarmRows] = useState<SetFarmRow[] | null>(null);
   const [selectedKey, setSelectedKey] = useState<string>('');
   const [jsonEditorOpen, setJsonEditorOpen] = useState(false);
+  const [activeTopTab, setActiveTopTab] = useState<'import' | 'farm' | 'rules'>('import');
+  const [activeRuleGroup, setActiveRuleGroup] = useState<string>('');
 
   const runParse = useCallback(() => {
     setError(null);
@@ -461,6 +583,13 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
   }, [displayBoxes]);
 
   const jsonSnippetLen = text.length;
+  const selectedBoxKey = selectedBox ? boxKey(selectedBox) : selectedKey;
+  const selectedEntryId = selectedBox?.entryId ?? selectedKey.split('::')[0] ?? '';
+
+  useEffect(() => {
+    if (!selectedEntryId) return;
+    setActiveRuleGroup(selectedEntryId);
+  }, [selectedEntryId]);
 
   return (
     <div style={styles.wrap}>
@@ -470,137 +599,230 @@ export default function StarRailRelicDashboard({ characterRules }: StarRailRelic
         <code style={{ color: '#fbbf24' }}>count</code> 之和。
       </p>
 
-      <div style={{display: 'grid',gridTemplateColumns: '1fr 1fr 1fr 1fr',gap: '8px',}}> 
-
-        <div style={{...styles.panelTight,gridColumn: 1}}>
-          <div style={{ ...styles.row, justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={styles.row}>
-              <label style={styles.btn}>
-                选择文件
-                <input type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onFile} />
-              </label>
-              <button type="button" style={styles.btnGhost} onClick={runParse}>
-                解析刷新
+      <div style={styles.topGrid}>
+        <div style={styles.panelTight}>
+          <div style={styles.panelHeader}>
+            <div>
+              <div style={styles.cardTitle}>工作区</div>
+              <div style={styles.hint}>导入 JSON，或在这里切换查看集体刷取与内容规则。</div>
+            </div>
+            <div style={styles.tabBar}>
+              <button
+                type="button"
+                style={{
+                  ...styles.tabButton,
+                  ...(activeTopTab === 'import' ? styles.tabButtonActive : {}),
+                }}
+                onClick={() => setActiveTopTab('import')}
+              >
+                导入数据
               </button>
               <button
                 type="button"
-                style={styles.btnGhost}
-                onClick={() =>
-                  setText(characterRules.length > 0 ? '{"source":"reliquary_archiver","version":4,"relics":[]}' : SAMPLE_JSON)
-                }
+                style={{
+                  ...styles.tabButton,
+                  ...(activeTopTab === 'farm' ? styles.tabButtonActive : {}),
+                }}
+                onClick={() => setActiveTopTab('farm')}
               >
-                清空
+                集体刷取
+              </button>
+              <button
+                type="button"
+                style={{
+                  ...styles.tabButton,
+                  ...(activeTopTab === 'rules' ? styles.tabButtonActive : {}),
+                }}
+                onClick={() => setActiveTopTab('rules')}
+              >
+                内容规则
               </button>
             </div>
-            <button type="button" style={styles.btnLink} onClick={() => setJsonEditorOpen((o) => !o)}>
-              {jsonEditorOpen ? '收起 JSON' : `展开粘贴 JSON（${jsonSnippetLen} 字）`}
-            </button>
           </div>
-          {jsonEditorOpen ? (
-            <textarea
-              style={{ ...styles.textareaSm, marginTop: 8 }}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              spellCheck={false}
-            />
-          ) : null}
-          {error ? <div style={styles.err}>{error}</div> : null}
-          {!jsonEditorOpen ? (
-            <p style={styles.hint}>装：已装备；仓：仓库匹配；库：未绑定。六列对应六部位。</p>
-          ) : null}
-        </div>
 
-        <div style={{...styles.panelTight,gridColumn: "2/5"}}>
-          <div style={{ ...styles.row, justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ ...styles.cardTitle, marginBottom: 0 }}>内容规则</span>
-            <span style={styles.muted}>{characterRules.length ? `${characterRules.length} 名角色` : '未配置'}</span>
-          </div>
-          {characterRules.length === 0 ? (
-            <p style={styles.hint}>编辑 src/data/star-rail-relic-rules.json（数组里每项一名角色）后重新构建。</p>
+          {activeTopTab === 'import' ? (
+            <>
+              <div style={{ ...styles.row, justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={styles.row}>
+                  <label style={styles.btn}>
+                    选择文件
+                    <input type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onFile} />
+                  </label>
+                  <button type="button" style={styles.btnGhost} onClick={runParse}>
+                    解析刷新
+                  </button>
+                  <button
+                    type="button"
+                    style={styles.btnGhost}
+                    onClick={() =>
+                      setText(characterRules.length > 0 ? '{"source":"reliquary_archiver","version":4,"relics":[]}' : SAMPLE_JSON)
+                    }
+                  >
+                    清空
+                  </button>
+                </div>
+                <button type="button" style={styles.btnLink} onClick={() => setJsonEditorOpen((o) => !o)}>
+                  {jsonEditorOpen ? '收起 JSON' : '展开粘贴 JSON'}
+                </button>
+              </div>
+              <div style={{ ...styles.muted, marginTop: 4 }}>{jsonEditorOpen ? '已展开编辑器' : `当前 ${jsonSnippetLen} 字`}</div>
+              {jsonEditorOpen ? (
+                <textarea
+                  style={{ ...styles.textareaSm, marginTop: 8 }}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  spellCheck={false}
+                />
+              ) : null}
+              {error ? <div style={styles.err}>{error}</div> : null}
+              {!jsonEditorOpen ? (
+                <p style={styles.hint}>装：当前角色已装备；他装：别的角色已装备；仓：仓库。六列对应六部位。</p>
+              ) : null}
+            </>
+          ) : activeTopTab === 'farm' ? (
+            <>
+              <div style={{ ...styles.row, justifyContent: 'space-between', marginBottom: 6 }}>
+                <span style={styles.hint}>按套装聚合需求、库存质量和建议词条。</span>
+                <span style={styles.panelMeta}>{displayFarm.length} 条记录</span>
+              </div>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>套装</th>
+                      <th style={styles.th}>类型</th>
+                      <th style={styles.th}>角色数</th>
+                      <th style={styles.th}>方案数</th>
+                      <th style={styles.th}>件数</th>
+                      <th style={styles.th}>低/均/高</th>
+                      <th style={styles.th}>建议词条</th>
+                      <th style={styles.th}>说明</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayFarm.map((r) => (
+                      <tr key={`${r.kind}-${r.setName}`}>
+                        <td style={styles.td}>
+                          {translateRelicSet(r.setName)}
+                          <div style={{ ...styles.muted, fontSize: '0.68rem', marginTop: 2 }}>{r.setName}</div>
+                        </td>
+                        <td style={styles.td}>{r.kind === 'planar' ? '位面' : '隧洞'}</td>
+                        <td style={styles.td}>{r.demandCharacters}</td>
+                        <td style={styles.td}>{r.demandLoadouts}</td>
+                        <td style={styles.td}>{r.ownedCount}</td>
+                        <td style={styles.td}>
+                          {r.ownedCount === 0 ? (
+                            <span style={{ color: '#fca5a5' }}>—</span>
+                          ) : (
+                            <>
+                              <span style={styles.hit}>{r.minHit}</span>
+                              <span style={styles.muted}> / </span>
+                              <span style={styles.hit}>{r.avgHit != null ? r.avgHit.toFixed(1) : '—'}</span>
+                              <span style={styles.muted}> / </span>
+                              <span style={styles.hit}>{r.maxHit}</span>
+                            </>
+                          )}
+                        </td>
+                        <td style={styles.td}>
+                          {r.effectiveSubstats.length ? (
+                            <div style={styles.effectiveList}>
+                              {r.effectiveSubstats.map((token) => (
+                                <span key={`${r.kind}-${r.setName}-${token}`} style={styles.effTag}>
+                                  {translateStatKey(token)}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <span style={styles.muted}>—</span>
+                          )}
+                        </td>
+                        <td style={styles.td}>{r.label}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           ) : (
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 12px' }}>
-              {characterRules.map((r) => (
-                <span key={r.entryId} style={{ fontSize: '0.78rem', color: '#cbd5e1' }}>
-                  <strong style={{ color: '#e2e8f0' }}>{r.displayName ?? r.characterId}</strong>
-                  {/* <span style={styles.muted}> #{r.characterId}</span> */}
-                  {r.loadouts.map((lo) => (
-                    <span key={lo.id} style={styles.ruleChip}>
-                      {lo.name}
-                    </span>
-                  ))}
+            <>
+              <div style={{ ...styles.row, justifyContent: 'space-between', marginBottom: 8 }}>
+                <span style={styles.hint}>在这里切换角色与方案，遗器盒会同步更新。</span>
+                <span style={styles.panelMeta}>
+                  {characterRules.length ? `${characterRules.length} 名角色 / ${displayBoxes.length} 套方案` : '未配置规则'}
                 </span>
-              ))}
-            </div>
+              </div>
+              {characterRules.length === 0 ? (
+                <p style={styles.hint}>编辑 src/data/star-rail-relic-rules.json（数组里每项一名角色）后重新构建。</p>
+              ) : (
+                <div style={styles.rulesGrid}>
+                  <div style={styles.ruleTabs}>
+                    {characterRules.map((r) => (
+                      <button
+                        key={r.entryId}
+                        type="button"
+                        style={{
+                          ...styles.ruleTabButton,
+                          ...(r.entryId === activeRuleGroup ? styles.ruleTabButtonActive : {}),
+                        }}
+                        onClick={() => setActiveRuleGroup(r.entryId)}
+                      >
+                        {(r.displayName ?? r.characterId) + ` · ${r.loadouts.length}`}
+                      </button>
+                    ))}
+                  </div>
+                  {characterRules
+                    .filter((r) => r.entryId === activeRuleGroup)
+                    .map((r) => (
+                      <div key={r.entryId} style={styles.rulePanel}>
+                        <div style={styles.ruleTitle}>{r.displayName ?? r.characterId}</div>
+                        <div style={styles.ruleChipRow}>
+                          {r.loadouts.map((lo) => {
+                            const key = `${r.entryId}::${lo.id}`;
+                            const active = key === selectedBoxKey;
+                            return (
+                              <button
+                                key={lo.id}
+                                type="button"
+                                style={{
+                                  ...styles.ruleChipButton,
+                                  ...(active ? styles.ruleChipButtonActive : {}),
+                                }}
+                                onClick={() => setSelectedKey(key)}
+                              >
+                                {lo.name}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </>
           )}
         </div>
-
-      </div>
-      <div style={styles.panel}>
-        <h2 style={{ ...styles.cardTitle, marginBottom: 10 }}>集体刷取参考</h2>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th style={styles.th}>套装</th>
-                <th style={styles.th}>类型</th>
-                <th style={styles.th}>角色数</th>
-                <th style={styles.th}>方案数</th>
-                <th style={styles.th}>件数</th>
-                <th style={styles.th}>低/均/高</th>
-                <th style={styles.th}>说明</th>
-              </tr>
-            </thead>
-            <tbody>
-              {displayFarm.map((r) => (
-                <tr key={`${r.kind}-${r.setName}`}>
-                  <td style={styles.td}>
-                    {translateRelicSet(r.setName)}
-                    <div style={{ ...styles.muted, fontSize: '0.68rem', marginTop: 2 }}>{r.setName}</div>
-                  </td>
-                  <td style={styles.td}>{r.kind === 'planar' ? '位面' : '隧洞'}</td>
-                  <td style={styles.td}>{r.demandCharacters}</td>
-                  <td style={styles.td}>{r.demandLoadouts}</td>
-                  <td style={styles.td}>{r.ownedCount}</td>
-                  <td style={styles.td}>
-                    {r.ownedCount === 0 ? (
-                      <span style={{ color: '#fca5a5' }}>—</span>
-                    ) : (
-                      <>
-                        <span style={styles.hit}>{r.minHit}</span>
-                        <span style={styles.muted}> / </span>
-                        <span style={styles.hit}>{r.avgHit != null ? r.avgHit.toFixed(1) : '—'}</span>
-                        <span style={styles.muted}> / </span>
-                        <span style={styles.hit}>{r.maxHit}</span>
-                      </>
-                    )}
-                  </td>
-                  <td style={styles.td}>{r.label}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
       </div>
 
-      <h2 style={{ ...styles.cardTitle, margin: '6px 0 8px' }}>遗器盒</h2>
+      <h2 style={{ ...styles.cardTitle, margin: '4px 0 6px' }}>遗器盒</h2>
       {displayBoxes.length > 0 ? (
         <>
-          <label style={{ ...styles.muted, display: 'block', marginBottom: 4, fontSize: '0.78rem' }}>角色与方案</label>
-          <select
-            style={styles.select}
-            value={selectedKey}
-            onChange={(e) => setSelectedKey(e.target.value)}
-            aria-label="选择角色与遗器方案"
-          >
-            {selectOptions.map((o) => (
-              <option key={o.key} value={o.key}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-
           {selectedBox && grouped ? (
             <div style={styles.card}>
+              <div style={{ ...styles.row, justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={styles.cardTitle}>当前方案</div>
+                <select
+                  style={{ ...styles.select, maxWidth: 280 }}
+                  value={selectedKey}
+                  onChange={(e) => setSelectedKey(e.target.value)}
+                  aria-label="选择角色与遗器方案"
+                >
+                  {selectOptions.map((o) => (
+                    <option key={o.key} value={o.key}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div style={styles.summaryGrid}>
                 <div>
                   <span style={styles.summaryStrong}>适用角色</span> {selectedBox.characterLabel}
