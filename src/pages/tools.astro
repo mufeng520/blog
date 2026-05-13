@@ -1,23 +1,22 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import projects from '../data/borrowed-projects.json';
+import tools from '../data/tools.json';
 
-type BorrowedProject = {
+type ToolItem = {
   name: string;
   url: string;
-  author: string;
-  category: string;
+  type: string;
+  status: string;
   description: string;
-  highlights?: string[];
+  tags?: string[];
 };
 
-const items = projects as BorrowedProject[];
-const categories = Array.from(new Set(items.map((item) => item.category)));
+const items = tools as ToolItem[];
 ---
 
-<BaseLayout title="他山之石 - 木风">
+<BaseLayout title="工具箱 - 木风">
   <style>
-    .borrow-page {
+    .tools-page {
       display: grid;
       gap: 22px;
       padding: 8px 0 28px;
@@ -93,29 +92,13 @@ const categories = Array.from(new Set(items.map((item) => item.category)));
       padding: 0 4px;
     }
 
-    .category-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 16px;
-      padding: 0 4px;
-    }
-
-    .category-chip {
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: rgba(105, 179, 143, 0.1);
-      color: #4d9273;
-      font-size: 0.78rem;
-    }
-
-    .project-grid {
+    .tool-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 14px;
     }
 
-    .project-card {
+    .tool-card {
       display: grid;
       gap: 10px;
       padding: 18px;
@@ -124,27 +107,32 @@ const categories = Array.from(new Set(items.map((item) => item.category)));
       border: 1px solid rgba(142, 175, 156, 0.16);
     }
 
-    .project-meta {
+    .tool-meta {
       display: flex;
       justify-content: space-between;
       gap: 12px;
       align-items: center;
     }
 
-    .project-category {
+    .tool-type,
+    .tool-status {
       padding: 5px 10px;
       border-radius: 999px;
-      background: rgba(105, 179, 143, 0.12);
-      color: #4d9273;
       font-size: 0.74rem;
     }
 
-    .project-author {
-      color: #90a59a;
-      font-size: 0.76rem;
+    .tool-type {
+      background: rgba(105, 179, 143, 0.12);
+      color: #4d9273;
     }
 
-    .project-name {
+    .tool-status {
+      background: rgba(255,255,255,0.76);
+      border: 1px solid rgba(142, 175, 156, 0.14);
+      color: #6c7f75;
+    }
+
+    .tool-name {
       font-size: 1.02rem;
       font-weight: 700;
       color: #24332d;
@@ -152,23 +140,23 @@ const categories = Array.from(new Set(items.map((item) => item.category)));
       line-height: 1.45;
     }
 
-    .project-name:hover {
+    .tool-name:hover {
       color: #4d9273;
     }
 
-    .project-desc {
+    .tool-desc {
       color: #4f6258;
       font-size: 0.9rem;
       line-height: 1.8;
     }
 
-    .highlight-list {
+    .tag-list {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
     }
 
-    .highlight-item {
+    .tag-item {
       padding: 5px 10px;
       border-radius: 999px;
       background: rgba(255,255,255,0.76);
@@ -178,42 +166,37 @@ const categories = Array.from(new Set(items.map((item) => item.category)));
     }
   </style>
 
-  <div class="borrow-page">
+  <div class="tools-page">
     <section class="hero">
-      <div class="eyebrow">Borrowed Projects · 他山之石</div>
-      <h1>把别人做得很好的项目认真收藏起来</h1>
+      <div class="eyebrow">Toolbox · 工具箱</div>
+      <h1>把自己真正写过、会继续维护的工具放在这里</h1>
       <p>
-        这里不是简单地堆链接，而是记录那些真正让我受启发的项目。可能是设计气质、结构思路、交互手感，也可能只是某个细节刚好打中了我。
+        这里收的不是概念，而是我已经做出来、或者会持续打磨的东西。它们可能不大，但至少解决过我自己的问题。
       </p>
       <div class="hero-tags">
-        <span class="hero-tag">共 {items.length} 个项目</span>
-        <span class="hero-tag">按灵感整理</span>
-        <span class="hero-tag">持续补充</span>
+        <span class="hero-tag">共 {items.length} 个工具</span>
+        <span class="hero-tag">直接可访问</span>
+        <span class="hero-tag">持续完善中</span>
       </div>
     </section>
 
     <section class="section-card">
-      <div class="section-title">分类索引</div>
-      <div class="category-row">
-        {categories.map((category) => (
-          <span class="category-chip">{category}</span>
-        ))}
-      </div>
-      <div class="project-grid">
+      <div class="section-title">我的工具</div>
+      <div class="tool-grid">
         {items.map((item) => (
-          <article class="project-card">
-            <div class="project-meta">
-              <span class="project-category">{item.category}</span>
-              <span class="project-author">@ {item.author}</span>
+          <article class="tool-card">
+            <div class="tool-meta">
+              <span class="tool-type">{item.type}</span>
+              <span class="tool-status">{item.status}</span>
             </div>
-            <a class="project-name" href={item.url} target="_blank" rel="noopener noreferrer">
+            <a class="tool-name" href={item.url}>
               {item.name}
             </a>
-            <p class="project-desc">{item.description}</p>
-            {item.highlights?.length ? (
-              <div class="highlight-list">
-                {item.highlights.map((point) => (
-                  <span class="highlight-item">{point}</span>
+            <p class="tool-desc">{item.description}</p>
+            {item.tags?.length ? (
+              <div class="tag-list">
+                {item.tags.map((tag) => (
+                  <span class="tag-item">#{tag}</span>
                 ))}
               </div>
             ) : null}

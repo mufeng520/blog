@@ -1,6 +1,8 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import { calculateReadingTime } from '../components/lib/reading-time';
+import '../styles/markdown-fresh.css';
+import WalineComments from '../components/WalineComments.astro';
 
 const { frontmatter, rawContent } = Astro.props as { frontmatter: Record<string, unknown>; rawContent?: (() => string) | string };
 const title = frontmatter.title || '文章';
@@ -128,59 +130,6 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       color: #4d9273 !important;
       font-weight: 500;
     }
-
-    /* 响应式媒体查询 - 大屏幕 */
-    @media (min-width: 768px) { 
-    }
-
-    /* 目录链接装饰点 - 悬停时显示 */
-    .toc-link::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: #d1d5da;
-      opacity: 0;
-      transition: all 0.3s ease;
-    }
-
-    /* 目录链接悬停效果 - 渐变背景 */
-    :global(.toc-link):hover {
-      background: linear-gradient(90deg, rgba(0, 168, 232, 0.08) 0%, transparent 100%);
-      color: #00a8e8;
-      transform: translateX(4px);
-      border-left-color: #00a8e8;
-    }
-
-    /* 目录链接悬停时显示装饰点 */
-    .toc-link:hover::before {
-      opacity: 1;
-      background: #00a8e8;
-    }
-
-    /* 目录链接激活状态 - 渐变背景和阴影 */
-    .toc-link.active {
-      background: linear-gradient(90deg, rgba(0, 168, 232, 0.15) 0%, rgba(0, 168, 232, 0.05) 100%);
-      color: #00a8e8;
-      font-weight: 600;
-      border-left: 3px solid #00a8e8;
-      padding-left: 11px;
-      box-shadow: 0 2px 8px rgba(0, 168, 232, 0.2);
-      transform: translateX(2px);
-    }
-
-    /* 目录链接激活时显示装饰点 */
-    :global(.toc-link.active::before) {
-      opacity: 1;
-      background: #00a8e8;
-      width: 6px;
-      height: 6px;
-    } 
-
 
     /* ========================================
        目录折叠功能样式
@@ -316,116 +265,6 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       gap: 5px;
     }
 
-    /* ========================================
-       文章内容样式
-       ======================================== */
-
-    /* 文章内容容器 */
-    .post-content {
-      color: #31423a;
-      line-height: 1.9;
-      font-size: 1.02rem;
-    }
-
-    /* 文章内一级标题样式 */
-    .post-content :global(h1) {
-      font-size: 1.95rem;
-      font-weight: 700;
-      color: #24332d;
-      margin-top: 42px;
-      margin-bottom: 18px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid rgba(105, 179, 143, 0.2);
-    }
-
-    /* 文章内二级标题样式 */
-    .post-content :global(h2) {
-      font-size: 1.55rem;
-      font-weight: 700;
-      color: #24332d;
-      margin-top: 34px;
-      margin-bottom: 16px;
-      padding-bottom: 0;
-      border-bottom: none;
-    }
-
-    /* 文章内三级标题样式 */
-    .post-content :global(h3) {
-      font-size: 1.3rem;
-      font-weight: 600;
-      color: #333;
-      margin-top: 30px;
-      margin-bottom: 15px;
-    }
-
-    /* 文章内四级标题样式 */
-    .post-content :global(h4) {
-      font-size: 1.1rem;
-      font-weight: 600;
-      color: #333;
-      margin-top: 25px;
-      margin-bottom: 12px;
-    }
-
-    .post-content :global(h5),
-    .post-content :global(h6) {
-      font-size: 1rem;
-      font-weight: 600;
-      color: #333;
-      margin-top: 20px;
-      margin-bottom: 10px;
-    }
-
-    /* 段落样式 */
-    .post-content :global(p) {
-      margin-bottom: 16px;
-      text-align: left;
-    }
-
-    /* 链接样式 */
-    .post-content :global(a) {
-      color: #4d9273;
-      text-decoration: none;
-      border-bottom: 1px solid rgba(105, 179, 143, 0.32);
-      transition: all 0.3s ease;
-    }
-
-    .post-content :global(a:hover) {
-      color: #3c7158;
-      border-bottom-color: #3c7158;
-    }
-
-    /* 列表样式 */
-    .post-content :global(ul),
-    .post-content :global(ol) {
-      margin-bottom: 16px;
-      padding-left: 25px;
-    }
-
-    .post-content :global(li) {
-      margin-bottom: 8px;
-      line-height: 1.6;
-    }
-
-    .post-content :global(ul li) {
-      list-style-type: disc;
-      position: static;
-    }
-
-    .post-content :global(ul li::before) {
-      display: none;
-    }
-
-    /* 引用样式 */
-    .post-content :global(blockquote) {
-      border-left: 4px solid #8ec7aa;
-      background: rgba(142, 199, 170, 0.12);
-      padding: 18px 20px;
-      margin: 20px 0;
-      border-radius: 0 16px 16px 0;
-      color: #51655b;
-    }
-
     /* 过期通知样式 */
     .post-expire {
       background: #f8f8f8;
@@ -446,6 +285,28 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       margin-top: 40px;
       font-size: 0.9rem;
       color: #666;
+    }
+
+    .post-comments {
+      margin-top: 30px;
+      padding: 24px 22px;
+      border-radius: 24px;
+      background: rgba(248, 252, 249, 0.82);
+      border: 1px solid rgba(142, 175, 156, 0.16);
+    }
+
+    .post-comments-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #24332d;
+      margin-bottom: 6px;
+    }
+
+    .post-comments-desc {
+      margin-bottom: 14px;
+      color: #6c7f75;
+      font-size: 0.9rem;
+      line-height: 1.8;
     }
 
     /* 标签样式 */
@@ -473,177 +334,6 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       color: #333;
     }
 
-    /* 代码块样式 - 参考第一张图的浅色风格 */
-    .post-content :global(pre) {
-      background: #f3f8f4;
-      border: 1px solid rgba(142, 175, 156, 0.2);
-      border-radius: 18px;
-      padding: 18px 20px;
-      overflow-x: auto;
-      margin: 25px 0;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
-    }
-
-    .post-content :global(code) {
-      background: rgba(105, 179, 143, 0.12);
-      color: #416d58;
-      padding: 3px 8px;
-      border-radius: 6px;
-      font-size: 0.9em;
-      font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    }
-
-    .post-content :global(pre code) {
-      background: transparent;
-      color: #333;
-      padding: 0;
-      border-radius: 0;
-      font-size: inherit;
-    }
-
-    /* 参考figure代码块样式 */
-    .post-content :global(figure.highlight) {
-      margin: 25px 0;
-      border-radius: 18px;
-      overflow: hidden;
-      box-shadow: 0 18px 36px rgba(89, 124, 106, 0.08);
-    }
-
-    .post-content :global(figure.highlight table) {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 0;
-      background: #f3f8f4;
-    }
-
-    .post-content :global(figure.highlight tbody) {
-      margin: 0;
-      padding: 0;
-    }
-
-    .post-content :global(figure.highlight tr) {
-      margin: 0;
-      padding: 0;
-    }
-
-    .post-content :global(figure.highlight td.code) {
-      padding: 0;
-      border: none;
-    }
-
-    .post-content :global(figure.highlight pre) {
-      margin: 0;
-      border: none;
-      border-radius: 0;
-      box-shadow: none;
-      background: #f3f8f4;
-    }
-
-    /* 代码高亮样式 - 参考第一张图 */
-    .post-content :global(.punctuation) {
-      color: #999;
-    }
-
-    .post-content :global(.attr) {
-      color: #d17a22;
-    }
-
-    .post-content :global(.string) {
-      color: #2c70b3;
-    }
-
-    /* 浅色主题代码高亮 */
-    .post-content :global(.astro-code) {
-      background: #f3f8f4 !important;
-      color: #333 !important;
-    }
-
-    .post-content :global(.astro-code github-dark) {
-      background: #f3f8f4 !important;
-      color: #333 !important;
-    }
-
-    /* 引用样式 */
-    .post-content :global(blockquote) {
-      border-left: 4px solid #00a8e8;
-      background: rgba(0, 168, 232, 0.06);
-      padding: 20px 25px;
-      margin: 25px 0;
-      border-radius: 0 12px 12px 0;
-      font-style: italic;
-      color: #555;
-    }
-
-    .post-content :global(blockquote p) {
-      margin-bottom: 0;
-    }
-
-    /* 图片样式 */
-    .post-content :global(img) {
-      max-width: 100%;
-      height: auto;
-      border-radius: 18px;
-      box-shadow: 0 18px 36px rgba(89, 124, 106, 0.08);
-      margin: 30px auto;
-      display: block;
-    }
-
-    /* 表格样式 */
-    .post-content :global(table) {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 25px 0;
-      background: #fff;
-      border-radius: 12px;
-      overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-      border: 1px solid #eee;
-    }
-
-    .post-content :global(th) {
-      background: rgba(0, 168, 232, 0.1);
-      padding: 12px 15px;
-      text-align: left;
-      font-weight: 600;
-      color: #333;
-    }
-
-    .post-content :global(td) {
-      padding: 12px 15px;
-      border-top: 1px solid #eee;
-    }
-
-    .post-content :global(tr:hover) {
-      background: rgba(0, 168, 232, 0.04);
-    }
-
-    /* 水平分割线 */
-    .post-content :global(hr) {
-      border: none;
-      border-top: 2px solid #eee;
-      margin: 40px 0;
-      border-radius: 2px;
-    }
-
-    /* 强调样式 */
-    .post-content :global(strong) {
-      color: #333;
-      font-weight: 600;
-    }
-
-    .post-content :global(em) {
-      color: #0077b6;
-      font-style: italic;
-    }
-
-    /* 数学公式样式（KaTeX/MathJax） */
-    .post-content :global(.math),
-    .post-content :global(.katex) {
-      font-size: 1.1em;
-    }
-
     @media (max-width: 1200px) {
       .toc-sidebar {
         display: none;
@@ -661,22 +351,6 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
         font-size: 2rem;
       }
 
-      .post-content :global(h1) {
-        font-size: 1.8rem;
-      }
-
-      .post-content :global(h2) {
-        font-size: 1.5rem;
-      }
-
-      .post-content :global(h3) {
-        font-size: 1.3rem;
-      }
-
-      .post-content :global(pre) {
-        padding: 15px;
-        font-size: 0.85rem;
-      }
     } 
 
   </style>
@@ -728,6 +402,11 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       <div class="post-content" id="post-content">
         <slot />
       </div>
+      <section class="post-comments">
+        <h2 class="post-comments-title">评论区</h2>
+        <p class="post-comments-desc">如果这篇文章对你有帮助，或者你也有自己的看法，欢迎在下面继续聊。</p>
+        <WalineComments />
+      </section>
     </article>
   </div>
 

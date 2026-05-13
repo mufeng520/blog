@@ -1,0 +1,227 @@
+.post-content {
+  color: #31423a;
+  font-size: 1.02rem;
+  line-height: 1.9;
+}
+
+.post-content :global(h1),
+.post-content :global(h2),
+.post-content :global(h3),
+.post-content :global(h4),
+.post-content :global(h5),
+.post-content :global(h6) {
+  color: #24332d;
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.post-content :global(h1) {
+  font-size: 1.95rem;
+  margin: 42px 0 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(105, 179, 143, 0.22);
+}
+
+.post-content :global(h2) {
+  font-size: 1.55rem;
+  margin: 34px 0 16px;
+}
+
+.post-content :global(h3) {
+  font-size: 1.28rem;
+  margin: 28px 0 14px;
+}
+
+.post-content :global(h4) {
+  font-size: 1.08rem;
+  margin: 24px 0 12px;
+}
+
+.post-content :global(h5),
+.post-content :global(h6) {
+  font-size: 1rem;
+  margin: 20px 0 10px;
+}
+
+.post-content :global(p),
+.post-content :global(ul),
+.post-content :global(ol),
+.post-content :global(blockquote),
+.post-content :global(pre),
+.post-content :global(table),
+.post-content :global(hr) {
+  margin-bottom: 18px;
+}
+
+.post-content :global(p) {
+  text-wrap: pretty;
+}
+
+.post-content :global(a) {
+  color: #4d9273;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(105, 179, 143, 0.28);
+  transition: color 0.25s ease, border-color 0.25s ease;
+}
+
+.post-content :global(a:hover) {
+  color: #396b54;
+  border-bottom-color: #396b54;
+}
+
+.post-content :global(ul),
+.post-content :global(ol) {
+  padding-left: 1.35rem;
+}
+
+.post-content :global(li) {
+  margin-bottom: 0.55rem;
+  color: #41544a;
+}
+
+.post-content :global(li)::marker {
+  color: #69b38f;
+}
+
+.post-content :global(strong) {
+  color: #24332d;
+  font-weight: 700;
+}
+
+.post-content :global(em) {
+  color: #4d9273;
+}
+
+.post-content :global(blockquote) {
+  padding: 18px 20px;
+  border-left: 4px solid #8ec7aa;
+  border-radius: 0 16px 16px 0;
+  background: rgba(142, 199, 170, 0.12);
+  color: #4d6459;
+}
+
+.post-content :global(blockquote p:last-child) {
+  margin-bottom: 0;
+}
+
+.post-content :global(code) {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.9em;
+  padding: 3px 8px;
+  border-radius: 7px;
+  background: rgba(105, 179, 143, 0.12);
+  color: #416d58;
+}
+
+.post-content :global(pre) {
+  overflow-x: auto;
+  padding: 18px 20px;
+  border-radius: 18px;
+  border: 1px solid rgba(142, 175, 156, 0.2);
+  background: #f3f8f4;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
+.post-content :global(pre code) {
+  padding: 0;
+  background: transparent;
+  color: #31423a;
+  font-size: inherit;
+}
+
+.post-content :global(.astro-code) {
+  background: #f3f8f4 !important;
+  color: #31423a !important;
+}
+
+.post-content :global(table) {
+  width: 100%;
+  overflow: hidden;
+  border-collapse: collapse;
+  border-radius: 18px;
+  border: 1px solid rgba(142, 175, 156, 0.18);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18px 36px rgba(89, 124, 106, 0.08);
+}
+
+.post-content :global(th) {
+  padding: 12px 14px;
+  background: rgba(105, 179, 143, 0.12);
+  color: #24332d;
+  text-align: left;
+  font-weight: 700;
+}
+
+.post-content :global(td) {
+  padding: 12px 14px;
+  color: #41544a;
+  border-top: 1px solid rgba(142, 175, 156, 0.16);
+}
+
+.post-content :global(tr:hover) {
+  background: rgba(105, 179, 143, 0.05);
+}
+
+.post-content :global(img) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 30px auto;
+  border-radius: 18px;
+  box-shadow: 0 18px 36px rgba(89, 124, 106, 0.08);
+}
+
+.post-content :global(hr) {
+  border: none;
+  border-top: 1px solid rgba(142, 175, 156, 0.22);
+}
+
+.post-content :global(figure.highlight) {
+  margin: 25px 0;
+  overflow: hidden;
+  border-radius: 18px;
+  box-shadow: 0 18px 36px rgba(89, 124, 106, 0.08);
+}
+
+.post-content :global(figure.highlight table),
+.post-content :global(figure.highlight pre) {
+  margin: 0;
+  background: #f3f8f4;
+}
+
+.post-content :global(.punctuation) {
+  color: #8b9891;
+}
+
+.post-content :global(.attr) {
+  color: #b57a36;
+}
+
+.post-content :global(.string) {
+  color: #3e6ea3;
+}
+
+@media (max-width: 768px) {
+  .post-content {
+    font-size: 0.98rem;
+    line-height: 1.82;
+  }
+
+  .post-content :global(h1) {
+    font-size: 1.8rem;
+  }
+
+  .post-content :global(h2) {
+    font-size: 1.45rem;
+  }
+
+  .post-content :global(h3) {
+    font-size: 1.2rem;
+  }
+
+  .post-content :global(pre) {
+    padding: 15px 16px;
+    font-size: 0.86rem;
+  }
+}
