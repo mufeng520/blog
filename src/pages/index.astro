@@ -1,23 +1,22 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import HomeClock from '../components/HomeClock';
 import { getCollection } from 'astro:content';
 
-// 获取所有 quotes
 const allQuotes = await getCollection('quotes');
-const ruleEntries = await getCollection('starRailRelicRules');
-
-// 随机选择一条
 const randomQuote = allQuotes[Math.floor(Math.random() * allQuotes.length)];
 ---
 
-<BaseLayout title="Read in the air">
+<BaseLayout
+  title="Read in the air"
+  headerQuote={{ text: randomQuote.data.text, author: randomQuote.data.author }}
+>
 	<style>
-		.content {
-			position: relative;
-			min-height: 62vh;
-			width: 100%;
-			padding: 28px 10px 10px;
-      border-radius: 30px;
+		.hero-shell {
+      position: relative;
+      display: grid;
+      padding: 24px;
+      border-radius: 32px;
       background:
         linear-gradient(160deg, rgba(255,255,255,0.78), rgba(247,252,248,0.62)),
         radial-gradient(circle at top right, rgba(178, 218, 194, 0.45), transparent 28%);
@@ -25,45 +24,90 @@ const randomQuote = allQuotes[Math.floor(Math.random() * allQuotes.length)];
       box-shadow: 0 24px 60px rgba(89, 124, 106, 0.08);
       overflow: hidden;
 		}
-		.word-cloud {
-			position: absolute;
-			display: inline-block;
-			font-weight: 600;
-			color: #5a9076;
-			transition: all 0.28s ease;
-			text-decoration: none;
-			cursor: pointer;
-      letter-spacing: 0.04em;
-		}
-		.word-cloud:hover {
-			color: #3f715b;
-			transform: scale(1.1) !important;
-			text-shadow: 0 12px 20px rgba(105, 179, 143, 0.18);
-			z-index: 10;
-		}
-		.word-cloud a {
-			color: inherit;
-			text-decoration: none;
-		}
 
-		/* 名言展示样式 */
-		.quote-container {
-			margin-top: 20px;
-			width: 100%;
-			max-width: 720px;
-      margin-left: auto;
-      margin-right: auto;
-		}
+    .hero-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 380px);
+      gap: 24px;
+      align-items: center;
+    }
 
-		.quote-card {
-			backdrop-filter: blur(16px);
-			border-radius: 24px;
-			padding: 28px 30px;
-			text-align: center;
-      background: rgba(255,255,255,0.68);
-      border: 1px solid rgba(142, 175, 156, 0.18);
-      box-shadow: 0 22px 44px rgba(96, 135, 113, 0.1);
-		}
+    .hero-copy {
+      min-height: 426px;
+      padding: 34px 28px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(177, 220, 196, 0.26), transparent 26%),
+        linear-gradient(145deg, rgba(252,255,253,0.95), rgba(239,247,241,0.92));
+      border: 1px solid rgba(142, 175, 156, 0.16);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+    }
+
+    .visual-kicker {
+      display: inline-flex;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: rgba(105, 179, 143, 0.12);
+      color: #4d9273;
+      font-size: 0.74rem;
+      letter-spacing: 0.08em;
+    }
+
+    .visual-title {
+      margin-top: 14px;
+      font-family: "Noto Serif SC", serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1.15;
+      color: #24332d;
+    }
+
+    .visual-text {
+      margin-top: 12px;
+      color: #62776c;
+      font-size: 0.96rem;
+      line-height: 1.9;
+    }
+
+    .visual-chip-row {
+      margin-top: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .visual-chip {
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.76);
+      border: 1px solid rgba(142, 175, 156, 0.14);
+      color: #6c7f75;
+      font-size: 0.8rem;
+    }
+
+    .visual-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .visual-mini {
+      padding: 12px 10px;
+      border-radius: 18px;
+      background: rgba(248,252,249,0.9);
+      border: 1px solid rgba(142, 175, 156, 0.14);
+      color: #486355;
+      text-align: center;
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    .visual-mini strong {
+      display: block;
+      font-size: 1rem;
+      color: #24332d;
+      margin-bottom: 4px;
+    }
 
     .snake-section {
       margin-top: 24px;
@@ -90,66 +134,74 @@ const randomQuote = allQuotes[Math.floor(Math.random() * allQuotes.length)];
       background: rgba(244, 250, 246, 0.9);
     }
 
-    .quote-text {
-      font-family: "Noto Serif SC", serif;
-      font-size: clamp(1.15rem, 2vw, 1.5rem);
-      line-height: 1.8;
-      color: #24332d;
-    }
-
-    .quote-author {
-      margin-top: 14px;
-      color: #71867a;
-      font-size: 0.9rem;
-      letter-spacing: 0.08em;
+    @media (max-width: 980px) {
+      .hero-main {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 768px) {
-      .content {
-        min-height: 70vh;
-        padding: 24px 10px 20px;
+      .hero-shell {
+        padding: 18px;
+        gap: 16px;
       }
 
-      .quote-container {
-        width: 100%;
-        max-width: 100%;
-        margin-top: 16px;
-      }
-
-      .quote-card {
-        padding: 22px 20px;
-      }
-
-      .snake-section {
-        margin-top: 18px;
-        padding: 14px 14px 10px;
+      .hero-copy {
+        min-height: auto;
+        padding: 24px 20px;
       }
 		}
 	</style>
-	<div class="content">
-		<span class="word-cloud" style="font-size: 48px; top: 18%; left: 15%; transform: rotate(-15deg);">装修中（10/100）</span>
-		<span class="word-cloud" style="font-size: 32px; top: 30%; left: 50%; transform: rotate(10deg);">崩坏：星穹铁道</span>
-		<span class="word-cloud" style="font-size: 42px; top: 55%; left: 35%; transform: rotate(5deg);">感谢<a href="https://www.viki.moe/">viki</a></span>
-		<span class="word-cloud" style="font-size: 32px; top: 39%; left: 68%; transform: rotate(-7deg);">python</span>
-		<span class="word-cloud" style="font-size: 32px; top: 45%; left: 23%; transform: rotate(5deg);">工程造价</span>
-		<span class="word-cloud" style="font-size: 32px; top: 65%; left: 60%; transform: rotate(-12deg);">辅助</span>
-		
-	</div>
-  <!-- 随机名言展示 -->
-  <div class="quote-container">
-    <div class="quote-card">
-      <div class="quote-text">"{randomQuote.data.text}"</div>
-      <div class="quote-author">—— {randomQuote.data.author}</div>
-    </div>
-  </div>
 
-    <section class="snake-section">
-      <div class="snake-title">GitHub Contribution Snake</div>
-      <img
-        class="snake-image"
-        src="https://raw.githubusercontent.com/mufeng520/mufeng520.github.io/snake/snake.svg"
-        alt="GitHub contribution snake"
-        loading="lazy"
-      />
-    </section>
+  <section class="hero-shell">
+    <div class="hero-main">
+      <div class="hero-copy">
+        <div class="visual-kicker">Now Building</div>
+        <div class="visual-title">把想做的东西，一点点堆成自己的样子。</div>
+        <div class="visual-text">
+          这里先放一些正在长出来的内容。它们未必完整，但都是真的会继续做下去的部分。
+        </div>
+        <div class="visual-chip-row">
+          <span class="visual-chip">装修中 10/100</span>
+          <span class="visual-chip">崩坏：星穹铁道</span>
+          <span class="visual-chip">Python</span>
+        </div>
+        <div class="visual-grid">
+          <div class="visual-mini">
+            <strong>工程造价</strong>
+            持续记录
+          </div>
+          <div class="visual-mini">
+            <strong>辅助</strong>
+            小工具整理
+          </div>
+          <div class="visual-mini">
+            <strong>感谢 viki</strong>
+            灵感来源
+          </div>
+          <div class="visual-mini">
+            <strong>工具箱</strong>
+            继续扩充
+          </div>
+        </div>
+        <div class="visual-text" style="margin-top: 0;">
+          想法、工具、记录，都会慢慢放进来。
+        </div>
+      </div>
+
+      <div>
+        <HomeClock client:load />
+      </div>
+    </div>
+  </section>
+
+  <section class="snake-section">
+    <div class="snake-title">GitHub Contribution Snake</div>
+    <img
+      class="snake-image"
+      src="https://raw.githubusercontent.com/mufeng520/mufeng520.github.io/snake/snake.svg"
+      alt="GitHub contribution snake"
+      loading="lazy"
+    />
+  </section>
 </BaseLayout>

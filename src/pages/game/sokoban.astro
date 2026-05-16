@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import SokobanGame from '../../components/SokobanGame'
+---
+
+<BaseLayout title="推箱子 - 木风">
+  <div class="sokoban-page">
+    <SokobanGame client:load />
+  </div>
+</BaseLayout>
