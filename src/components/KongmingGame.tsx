@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { KONGMING_BOARDS, type BoardVariant, type PegMove, type PegPosition } from '../lib/kongming/boards'
+import {
+  KONGMING_BOARDS,
+  KONGMING_BOARD_LIST,
+  type BoardVariant,
+  type PegBoardDefinition,
+  type PegMove,
+  type PegPosition,
+} from '../lib/kongming/boards'
 import {
   applyMove,
   countPegs,
@@ -14,18 +21,13 @@ import {
   type PegStoredVariantState,
 } from '../lib/kongming/game'
 
-const STORAGE_KEY = 'mufeng_kongming_progress_v1'
+const STORAGE_KEY = 'mufeng_kongming_progress_v2'
 const MAX_UNDO_STEPS = 200
+const DEFAULT_VARIANT = KONGMING_BOARD_LIST[3]?.variant ?? KONGMING_BOARD_LIST[0].variant
 
 interface VariantState extends PegStoredVariantState {}
 
 interface KongmingState {
-  variant: BoardVariant
-  variants: Record<BoardVariant, VariantState>
-}
-
-interface StoredKongmingState {
-  version: 1
   variant: BoardVariant
   variants: Record<BoardVariant, VariantState>
 }
@@ -44,9 +46,9 @@ interface StoredVariantState {
 }
 
 interface StoredKongmingPayload {
-  version: 1
+  version: 2
   variant: BoardVariant
-  variants: Record<BoardVariant, StoredVariantState>
+  variants: Partial<Record<BoardVariant, StoredVariantState>>
 }
 
 const componentStyles = `
@@ -116,7 +118,7 @@ const componentStyles = `
 
   .kongming-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1.35fr) minmax(300px, 370px);
+    grid-template-columns: minmax(0, 1.38fr) minmax(320px, 390px);
     gap: 18px;
     align-items: start;
   }
@@ -153,7 +155,7 @@ const componentStyles = `
 
   .kongming-variant-switch {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     gap: 10px;
     margin-top: 18px;
   }
@@ -314,24 +316,13 @@ const componentStyles = `
     border: 1px solid rgba(142, 175, 156, 0.2);
   }
 
-  .kongming-board.cross {
+  .kongming-board {
     position: relative;
-    width: 470px;
-    height: 470px;
-  }
-
-  .kongming-board.triangle {
-    position: relative;
-    width: 420px;
-    height: 360px;
+    max-width: 100%;
   }
 
   .kongming-slot {
     position: absolute;
-    width: 54px;
-    height: 54px;
-    margin-left: -27px;
-    margin-top: -27px;
     border-radius: 50%;
     background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.9), rgba(214, 228, 217, 0.95));
     border: 1px solid rgba(124, 159, 140, 0.28);
@@ -382,7 +373,6 @@ const componentStyles = `
 
   .kongming-hole {
     position: absolute;
-    inset: 13px;
     border-radius: 50%;
     background: radial-gradient(circle at 50% 55%, rgba(130, 154, 138, 0.26), rgba(255,255,255,0));
     border: 1px dashed rgba(130, 154, 138, 0.28);
@@ -466,39 +456,15 @@ const componentStyles = `
       border-radius: 24px;
     }
 
-    .kongming-meta-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
+    .kongming-meta-grid,
     .kongming-control-grid,
     .kongming-variant-switch {
-      grid-template-columns: 1fr;
-    }
-
-    .kongming-board.cross {
-      width: 320px;
-      height: 320px;
-    }
-
-    .kongming-board.triangle {
-      width: 300px;
-      height: 250px;
-    }
-
-    .kongming-slot {
-      width: 38px;
-      height: 38px;
-      margin-left: -19px;
-      margin-top: -19px;
-    }
-
-    .kongming-hole {
-      inset: 9px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 `
 
-const STORAGE_VERSION = 1
+const STORAGE_VERSION = 2
 
 function createVariantState(variant: BoardVariant): VariantState {
   return {
@@ -512,11 +478,10 @@ function createVariantState(variant: BoardVariant): VariantState {
 
 function createInitialState(): KongmingState {
   return {
-    variant: 'cross',
-    variants: {
-      cross: createVariantState('cross'),
-      triangle: createVariantState('triangle'),
-    },
+    variant: DEFAULT_VARIANT,
+    variants: Object.fromEntries(
+      KONGMING_BOARD_LIST.map((board) => [board.variant, createVariantState(board.variant)]),
+    ) as Record<BoardVariant, VariantState>,
   }
 }
 
@@ -552,6 +517,10 @@ function isMove(value: unknown): value is PegMove {
   return typeof move.from === 'number' && typeof move.over === 'number' && typeof move.to === 'number'
 }
 
+function isBoardVariant(value: unknown): value is BoardVariant {
+  return typeof value === 'string' && value in KONGMING_BOARDS
+}
+
 function loadStoredState(): KongmingState | null {
   if (typeof window === 'undefined') {
     return null
@@ -565,22 +534,21 @@ function loadStoredState(): KongmingState | null {
     }
 
     const parsed = JSON.parse(rawValue) as Partial<StoredKongmingPayload>
-
-    if (parsed.version !== STORAGE_VERSION || (parsed.variant !== 'cross' && parsed.variant !== 'triangle')) {
+    if (parsed.version !== STORAGE_VERSION || !isBoardVariant(parsed.variant)) {
       return null
     }
 
     const nextState = createInitialState()
     nextState.variant = parsed.variant
 
-    for (const variant of ['cross', 'triangle'] as const) {
-      const storedVariant = parsed.variants?.[variant]
+    for (const board of KONGMING_BOARD_LIST) {
+      const storedVariant = parsed.variants?.[board.variant]
 
       if (!storedVariant || !isValidStoredSnapshot(storedVariant.snapshot)) {
         continue
       }
 
-      nextState.variants[variant] = {
+      nextState.variants[board.variant] = {
         snapshot: parseSnapshot(storedVariant.snapshot),
         undoStack: Array.isArray(storedVariant.undoStack)
           ? storedVariant.undoStack.filter(isValidStoredSnapshot).slice(-MAX_UNDO_STEPS).map(parseSnapshot)
@@ -593,46 +561,70 @@ function loadStoredState(): KongmingState | null {
 
     return nextState
   } catch (error) {
-    console.warn('读取孔明棋进度失败', error)
+    console.warn('Failed to load kongming progress', error)
     return null
   }
 }
 
-function getBoardMetrics(variant: BoardVariant) {
-  if (variant === 'cross') {
+function getBoardMetrics(board: PegBoardDefinition) {
+  if (board.geometry === 'triangle') {
+    const triangleOrder = board.bounds.rows
+    const stepX = triangleOrder <= 5 ? 74 : triangleOrder <= 7 ? 56 : 42
+    const stepY = triangleOrder <= 5 ? 58 : triangleOrder <= 7 ? 44 : 34
+    const slotSize = triangleOrder <= 5 ? 54 : triangleOrder <= 7 ? 42 : 32
+    const width = stepX * Math.max(3, triangleOrder - 1) + slotSize + 32
+    const height = stepY * Math.max(3, triangleOrder - 1) + slotSize + 32
+
     return {
-      width: 470,
-      height: 470,
-      stepX: 58,
-      stepY: 58,
-      offsetX: 58,
-      offsetY: 58,
+      width,
+      height,
+      stepX,
+      stepY,
+      offsetX: width / 2,
+      offsetY: slotSize / 2 + 18,
+      slotSize,
+      holeInset: Math.max(7, Math.round(slotSize * 0.24)),
+      pegInset: Math.max(5, Math.round(slotSize * 0.12)),
     }
   }
 
+  const maxSpan = Math.max(board.bounds.rows, board.bounds.cols)
+  const compact = maxSpan >= 9
+  const step = compact ? 46 : 58
+  const slotSize = compact ? 42 : 54
+  const width = (board.bounds.cols - 1) * step + slotSize + 36
+  const height = (board.bounds.rows - 1) * step + slotSize + 36
+
   return {
-    width: 420,
-    height: 360,
-    stepX: 74,
-    stepY: 58,
-    offsetX: 210,
-    offsetY: 44,
+    width,
+    height,
+    stepX: step,
+    stepY: step,
+    offsetX: slotSize / 2 + 18,
+    offsetY: slotSize / 2 + 18,
+    slotSize,
+    holeInset: Math.max(7, Math.round(slotSize * 0.24)),
+    pegInset: Math.max(5, Math.round(slotSize * 0.12)),
   }
 }
 
-function getSlotStyle(position: PegPosition, variant: BoardVariant): React.CSSProperties {
-  const metrics = getBoardMetrics(variant)
+function getSlotStyle(position: PegPosition, board: PegBoardDefinition): React.CSSProperties {
+  const metrics = getBoardMetrics(board)
 
-  if (variant === 'cross') {
+  if (board.geometry === 'triangle') {
     return {
-      left: metrics.offsetX + position.col * metrics.stepX,
-      top: metrics.offsetY + position.row * metrics.stepY,
+      left: metrics.offsetX + (position.col - position.row / 2) * metrics.stepX - metrics.slotSize / 2,
+      top: metrics.offsetY + position.row * metrics.stepY - metrics.slotSize / 2,
+      width: metrics.slotSize,
+      height: metrics.slotSize,
     }
   }
 
   return {
-    left: metrics.offsetX + (position.col - position.row / 2) * metrics.stepX,
-    top: metrics.offsetY + position.row * metrics.stepY,
+    left: metrics.offsetX + position.col * metrics.stepX - metrics.slotSize / 2,
+    top: metrics.offsetY + position.row * metrics.stepY - metrics.slotSize / 2,
+    width: metrics.slotSize,
+    height: metrics.slotSize,
   }
 }
 
@@ -655,27 +647,27 @@ export default function KongmingGame() {
       return
     }
 
+    const variants = Object.fromEntries(
+      KONGMING_BOARD_LIST.map((board) => [
+        board.variant,
+        {
+          ...game.variants[board.variant],
+          snapshot: serializeSnapshot(game.variants[board.variant].snapshot),
+          undoStack: game.variants[board.variant].undoStack.map(serializeSnapshot),
+        },
+      ]),
+    ) as Partial<Record<BoardVariant, StoredVariantState>>
+
     const payload: StoredKongmingPayload = {
       version: STORAGE_VERSION,
       variant: game.variant,
-      variants: {
-        cross: {
-          ...game.variants.cross,
-          snapshot: serializeSnapshot(game.variants.cross.snapshot),
-          undoStack: game.variants.cross.undoStack.map(serializeSnapshot),
-        },
-        triangle: {
-          ...game.variants.triangle,
-          snapshot: serializeSnapshot(game.variants.triangle.snapshot),
-          undoStack: game.variants.triangle.undoStack.map(serializeSnapshot),
-        },
-      },
+      variants,
     }
 
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
     } catch (error) {
-      console.warn('保存孔明棋进度失败', error)
+      console.warn('Failed to save kongming progress', error)
     }
   }, [game, hydrated])
 
@@ -793,18 +785,19 @@ export default function KongmingGame() {
   }
 
   const pegCount = countPegs(currentState.snapshot)
+  const metrics = getBoardMetrics(currentBoard)
   const statusText = currentState.solved
-    ? '只剩下一枚棋子，已经完成这一盘。'
+    ? '当前棋盘已经只剩下一枚棋子，可以切到下一种继续挑战。'
     : hasNoMoves(game.variant, currentState.snapshot)
-      ? '当前没有合法步了，这一盘已经走死。'
+      ? '当前局面已经没有合法步了，可以撤销一步或重开。'
       : currentState.hintMove
-        ? '已高亮一条推荐走法，你可以继续点终点位置完成它。'
+        ? '已经为你高亮了一手推荐走法，继续点击终点即可落子。'
         : hydrated
-          ? '点一枚棋子，再点它可以跳到的空位。跨过的棋子会被移除。'
+          ? '点选一枚棋子，再点它能跳到的空位。跨过的棋子会被移除。'
           : '正在恢复本地进度...'
 
   const statusClass = currentState.solved ? ' success' : hasNoMoves(game.variant, currentState.snapshot) ? ' fail' : ''
-  const progress = ((currentBoard.positions.length - pegCount) / (currentBoard.positions.length - 1)) * 100
+  const progress = ((currentBoard.positions.length - pegCount) / Math.max(1, currentBoard.positions.length - 1)) * 100
 
   return (
     <div className="kongming-app">
@@ -812,29 +805,29 @@ export default function KongmingGame() {
 
       <section className="kongming-hero">
         <div className="kongming-eyebrow">Toolbox · 孔明棋</div>
-        <h1>把棋子一颗颗跳掉，最后只留下中间那一枚。</h1>
-        <p>经典十字盘和三角棋盘放在同一页里，支持撤销、重开、本地存档和下一步提示。</p>
+        <h1>把图里的几种经典棋盘都放进来，再把三角盘扩展到 3 到 10 阶。</h1>
+        <p>
+          现在这页不再只是两个固定版本，而是一组可切换的孔明棋集合。
+          十字系、菱形系和多阶三角盘共存，提示策略会按盘面规模自动切换强度与速度。
+        </p>
         <div className="kongming-hero-tags">
-          <span className="kongming-hero-tag">十字盘 + 三角盘</span>
+          <span className="kongming-hero-tag">6 种经典变体</span>
+          <span className="kongming-hero-tag">3-10 阶三角盘</span>
           <span className="kongming-hero-tag">撤销 + 提示 + 本地存档</span>
-          <span className="kongming-hero-tag">单页双棋盘切换</span>
         </div>
 
         <div className="kongming-variant-switch">
-          {(['cross', 'triangle'] as const).map((variant) => {
-            const board = KONGMING_BOARDS[variant]
-            return (
-              <button
-                key={variant}
-                type="button"
-                className={`kongming-variant-btn${game.variant === variant ? ' active' : ''}`}
-                onClick={() => selectVariant(variant)}
-              >
-                <div className="kongming-variant-label">{board.label}</div>
-                <div className="kongming-variant-subtitle">{board.subtitle}</div>
-              </button>
-            )
-          })}
+          {KONGMING_BOARD_LIST.map((board) => (
+            <button
+              key={board.variant}
+              type="button"
+              className={`kongming-variant-btn${game.variant === board.variant ? ' active' : ''}`}
+              onClick={() => selectVariant(board.variant)}
+            >
+              <div className="kongming-variant-label">{board.label}</div>
+              <div className="kongming-variant-subtitle">{board.subtitle}</div>
+            </button>
+          ))}
         </div>
       </section>
 
@@ -854,14 +847,14 @@ export default function KongmingGame() {
               <div className="kongming-chip-value">{pegCount}</div>
             </div>
             <div className="kongming-chip">
-              <div className="kongming-chip-label">可走步</div>
+              <div className="kongming-chip-label">合法步</div>
               <div className="kongming-chip-value">{legalMoves.length}</div>
             </div>
           </div>
 
           <div className="kongming-progress" style={{ marginTop: 16 }}>
             <div className="kongming-section-subtitle">
-              当前版本的局面、步数和撤销栈会分别保存在浏览器本地。
+              每一种棋盘的当前局面、步数和撤销栈都会分别保存在浏览器本地。大盘提示会自动优先速度，小盘提示会更追求正确性。
             </div>
             <div className="kongming-progress-track">
               <div className="kongming-progress-fill" style={{ width: `${progress}%` }} />
@@ -873,7 +866,7 @@ export default function KongmingGame() {
           </div>
 
           <div className="kongming-board-shell">
-            <div className={`kongming-board ${game.variant}`}>
+            <div className="kongming-board" style={{ width: metrics.width, height: metrics.height }}>
               {currentBoard.positions.map((position) => {
                 const occupied = isPegOccupied(currentState.snapshot, position.id)
                 const selectableTarget =
@@ -887,12 +880,13 @@ export default function KongmingGame() {
                     currentState.hintMove.to === position.id
                   : false
                 const selected = currentState.selectedPeg === position.id
+                const slotStyle = getSlotStyle(position, currentBoard)
 
                 return (
                   <div
                     key={position.id}
                     className={`kongming-slot${hinted ? ' hint' : ''}${selectableTarget ? ' target' : ''}`}
-                    style={getSlotStyle(position, game.variant)}
+                    style={slotStyle}
                   >
                     {occupied ? (
                       <button
@@ -900,6 +894,7 @@ export default function KongmingGame() {
                         className={`kongming-peg${selected ? ' selected' : ''}`}
                         onClick={() => handlePositionClick(position.id)}
                         aria-label={`选择棋子 ${position.id + 1}`}
+                        style={{ inset: metrics.pegInset }}
                       />
                     ) : (
                       <button
@@ -908,6 +903,7 @@ export default function KongmingGame() {
                         onClick={() => handlePositionClick(position.id)}
                         aria-label={`空位 ${position.id + 1}`}
                         disabled={!selectableTarget}
+                        style={{ inset: metrics.holeInset }}
                       />
                     )}
                   </div>
@@ -921,7 +917,7 @@ export default function KongmingGame() {
           <section className="kongming-card">
             <div className="kongming-section-title">操作</div>
             <div className="kongming-section-subtitle">
-              提示功能会为当前局面高亮一条可行解的下一步，不会自动代下。
+              提示不会自动代你下，只会高亮一手建议。盘面越大，提示越偏向快速反馈；盘面越小，提示越偏向精确搜索。
             </div>
             <div className="kongming-control-grid">
               <button type="button" className="kongming-btn primary" onClick={showHint} disabled={legalMoves.length === 0}>
@@ -936,9 +932,13 @@ export default function KongmingGame() {
               <button
                 type="button"
                 className="kongming-btn"
-                onClick={() => selectVariant(game.variant === 'cross' ? 'triangle' : 'cross')}
+                onClick={() => {
+                  const currentIndex = KONGMING_BOARD_LIST.findIndex((board) => board.variant === game.variant)
+                  const nextBoard = KONGMING_BOARD_LIST[(currentIndex + 1) % KONGMING_BOARD_LIST.length]
+                  selectVariant(nextBoard.variant)
+                }}
               >
-                切换到{game.variant === 'cross' ? '三角盘' : '十字盘'}
+                切换到下一盘
               </button>
             </div>
           </section>
@@ -950,19 +950,19 @@ export default function KongmingGame() {
                 <div className="kongming-legend-icon">
                   <div className="kongming-legend-peg" />
                 </div>
-                <div>实心圆棋子表示当前可操作的棋子。</div>
+                <div>实体圆棋子表示当前可操作的棋子。</div>
               </div>
               <div className="kongming-legend-item">
                 <div className="kongming-legend-icon">
                   <div className="kongming-legend-hole" />
                 </div>
-                <div>空孔表示可以落子的有效位置，但只有符合跳跃规则时才能落下。</div>
+                <div>空孔表示有效落点，但必须满足跳跃规则时才能落下。</div>
               </div>
               <div className="kongming-legend-item">
                 <div className="kongming-legend-icon">
                   <div className="kongming-legend-hint" />
                 </div>
-                <div>高亮孔位表示当前选中棋子的可跳目标，提示时会标出推荐路线。</div>
+                <div>高亮孔位表示提示推荐的路线，或当前选中棋子的目标点。</div>
               </div>
             </div>
           </section>
@@ -970,7 +970,7 @@ export default function KongmingGame() {
           <section className="kongming-card">
             <div className="kongming-section-title">规则</div>
             <div className="kongming-section-subtitle">
-              每一步都要跨过相邻的一枚棋子，并落到它后面的空位上。被跨过的那枚棋子会被移除。最后只剩一枚棋子时算成功。
+              每一步都要跨过相邻的一枚棋子，并落到它后面的空位上。被跨过的那枚棋子会被移除。最后只剩下一枚棋子时算成功。
             </div>
           </section>
         </aside>

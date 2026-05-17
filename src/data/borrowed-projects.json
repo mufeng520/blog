@@ -1,50 +1,34 @@
 [
   {
-    "name": "Fuwari",
-    "url": "https://github.com/saicaca/fuwari",
-    "author": "saicaca",
-    "category": "博客主题",
-    "description": "很喜欢它干净、轻盈、留白充足的博客气质，也给我这个站的页面整理带来不少启发。",
-    "highlights": ["排版舒服", "卡片节制", "主题完整"]
-  },
-  {
     "name": "Waline",
     "url": "https://github.com/walinejs/waline",
     "author": "WalineJS",
-    "category": "评论系统",
-    "description": "一个部署灵活、体验友好的评论系统，适合静态站点，也适合想保留更多自定义空间的人。",
-    "highlights": ["部署灵活", "前端友好", "适合静态站"]
+    "category": "基石",
+    "description": "目前使用的评论系统。但我认为不是最优的方案",
+    "highlights": ["评论系统"]
   },
   {
     "name": "Astro",
     "url": "https://github.com/withastro/astro",
     "author": "withastro",
-    "category": "框架",
+    "category": "基石",
     "description": "我现在主站的核心框架。内容站、工具页和组件岛模式结合得很自然，写起来也很舒服。",
-    "highlights": ["静态优先", "岛屿架构", "内容站体验好"]
-  },
-  {
-    "name": "Shadcn UI",
-    "url": "https://github.com/shadcn-ui/ui",
-    "author": "shadcn-ui",
-    "category": "组件思路",
-    "description": "不只是组件库，更像一种组织前端组件的方式。很多时候比直接抄样式更有参考价值。",
-    "highlights": ["组件拆分清晰", "设计系统感强", "可裁剪"]
-  },
-  {
-    "name": "Vite",
-    "url": "https://github.com/vitejs/vite",
-    "author": "vitejs",
-    "category": "开发工具",
-    "description": "前端开发体验的底层快乐来源之一，简单、快，基本不会成为项目里的拖累。",
-    "highlights": ["开发很快", "配置不重", "生态成熟"]
+    "highlights": ["前端框架"]
   },
   {
     "name": "P5.js",
     "url": "https://github.com/processing/p5.js",
     "author": "processing",
-    "category": "创意编程",
+    "category": "基石",
     "description": "做一些可视化、烟花、互动小实验时特别顺手。适合把脑子里的奇怪想法快速落成画面。",
     "highlights": ["上手快", "适合互动", "试验性强"]
+  },
+  {
+    "name": "星穹铁道 猫猫糕友人帐",
+    "url": "https://catcake.hoshimi.io/",
+    "author": "星神(冰原熊幼崽), ALiCE, 天則",
+    "category": "钻石",
+    "description": "星穹铁道小工具，方便玩家互换猫糕",
+    "highlights": ["工具", "游戏"]
   }
 ]
