@@ -47,7 +47,13 @@ const { pageSize = 10 } = Astro.props;
     <div class="native-comments-actions">
       <span class="native-comments-hint">支持 Markdown、预设表情、剧透语法，如 || 剧透内容 ||</span>
       <span class="native-comments-count"><span data-comment-count>0</span> / 1000</span>
-      <button type="submit">发送评论</button>
+      <button type="submit">
+        <span>提交留言</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M21 3 10 14"></path>
+          <path d="m21 3-7 18-4-7-7-4 18-7Z"></path>
+        </svg>
+      </button>
     </div>
   </form>
 
@@ -63,12 +69,21 @@ const { pageSize = 10 } = Astro.props;
   .native-comments {
     display: grid;
     gap: 18px;
+    --comment-border: rgba(142, 175, 156, 0.24);
+    --comment-border-strong: rgba(142, 175, 156, 0.38);
+    --comment-bg: rgba(255, 255, 255, 0.76);
+    --comment-bg-soft: rgba(248, 252, 249, 0.82);
+    --comment-text: #24332d;
+    --comment-muted: #6c7f75;
+    --comment-muted-soft: #81978c;
+    --comment-primary: #4d9273;
+    --comment-primary-soft: rgba(105, 179, 143, 0.11);
   }
 
   .native-comments-compose-title,
   .native-comments-list-title {
     margin: 0;
-    color: #24332d;
+    color: var(--comment-text);
     font-size: 1.16rem;
     font-weight: 700;
     line-height: 1.35;
@@ -79,13 +94,13 @@ const { pageSize = 10 } = Astro.props;
   }
 
   .native-comments-list-title span {
-    color: #6c7f75;
+    color: var(--comment-muted);
     font-weight: 600;
   }
 
   .native-comments-status {
     padding: 12px 14px;
-    border-radius: 14px;
+    border-radius: 8px;
     background: rgba(255, 248, 235, 0.88);
     border: 1px solid rgba(229, 193, 123, 0.28);
     color: #7a6540;
@@ -99,9 +114,9 @@ const { pageSize = 10 } = Astro.props;
 
   .native-comments-form,
   .native-comment {
-    border: 1px solid rgba(142, 175, 156, 0.2);
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid var(--comment-border);
+    border-radius: 8px;
+    background: var(--comment-bg);
   }
 
   .native-comments-form {
@@ -116,35 +131,38 @@ const { pageSize = 10 } = Astro.props;
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    padding: 10px 12px;
+    padding: 10px 14px;
     border-radius: 0;
-    background: rgba(105, 179, 143, 0.1);
-    color: #4d9273;
+    background: var(--comment-primary-soft);
+    color: var(--comment-primary);
     font-size: 0.86rem;
+  }
+
+  .native-comments-replying[hidden],
+  .native-comments-load-more[hidden] {
+    display: none;
   }
 
   .native-comments-replying button,
   .native-comments-actions button,
   .native-comments-load-more,
+  .native-comment-toggle-replies,
   .native-comment-reply-btn {
     border: none;
-    border-radius: 999px;
+    border-radius: 6px;
     font: inherit;
     cursor: pointer;
-    transition: transform 0.22s ease, background 0.22s ease, color 0.22s ease;
+    transition: transform 0.16s ease, background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
   }
 
-  .native-comments-replying button,
-  .native-comment-reply-btn {
+  .native-comments-replying button {
     padding: 6px 10px;
-    color: #4d9273;
+    color: var(--comment-primary);
     background: rgba(105, 179, 143, 0.12);
     font-size: 0.8rem;
   }
 
-  .native-comments-replying button:hover,
-  .native-comment-reply-btn:hover {
-    transform: translateY(-1px);
+  .native-comments-replying button:hover {
     background: rgba(105, 179, 143, 0.18);
   }
 
@@ -152,7 +170,7 @@ const { pageSize = 10 } = Astro.props;
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0;
-    border-bottom: 1px solid rgba(142, 175, 156, 0.18);
+    border-bottom: 1px solid var(--comment-border);
   }
 
   .native-comments-form label {
@@ -178,7 +196,7 @@ const { pageSize = 10 } = Astro.props;
     border: none;
     border-radius: 0;
     background: transparent;
-    color: #24332d;
+    color: var(--comment-text);
     font: inherit;
     font-weight: 400;
     transition: border-color 0.22s ease, box-shadow 0.22s ease;
@@ -190,7 +208,7 @@ const { pageSize = 10 } = Astro.props;
   }
 
   .native-comments-form textarea {
-    min-height: 176px;
+    min-height: 152px;
     padding: 18px;
     resize: vertical;
   }
@@ -237,15 +255,31 @@ const { pageSize = 10 } = Astro.props;
 
   .native-comments-actions button,
   .native-comments-load-more {
-    padding: 9px 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 34px;
+    padding: 8px 13px;
     color: #fff;
-    background: linear-gradient(135deg, #72bc97, #4d9273);
+    background: var(--comment-primary);
+    border: 1px solid transparent;
     font-weight: 600;
+  }
+
+  .native-comments-actions button svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
   }
 
   .native-comments-actions button:hover,
   .native-comments-load-more:hover {
-    transform: translateY(-1px);
+    background: #427f63;
   }
 
   .native-comments-actions button:disabled,
@@ -262,95 +296,136 @@ const { pageSize = 10 } = Astro.props;
 
   .native-comments-empty {
     padding: 22px;
-    border-radius: 18px;
-    color: #6c7f75;
-    background: rgba(248, 252, 249, 0.82);
+    border-radius: 8px;
+    color: var(--comment-muted);
+    background: var(--comment-bg-soft);
     border: 1px dashed rgba(142, 175, 156, 0.28);
     text-align: center;
   }
 
   .native-comment {
-    display: grid;
-    grid-template-columns: 48px 1fr;
-    gap: 14px;
-    padding: 22px 24px;
-    box-shadow: 0 12px 32px rgba(89, 124, 106, 0.05);
+    padding: 16px;
+    transition: border-color 0.18s ease, background 0.18s ease;
+  }
+
+  .native-comment:hover {
+    border-color: var(--comment-border-strong);
   }
 
   .native-comment.is-reply {
-    grid-template-columns: 36px 1fr;
-    margin-top: 0;
-    padding: 16px 0 16px 18px;
+    padding: 12px 0;
     border: none;
-    border-left: 2px solid rgba(142, 175, 156, 0.22);
     border-radius: 0;
     background: transparent;
-    box-shadow: none;
+  }
+
+  .native-comment.is-reply:hover {
+    border-color: transparent;
+  }
+
+  .native-comment.is-reply + .native-comment.is-reply {
+    border-top: 1px solid rgba(142, 175, 156, 0.16);
+  }
+
+  .native-comment-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+    min-width: 0;
+  }
+
+  .native-comment.is-reply .native-comment-header {
+    gap: 10px;
+    margin-bottom: 8px;
   }
 
   .native-comment-avatar {
+    position: relative;
+    flex: 0 0 auto;
     display: grid;
     place-items: center;
-    width: 48px;
-    height: 48px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    color: #fff;
-    background: linear-gradient(135deg, #6aa68f, #456f86);
-    font-size: 0.94rem;
-    font-weight: 700;
+    background: #eef7f1;
+    border: 1px solid rgba(142, 175, 156, 0.22);
     overflow: hidden;
   }
 
   .native-comment.is-reply .native-comment-avatar {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
   }
 
   .native-comment-avatar img {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
 
-  .native-comment-main {
+  .native-comment-meta {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .native-comment-author-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     min-width: 0;
   }
 
-  .native-comment-head {
+  .native-comment-detail {
     display: flex;
-    align-items: baseline;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 8px;
+    align-items: center;
+    gap: 8px;
+    margin-top: 2px;
+    color: var(--comment-muted-soft);
+    font-size: 0.75rem;
+    line-height: 1.45;
   }
 
   .native-comment-author {
-    color: #24332d;
-    font-weight: 700;
+    color: var(--comment-text);
+    font-size: 0.9rem;
+    font-weight: 650;
     text-decoration: none;
+    overflow-wrap: anywhere;
   }
 
-  .native-comment-author[href]::after {
-    content: ' ↗';
-    color: #6c7f75;
-    font-weight: 600;
+  .native-comment.is-reply .native-comment-author {
+    font-size: 0.82rem;
+  }
+
+  .native-comment-author[href] {
+    text-decoration-line: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
   }
 
   .native-comment-author[href]:hover {
-    color: #4d9273;
+    color: var(--comment-primary);
+    text-decoration-style: solid;
   }
 
   .native-comment-time {
-    color: #81978c;
-    font-size: 0.78rem;
+    color: inherit;
+    font-size: inherit;
   }
 
   .native-comment-body {
     color: #3e5148;
     font-size: 0.94rem;
-    line-height: 1.85;
+    line-height: 1.82;
     word-break: break-word;
-    min-height: 28px;
+    min-height: 24px;
+  }
+
+  .native-comment.is-reply .native-comment-body {
+    font-size: 0.9rem;
+    line-height: 1.76;
   }
 
   .native-comment-body :global(p) {
@@ -362,7 +437,7 @@ const { pageSize = 10 } = Astro.props;
   }
 
   .native-comment-body :global(a) {
-    color: #4d9273;
+    color: var(--comment-primary);
     text-decoration: none;
     border-bottom: 1px solid rgba(105, 179, 143, 0.24);
   }
@@ -375,21 +450,38 @@ const { pageSize = 10 } = Astro.props;
     font-size: 0.88em;
   }
 
+  .native-comment-body :global(img) {
+    max-width: 100%;
+    height: auto;
+    border-radius: 6px;
+  }
+
+  .native-comment-body :global(img.emoji) {
+    display: inline-block;
+    width: 3em;
+    height: 3em;
+    margin: 0 0.08em;
+    vertical-align: -0.85em;
+    border-radius: 0;
+  }
+
   .native-comment-foot {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-top: 18px;
-    padding-top: 14px;
+    margin-top: 12px;
+    padding-top: 12px;
     border-top: 1px solid rgba(142, 175, 156, 0.18);
   }
 
   .native-comment-replies {
-    grid-column: 1 / -1;
     display: grid;
     gap: 0;
-    margin-left: 48px;
-    padding-left: 18px;
+    margin-top: 12px;
+    margin-left: 18px;
+    padding-left: 14px;
+    border-left: 1px solid rgba(142, 175, 156, 0.28);
   }
 
   .native-comment-replies[hidden] {
@@ -397,17 +489,60 @@ const { pageSize = 10 } = Astro.props;
   }
 
   .native-comment-toggle-replies {
-    padding: 6px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 5px 8px;
     border: none;
     background: transparent;
-    color: #4d9273;
+    color: var(--comment-muted);
     font: inherit;
-    font-size: 0.84rem;
+    font-size: 0.78rem;
+    font-weight: 600;
     cursor: pointer;
   }
 
   .native-comment-reply-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     margin-left: auto;
+    min-height: 28px;
+    padding: 5px 8px;
+    background: transparent;
+    color: var(--comment-muted);
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .native-comment-toggle-replies:hover,
+  .native-comment-reply-btn:hover {
+    color: var(--comment-text);
+    background: var(--comment-primary-soft);
+  }
+
+  .native-comment-toggle-replies:active,
+  .native-comment-reply-btn:active,
+  .native-comments-actions button:active,
+  .native-comments-load-more:active {
+    transform: scale(0.96);
+  }
+
+  .native-comment-toggle-replies svg,
+  .native-comment-reply-btn svg {
+    width: 14px;
+    height: 14px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+    transition: transform 0.2s ease;
+  }
+
+  .native-comment-toggle-replies.is-open svg {
+    transform: rotate(180deg);
   }
 
   .native-comments-load-more {
@@ -436,18 +571,17 @@ const { pageSize = 10 } = Astro.props;
     }
 
     .native-comment {
-      grid-template-columns: 38px 1fr;
-      padding: 18px 16px;
+      padding: 14px;
     }
 
     .native-comment-avatar {
-      width: 38px;
-      height: 38px;
+      width: 34px;
+      height: 34px;
     }
 
     .native-comment-replies {
-      margin-left: 0;
-      padding-left: 10px;
+      margin-left: 8px;
+      padding-left: 12px;
     }
   }
 </style>
@@ -466,13 +600,14 @@ const { pageSize = 10 } = Astro.props;
 
   function formatDate(value) {
     try {
-      return new Intl.DateTimeFormat('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-      }).format(new Date(value));
+      const date = new Date(value);
+      const now = new Date();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const hour = String(date.getHours()).padStart(2, '0');
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      const year = date.getFullYear() === now.getFullYear() ? '' : `${date.getFullYear()}.`;
+      return `${year}${month}.${day} ${hour}:${minute}`;
     } catch {
       return value;
     }
@@ -481,6 +616,49 @@ const { pageSize = 10 } = Astro.props;
   function getInitial(nick) {
     const clean = String(nick || '访客').trim();
     return clean.slice(0, 1).toUpperCase();
+  }
+
+  function escapeSvgText(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  function hashString(value) {
+    let hash = 0;
+    const text = String(value || 'visitor');
+    for (let index = 0; index < text.length; index += 1) {
+      hash = (hash << 5) - hash + text.charCodeAt(index);
+      hash |= 0;
+    }
+    return Math.abs(hash);
+  }
+
+  function fallbackAvatarUrl(comment) {
+    const seed = `${comment.id || ''}:${comment.nick || ''}`;
+    const palettes = [
+      ['#69b38f', '#456f86'],
+      ['#d59f62', '#8d6a9f'],
+      ['#7a9ecf', '#4f6f9d'],
+      ['#c77f8a', '#6f8b65'],
+      ['#8aa978', '#3f7f7a'],
+    ];
+    const [start, end] = palettes[hashString(seed) % palettes.length];
+    const initial = escapeSvgText(getInitial(comment.nick));
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+        <defs>
+          <linearGradient id="g" x1="0" x2="1" y1="0" y2="1">
+            <stop offset="0%" stop-color="${start}" />
+            <stop offset="100%" stop-color="${end}" />
+          </linearGradient>
+        </defs>
+        <rect width="96" height="96" rx="48" fill="url(#g)" />
+        <text x="50%" y="52%" fill="#fff" font-size="40" font-family="Arial, sans-serif" font-weight="700" text-anchor="middle" dominant-baseline="middle">${initial}</text>
+      </svg>
+    `;
+    return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
   }
 
   function normalizePath(pathname) {
@@ -498,6 +676,32 @@ const { pageSize = 10 } = Astro.props;
     }
   }
 
+  function chevronIcon() {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+  }
+
+  function replyIcon() {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 14 4 9 9 4"></polyline><path d="M20 20v-7a4 4 0 0 0-4-4H4"></path></svg>';
+  }
+
+  function replyToggleText(count, expanded = false) {
+    return `<span>${expanded ? '收起回复' : '展开回复'} (${count})</span>${chevronIcon()}`;
+  }
+
+  function renderAvatar(comment, author) {
+    const fallback = fallbackAvatarUrl(comment);
+    const src = comment.avatarUrl || fallback;
+    return `
+      <img
+        src="${escapeHtml(src)}"
+        alt="${author} 的头像"
+        loading="lazy"
+        referrerpolicy="no-referrer"
+        data-fallback-avatar="${escapeHtml(fallback)}"
+      />
+    `;
+  }
+
   function saveAuthor(formData) {
     const author = {
       nick: formData.get('nick') || '',
@@ -513,31 +717,44 @@ const { pageSize = 10 } = Astro.props;
       ? `<a class="native-comment-author" href="${escapeHtml(comment.link)}" target="_blank" rel="noopener noreferrer">${author}</a>`
       : `<span class="native-comment-author">${author}</span>`;
     const replyCount = (comment.replies || []).length;
-    const toggleButton = !isReply && replyCount
-      ? `<button type="button" class="native-comment-toggle-replies" data-toggle-replies data-reply-count="${replyCount}">展开回复 (${replyCount})</button>`
+    const toggleButton = !isReply && replyCount > 0
+      ? `<button type="button" class="native-comment-toggle-replies" data-toggle-replies data-reply-count="${replyCount}">${replyToggleText(replyCount)}</button>`
       : '';
     const replyButton = isReply
       ? ''
-      : `<button type="button" class="native-comment-reply-btn" data-reply-id="${escapeHtml(comment.id)}" data-reply-nick="${author}">回复</button>`;
+      : `<button type="button" class="native-comment-reply-btn" data-reply-id="${escapeHtml(comment.id)}" data-reply-nick="${author}"><span>回复</span>${replyIcon()}</button>`;
     const replies = (comment.replies || []).map((reply) => renderComment(reply, true)).join('');
-    const avatar = comment.avatarUrl
-      ? `<img src="${escapeHtml(comment.avatarUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`
-      : escapeHtml(getInitial(comment.nick));
+    const avatar = renderAvatar(comment, author);
 
     return `
       <article class="native-comment${isReply ? ' is-reply' : ''}">
-        <div class="native-comment-avatar" aria-hidden="true">${avatar}</div>
-        <div class="native-comment-main">
-          <div class="native-comment-head">
-            ${authorContent}
-            <time class="native-comment-time">${escapeHtml(formatDate(comment.createdAt))}</time>
+        <div class="native-comment-header">
+          <div class="native-comment-avatar">${avatar}</div>
+          <div class="native-comment-meta">
+            <div class="native-comment-author-line">
+              ${authorContent}
+            </div>
+            <div class="native-comment-detail">
+              <time class="native-comment-time">${escapeHtml(formatDate(comment.createdAt))}</time>
+            </div>
           </div>
-          <div class="native-comment-body">${comment.contentHtml || ''}</div>
-          ${replyButton ? `<div class="native-comment-foot">${toggleButton}<span></span>${replyButton}</div>` : ''}
         </div>
-        ${replies ? `<div class="native-comment-replies" hidden>${replies}</div>` : ''}
+        <div class="native-comment-body">${comment.contentHtml || ''}</div>
+        ${replyButton ? `<div class="native-comment-foot">${toggleButton || '<span></span>'}${replyButton}</div>` : ''}
+        ${!isReply && replies ? `<div class="native-comment-replies" hidden>${replies}</div>` : ''}
       </article>
     `;
+  }
+
+  function bindAvatarFallbacks(root) {
+    root.querySelectorAll('[data-fallback-avatar]').forEach((image) => {
+      image.addEventListener('error', () => {
+        const fallback = image.getAttribute('data-fallback-avatar');
+        if (fallback && image.getAttribute('src') !== fallback) {
+          image.setAttribute('src', fallback);
+        }
+      }, { once: true });
+    });
   }
 
   document.querySelectorAll('[data-native-comments]').forEach((root) => {
@@ -593,6 +810,7 @@ const { pageSize = 10 } = Astro.props;
       } else {
         listEl.innerHTML = state.comments.map((comment) => renderComment(comment)).join('');
       }
+      bindAvatarFallbacks(root);
 
       root.querySelectorAll('[data-reply-id]').forEach((button) => {
         button.addEventListener('click', () => {
@@ -616,7 +834,8 @@ const { pageSize = 10 } = Astro.props;
           const count = button.getAttribute('data-reply-count') || '0';
           if (!replies) return;
           replies.hidden = !replies.hidden;
-          button.textContent = replies.hidden ? `展开回复 (${count})` : `收起回复 (${count})`;
+          button.classList.toggle('is-open', !replies.hidden);
+          button.innerHTML = replyToggleText(count, !replies.hidden);
         });
       });
     }
@@ -676,7 +895,7 @@ const { pageSize = 10 } = Astro.props;
         const submitBtn = form.querySelector('[type="submit"]');
         const formData = new FormData(form);
         submitBtn.disabled = true;
-        submitBtn.textContent = '发送中...';
+        submitBtn.innerHTML = '<span>发送中...</span>';
         setStatus('正在发送评论...');
 
         try {
@@ -711,7 +930,7 @@ const { pageSize = 10 } = Astro.props;
           setStatus(error instanceof Error ? error.message : '评论发送失败。');
         } finally {
           submitBtn.disabled = false;
-          submitBtn.textContent = '发送评论';
+          submitBtn.innerHTML = '<span>提交留言</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 3 10 14"></path><path d="m21 3-7 18-4-7-7-4 18-7Z"></path></svg>';
         }
       });
     }

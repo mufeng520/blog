@@ -37,5 +37,5 @@ create table if not exists comment_settings (
 
 insert into comment_settings (key, value) values
   ('show_author_link', 'true'),
-  ('show_email_avatar', 'false')
+  ('show_email_avatar', 'true')
 on conflict (key) do nothing;

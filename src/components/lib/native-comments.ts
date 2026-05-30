@@ -11,7 +11,6 @@ export interface PublicComment {
   id: string;
   parentId: string | null;
   nick: string;
-  mailHash: string | null;
   avatarUrl: string | null;
   link: string | null;
   contentHtml: string;
@@ -156,7 +155,7 @@ function parseBooleanValue(value: unknown, defaultValue: boolean): boolean {
 export function getPublicCommentSettings(): PublicCommentSettings {
   return {
     showAuthorLink: readBooleanEnv('COMMENTS_SHOW_AUTHOR_LINK', true),
-    showEmailAvatar: readBooleanEnv('COMMENTS_SHOW_EMAIL_AVATAR', false),
+    showEmailAvatar: readBooleanEnv('COMMENTS_SHOW_EMAIL_AVATAR', true),
   };
 }
 
@@ -314,7 +313,6 @@ async function toPublicComment(
     id: row.id,
     parentId: row.parent_id,
     nick: row.nick,
-    mailHash: settings.showEmailAvatar ? row.mail_hash : null,
     avatarUrl: getAvatarUrl(row.mail_hash, settings),
     link: settings.showAuthorLink ? row.link : null,
     contentHtml: await parseMessage(row.content),
