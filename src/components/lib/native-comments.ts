@@ -12,11 +12,17 @@ export interface PublicComment {
   parentId: string | null;
   nick: string;
   mailHash: string | null;
+  avatarUrl: string | null;
   link: string | null;
   contentHtml: string;
   contentText: string;
   createdAt: string;
   replies: PublicComment[];
+}
+
+export interface PublicCommentSettings {
+  showAuthorLink: boolean;
+  showEmailAvatar: boolean;
 }
 
 export interface AdminComment {
@@ -133,6 +139,78 @@ function hashMail(mail?: string | null): string | null {
   return createHash('sha256').update(normalized).digest('hex');
 }
 
+function readBooleanEnv(name: string, defaultValue: boolean): boolean {
+  const value = process.env[name]?.trim().toLowerCase();
+  if (!value) return defaultValue;
+  return parseBooleanValue(value, defaultValue);
+}
+
+function parseBooleanValue(value: unknown, defaultValue: boolean): boolean {
+  const normalized = String(value ?? '').trim().toLowerCase();
+  if (!normalized) return defaultValue;
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  return defaultValue;
+}
+
+export function getPublicCommentSettings(): PublicCommentSettings {
+  return {
+    showAuthorLink: readBooleanEnv('COMMENTS_SHOW_AUTHOR_LINK', true),
+    showEmailAvatar: readBooleanEnv('COMMENTS_SHOW_EMAIL_AVATAR', false),
+  };
+}
+
+async function getPublicCommentSettingsFromDb(sql: SqlClient): Promise<PublicCommentSettings> {
+  const settings = getPublicCommentSettings();
+
+  const rows = await sql`
+    select key, value
+    from comment_settings
+    where key in ('show_author_link', 'show_email_avatar')
+  ` as { key: string; value: string }[];
+
+  for (const row of rows) {
+    if (row.key === 'show_author_link') {
+      settings.showAuthorLink = parseBooleanValue(row.value, settings.showAuthorLink);
+    }
+    if (row.key === 'show_email_avatar') {
+      settings.showEmailAvatar = parseBooleanValue(row.value, settings.showEmailAvatar);
+    }
+  }
+
+  return settings;
+}
+
+export async function getAdminCommentSettings(): Promise<PublicCommentSettings> {
+  return await getPublicCommentSettingsFromDb(getSql());
+}
+
+export async function updateAdminCommentSettings(input: unknown): Promise<PublicCommentSettings> {
+  const sql = getSql();
+  const data = input && typeof input === 'object' ? input as Record<string, unknown> : {};
+  const settings = {
+    showAuthorLink: Boolean(data.showAuthorLink),
+    showEmailAvatar: Boolean(data.showEmailAvatar),
+  };
+
+  await sql`
+    insert into comment_settings (key, value)
+    values
+      ('show_author_link', ${String(settings.showAuthorLink)}),
+      ('show_email_avatar', ${String(settings.showEmailAvatar)})
+    on conflict (key) do update
+      set value = excluded.value,
+          updated_at = now()
+  `;
+
+  return settings;
+}
+
+function getAvatarUrl(mailHash: string | null, settings: PublicCommentSettings): string | null {
+  if (!settings.showEmailAvatar || !mailHash) return null;
+  return `https://gravatar.loli.net/avatar/${mailHash}?d=identicon&s=80`;
+}
+
 function normalizeUrl(link?: string | null): string | null {
   const raw = link?.trim();
   if (!raw) return null;
@@ -164,21 +242,21 @@ export function validateCommentInput(input: CommentInput): Required<CommentInput
   }
 
   const path = normalizeCommentPath(input.path);
-  const nick = input.nick.trim();
+  const nick = input.nick.trim() || '匿名访客';
   const content = input.content.trim();
   const mail = input.mail?.trim() || null;
   const link = normalizeUrl(input.link);
 
-  if (nick.length < 1 || nick.length > 32) {
-    throw new CommentError(400, '昵称长度需要在 1 到 32 个字符之间。');
+  if (nick.length > 32) {
+    throw new CommentError(400, '昵称长度不能超过 32 个字符。');
   }
 
   if (mail && (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail) || mail.length > 120)) {
     throw new CommentError(400, '邮箱格式不正确。');
   }
 
-  if (content.length < 2 || content.length > 500) {
-    throw new CommentError(400, '评论内容需要在 2 到 500 个字符之间。');
+  if (content.length < 2 || content.length > 1000) {
+    throw new CommentError(400, '评论内容需要在 2 到 1000 个字符之间。');
   }
 
   return {
@@ -228,13 +306,17 @@ function formatDate(value: string | Date): string {
   return value instanceof Date ? value.toISOString() : new Date(value).toISOString();
 }
 
-async function toPublicComment(row: CommentRow): Promise<PublicComment> {
+async function toPublicComment(
+  row: CommentRow,
+  settings: PublicCommentSettings,
+): Promise<PublicComment> {
   return {
     id: row.id,
     parentId: row.parent_id,
     nick: row.nick,
-    mailHash: row.mail_hash,
-    link: row.link,
+    mailHash: settings.showEmailAvatar ? row.mail_hash : null,
+    avatarUrl: getAvatarUrl(row.mail_hash, settings),
+    link: settings.showAuthorLink ? row.link : null,
     contentHtml: await parseMessage(row.content),
     contentText: truncateText(cleanMarkdownContent(row.content), 120),
     createdAt: formatDate(row.created_at),
@@ -267,6 +349,7 @@ export async function listPublicComments(pathInput: unknown, page = 1, pageSize 
   const safePage = Math.max(1, Number.isFinite(page) ? Math.floor(page) : 1);
   const safePageSize = Math.min(30, Math.max(1, Number.isFinite(pageSize) ? Math.floor(pageSize) : 10));
   const offset = (safePage - 1) * safePageSize;
+  const settings = await getPublicCommentSettingsFromDb(sql);
 
   const [countRow] = await sql`
     select count(*)::int as total
@@ -299,9 +382,9 @@ export async function listPublicComments(pathInput: unknown, page = 1, pageSize 
       ` as CommentRow[]
     : [];
 
-  const rootComments = await Promise.all(roots.map(toPublicComment));
+  const rootComments = await Promise.all(roots.map((row) => toPublicComment(row, settings)));
   const repliesByParent = new Map<string, PublicComment[]>();
-  for (const reply of await Promise.all(replies.map(toPublicComment))) {
+  for (const reply of await Promise.all(replies.map((row) => toPublicComment(row, settings)))) {
     if (!reply.parentId) continue;
     const list = repliesByParent.get(reply.parentId) || [];
     list.push(reply);
@@ -318,6 +401,7 @@ export async function listPublicComments(pathInput: unknown, page = 1, pageSize 
     page: safePage,
     pageSize: safePageSize,
     hasMore: offset + rootComments.length < (countRow?.total ?? 0),
+    settings,
   };
 }
 
@@ -373,7 +457,7 @@ export async function createComment(input: CommentInput, headers: Headers) {
     returning *
   ` as CommentRow[];
 
-  return await toPublicComment(created);
+  return await toPublicComment(created, await getPublicCommentSettingsFromDb(sql));
 }
 
 export async function listAdminComments(statusInput: unknown, page = 1, pageSize = 20) {

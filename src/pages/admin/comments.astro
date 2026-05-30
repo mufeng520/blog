@@ -1,8 +1,8 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
+import AdminLayout from '../../layouts/AdminLayout.astro';
 ---
 
-<BaseLayout title="评论管理 - 木风">
+<AdminLayout title="评论管理" active="comments">
   <style>
     .comment-admin {
       display: grid;
@@ -46,12 +46,37 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       align-items: end;
     }
 
+    .comment-admin-settings {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(142, 175, 156, 0.18);
+    }
+
     .comment-admin-controls label {
       display: grid;
       gap: 6px;
       color: #52685e;
       font-size: 0.84rem;
       font-weight: 600;
+    }
+
+    .comment-admin-settings label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #52685e;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    .comment-admin-settings input {
+      width: 16px;
+      height: 16px;
+      accent-color: #4d9273;
     }
 
     .comment-admin-controls input,
@@ -67,6 +92,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
 
     .comment-admin-button,
+    .comment-admin-save,
     .comment-admin-action,
     .comment-admin-load {
       border: none;
@@ -78,6 +104,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
 
     .comment-admin-button,
+    .comment-admin-save,
     .comment-admin-load {
       padding: 11px 16px;
       color: #fff;
@@ -190,6 +217,11 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       .comment-admin-controls {
         grid-template-columns: 1fr;
       }
+
+      .comment-admin-settings {
+        align-items: flex-start;
+        flex-direction: column;
+      }
     }
   </style>
 
@@ -216,6 +248,18 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
           </select>
         </label>
         <button class="comment-admin-button" type="submit">加载评论</button>
+      </form>
+
+      <form class="comment-admin-settings" data-admin-settings>
+        <label>
+          <input name="showAuthorLink" type="checkbox" />
+          <span>公开展示用户填写的网站链接</span>
+        </label>
+        <label>
+          <input name="showEmailAvatar" type="checkbox" />
+          <span>使用用户邮箱生成头像</span>
+        </label>
+        <button class="comment-admin-save" type="submit">保存显示设置</button>
       </form>
     </div>
 
@@ -251,6 +295,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
     }
 
     const form = document.querySelector('[data-admin-controls]');
+    const settingsForm = document.querySelector('[data-admin-settings]');
     const listEl = document.querySelector('[data-admin-list]');
     const statusEl = document.querySelector('[data-admin-status]');
     const loadMoreBtn = document.querySelector('[data-admin-load]');
@@ -352,6 +397,27 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       }
     }
 
+    async function fetchSettings() {
+      if (!state.token || !settingsForm) return;
+
+      try {
+        const response = await fetch('/api/admin/comments/settings', {
+          headers: {
+            authorization: `Bearer ${state.token}`,
+          },
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || '显示设置加载失败。');
+        }
+
+        settingsForm.querySelector('[name="showAuthorLink"]').checked = Boolean(payload.data.showAuthorLink);
+        settingsForm.querySelector('[name="showEmailAvatar"]').checked = Boolean(payload.data.showEmailAvatar);
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : '显示设置加载失败。');
+      }
+    }
+
     async function updateStatus(id, action) {
       if (!id || !action) return;
       setStatus('正在更新评论状态...');
@@ -380,7 +446,38 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       state.token = String(data.get('token') || '').trim();
       state.status = String(data.get('status') || '');
       localStorage.setItem(TOKEN_KEY, state.token);
+      await fetchSettings();
       await fetchComments(true);
+    });
+
+    settingsForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!state.token) {
+        setStatus('请先输入管理 Token。');
+        return;
+      }
+
+      const data = new FormData(settingsForm);
+      try {
+        const response = await fetch('/api/admin/comments/settings', {
+          method: 'PATCH',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${state.token}`,
+          },
+          body: JSON.stringify({
+            showAuthorLink: data.get('showAuthorLink') === 'on',
+            showEmailAvatar: data.get('showEmailAvatar') === 'on',
+          }),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || '显示设置保存失败。');
+        }
+        setStatus('显示设置已保存。', true);
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : '显示设置保存失败。');
+      }
     });
 
     loadMoreBtn?.addEventListener('click', async () => {
@@ -389,4 +486,4 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
       await fetchComments(false);
     });
   </script>
-</BaseLayout>
+</AdminLayout>

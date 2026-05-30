@@ -28,3 +28,14 @@ create index if not exists comments_admin_idx
 
 create index if not exists comments_rate_limit_idx
   on comments (ip_hash, created_at desc);
+
+create table if not exists comment_settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default now()
+);
+
+insert into comment_settings (key, value) values
+  ('show_author_link', 'true'),
+  ('show_email_avatar', 'false')
+on conflict (key) do nothing;

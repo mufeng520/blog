@@ -9,6 +9,7 @@ const { pageSize = 10 } = Astro.props;
 <div class="native-comments" data-native-comments data-page-size={pageSize}>
   <div class="native-comments-status" data-comments-status>评论区加载中...</div>
 
+  <h3 class="native-comments-compose-title">说点什么</h3>
   <form class="native-comments-form" data-comment-form>
     <div class="native-comments-replying" data-replying hidden>
       <span data-replying-text></span>
@@ -17,22 +18,22 @@ const { pageSize = 10 } = Astro.props;
 
     <div class="native-comments-fields">
       <label>
-        <span>昵称</span>
-        <input name="nick" maxlength="32" autocomplete="nickname" required />
+        <span>名称：可选，用于展示身份</span>
+        <input name="nick" maxlength="32" autocomplete="nickname" />
       </label>
       <label>
-        <span>邮箱</span>
+        <span>邮箱：可选，用于头像</span>
         <input name="mail" type="email" maxlength="120" autocomplete="email" />
       </label>
       <label>
-        <span>网址</span>
+        <span>网站：可选，用于引导访问</span>
         <input name="link" type="url" maxlength="240" autocomplete="url" placeholder="https://" />
       </label>
     </div>
 
     <label class="native-comments-content">
-      <span>评论</span>
-      <textarea name="content" maxlength="500" rows="5" required></textarea>
+      <span class="native-comments-content-label">还在等什么？来都来了，键盘敲起。</span>
+      <textarea name="content" maxlength="1000" rows="6" required></textarea>
     </label>
 
     <label class="native-comments-hp" aria-hidden="true">
@@ -44,11 +45,13 @@ const { pageSize = 10 } = Astro.props;
     <input type="hidden" name="startedAt" />
 
     <div class="native-comments-actions">
-      <span class="native-comments-hint">支持 Markdown，最多 500 字。</span>
+      <span class="native-comments-hint">支持 Markdown、预设表情、剧透语法，如 || 剧透内容 ||</span>
+      <span class="native-comments-count"><span data-comment-count>0</span> / 1000</span>
       <button type="submit">发送评论</button>
     </div>
   </form>
 
+  <h3 class="native-comments-list-title">大家在聊 <span data-comments-total></span></h3>
   <div class="native-comments-list" data-comments-list></div>
 
   <button class="native-comments-load-more" type="button" data-load-more hidden>
@@ -59,7 +62,25 @@ const { pageSize = 10 } = Astro.props;
 <style>
   .native-comments {
     display: grid;
-    gap: 16px;
+    gap: 18px;
+  }
+
+  .native-comments-compose-title,
+  .native-comments-list-title {
+    margin: 0;
+    color: #24332d;
+    font-size: 1.16rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .native-comments-list-title {
+    margin-top: 12px;
+  }
+
+  .native-comments-list-title span {
+    color: #6c7f75;
+    font-weight: 600;
   }
 
   .native-comments-status {
@@ -78,15 +99,16 @@ const { pageSize = 10 } = Astro.props;
 
   .native-comments-form,
   .native-comment {
-    border: 1px solid rgba(142, 175, 156, 0.16);
-    border-radius: 20px;
-    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(142, 175, 156, 0.2);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.7);
   }
 
   .native-comments-form {
     display: grid;
-    gap: 14px;
-    padding: 16px;
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
   }
 
   .native-comments-replying {
@@ -95,7 +117,7 @@ const { pageSize = 10 } = Astro.props;
     justify-content: space-between;
     gap: 12px;
     padding: 10px 12px;
-    border-radius: 14px;
+    border-radius: 0;
     background: rgba(105, 179, 143, 0.1);
     color: #4d9273;
     font-size: 0.86rem;
@@ -129,24 +151,33 @@ const { pageSize = 10 } = Astro.props;
   .native-comments-fields {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    gap: 0;
+    border-bottom: 1px solid rgba(142, 175, 156, 0.18);
   }
 
   .native-comments-form label {
     display: grid;
-    gap: 6px;
+    gap: 8px;
     min-width: 0;
     color: #52685e;
     font-size: 0.84rem;
     font-weight: 600;
   }
 
+  .native-comments-fields label {
+    padding: 16px 18px 14px;
+  }
+
+  .native-comments-fields label + label {
+    border-left: 1px solid rgba(142, 175, 156, 0.14);
+  }
+
   .native-comments-form input,
   .native-comments-form textarea {
     width: 100%;
-    border: 1px solid rgba(142, 175, 156, 0.22);
-    border-radius: 14px;
-    background: rgba(250, 253, 251, 0.9);
+    border: none;
+    border-radius: 0;
+    background: transparent;
     color: #24332d;
     font: inherit;
     font-weight: 400;
@@ -154,21 +185,25 @@ const { pageSize = 10 } = Astro.props;
   }
 
   .native-comments-form input {
-    height: 42px;
-    padding: 0 12px;
+    height: 28px;
+    padding: 0;
   }
 
   .native-comments-form textarea {
-    min-height: 128px;
-    padding: 12px;
+    min-height: 176px;
+    padding: 18px;
     resize: vertical;
   }
 
   .native-comments-form input:focus,
   .native-comments-form textarea:focus {
     outline: none;
-    border-color: #69b38f;
-    box-shadow: 0 0 0 4px rgba(105, 179, 143, 0.12);
+    box-shadow: none;
+  }
+
+  .native-comments-form input::placeholder,
+  .native-comments-form textarea::placeholder {
+    color: #8b9993;
   }
 
   .native-comments-hp {
@@ -182,18 +217,27 @@ const { pageSize = 10 } = Astro.props;
   .native-comments-actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
+    justify-content: flex-end;
+    gap: 16px;
+    padding: 12px 18px 16px;
+    border-top: 1px solid rgba(142, 175, 156, 0.14);
   }
 
   .native-comments-hint {
+    margin-right: auto;
     color: #7c9287;
     font-size: 0.82rem;
   }
 
+  .native-comments-count {
+    color: #6f8278;
+    font-size: 0.84rem;
+    white-space: nowrap;
+  }
+
   .native-comments-actions button,
   .native-comments-load-more {
-    padding: 10px 16px;
+    padding: 9px 14px;
     color: #fff;
     background: linear-gradient(135deg, #72bc97, #4d9273);
     font-weight: 600;
@@ -213,7 +257,7 @@ const { pageSize = 10 } = Astro.props;
 
   .native-comments-list {
     display: grid;
-    gap: 12px;
+    gap: 16px;
   }
 
   .native-comments-empty {
@@ -227,26 +271,45 @@ const { pageSize = 10 } = Astro.props;
 
   .native-comment {
     display: grid;
-    grid-template-columns: 42px 1fr;
-    gap: 12px;
-    padding: 16px;
+    grid-template-columns: 48px 1fr;
+    gap: 14px;
+    padding: 22px 24px;
+    box-shadow: 0 12px 32px rgba(89, 124, 106, 0.05);
   }
 
   .native-comment.is-reply {
-    margin-top: 10px;
-    background: rgba(248, 252, 249, 0.78);
+    grid-template-columns: 36px 1fr;
+    margin-top: 0;
+    padding: 16px 0 16px 18px;
+    border: none;
+    border-left: 2px solid rgba(142, 175, 156, 0.22);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .native-comment-avatar {
     display: grid;
     place-items: center;
-    width: 42px;
-    height: 42px;
-    border-radius: 14px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
     color: #fff;
     background: linear-gradient(135deg, #6aa68f, #456f86);
     font-size: 0.94rem;
     font-weight: 700;
+    overflow: hidden;
+  }
+
+  .native-comment.is-reply .native-comment-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .native-comment-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .native-comment-main {
@@ -267,6 +330,12 @@ const { pageSize = 10 } = Astro.props;
     text-decoration: none;
   }
 
+  .native-comment-author[href]::after {
+    content: ' ↗';
+    color: #6c7f75;
+    font-weight: 600;
+  }
+
   .native-comment-author[href]:hover {
     color: #4d9273;
   }
@@ -281,6 +350,7 @@ const { pageSize = 10 } = Astro.props;
     font-size: 0.94rem;
     line-height: 1.85;
     word-break: break-word;
+    min-height: 28px;
   }
 
   .native-comment-body :global(p) {
@@ -306,13 +376,38 @@ const { pageSize = 10 } = Astro.props;
   }
 
   .native-comment-foot {
-    margin-top: 10px;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(142, 175, 156, 0.18);
   }
 
   .native-comment-replies {
-    grid-column: 2;
+    grid-column: 1 / -1;
     display: grid;
     gap: 0;
+    margin-left: 48px;
+    padding-left: 18px;
+  }
+
+  .native-comment-replies[hidden] {
+    display: none;
+  }
+
+  .native-comment-toggle-replies {
+    padding: 6px 0;
+    border: none;
+    background: transparent;
+    color: #4d9273;
+    font: inherit;
+    font-size: 0.84rem;
+    cursor: pointer;
+  }
+
+  .native-comment-reply-btn {
+    margin-left: auto;
   }
 
   .native-comments-load-more {
@@ -325,9 +420,15 @@ const { pageSize = 10 } = Astro.props;
       grid-template-columns: 1fr;
     }
 
+    .native-comments-fields label + label {
+      border-left: none;
+      border-top: 1px solid rgba(142, 175, 156, 0.14);
+    }
+
     .native-comments-actions {
-      align-items: stretch;
+      align-items: flex-start;
       flex-direction: column;
+      gap: 10px;
     }
 
     .native-comments-actions button {
@@ -335,14 +436,18 @@ const { pageSize = 10 } = Astro.props;
     }
 
     .native-comment {
-      grid-template-columns: 36px 1fr;
-      padding: 14px;
+      grid-template-columns: 38px 1fr;
+      padding: 18px 16px;
     }
 
     .native-comment-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 12px;
+      width: 38px;
+      height: 38px;
+    }
+
+    .native-comment-replies {
+      margin-left: 0;
+      padding-left: 10px;
     }
   }
 </style>
@@ -407,23 +512,30 @@ const { pageSize = 10 } = Astro.props;
     const authorContent = comment.link
       ? `<a class="native-comment-author" href="${escapeHtml(comment.link)}" target="_blank" rel="noopener noreferrer">${author}</a>`
       : `<span class="native-comment-author">${author}</span>`;
+    const replyCount = (comment.replies || []).length;
+    const toggleButton = !isReply && replyCount
+      ? `<button type="button" class="native-comment-toggle-replies" data-toggle-replies data-reply-count="${replyCount}">展开回复 (${replyCount})</button>`
+      : '';
     const replyButton = isReply
       ? ''
       : `<button type="button" class="native-comment-reply-btn" data-reply-id="${escapeHtml(comment.id)}" data-reply-nick="${author}">回复</button>`;
     const replies = (comment.replies || []).map((reply) => renderComment(reply, true)).join('');
+    const avatar = comment.avatarUrl
+      ? `<img src="${escapeHtml(comment.avatarUrl)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`
+      : escapeHtml(getInitial(comment.nick));
 
     return `
       <article class="native-comment${isReply ? ' is-reply' : ''}">
-        <div class="native-comment-avatar" aria-hidden="true">${escapeHtml(getInitial(comment.nick))}</div>
+        <div class="native-comment-avatar" aria-hidden="true">${avatar}</div>
         <div class="native-comment-main">
           <div class="native-comment-head">
             ${authorContent}
             <time class="native-comment-time">${escapeHtml(formatDate(comment.createdAt))}</time>
           </div>
           <div class="native-comment-body">${comment.contentHtml || ''}</div>
-          ${replyButton ? `<div class="native-comment-foot">${replyButton}</div>` : ''}
+          ${replyButton ? `<div class="native-comment-foot">${toggleButton}<span></span>${replyButton}</div>` : ''}
         </div>
-        ${replies ? `<div class="native-comment-replies">${replies}</div>` : ''}
+        ${replies ? `<div class="native-comment-replies" hidden>${replies}</div>` : ''}
       </article>
     `;
   }
@@ -433,6 +545,8 @@ const { pageSize = 10 } = Astro.props;
     const form = root.querySelector('[data-comment-form]');
     const listEl = root.querySelector('[data-comments-list]');
     const loadMoreBtn = root.querySelector('[data-load-more]');
+    const totalEl = root.querySelector('[data-comments-total]');
+    const countEl = root.querySelector('[data-comment-count]');
     const replyingEl = root.querySelector('[data-replying]');
     const replyingText = root.querySelector('[data-replying-text]');
     const cancelReplyBtn = root.querySelector('[data-cancel-reply]');
@@ -442,6 +556,7 @@ const { pageSize = 10 } = Astro.props;
       page: 1,
       hasMore: false,
       loading: false,
+      total: 0,
       comments: [],
     };
 
@@ -489,6 +604,21 @@ const { pageSize = 10 } = Astro.props;
         loadMoreBtn.hidden = !state.hasMore;
         loadMoreBtn.disabled = state.loading;
       }
+
+      if (totalEl) {
+        totalEl.textContent = `(${state.total})`;
+      }
+
+      root.querySelectorAll('[data-toggle-replies]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const card = button.closest('.native-comment');
+          const replies = card?.querySelector('.native-comment-replies');
+          const count = button.getAttribute('data-reply-count') || '0';
+          if (!replies) return;
+          replies.hidden = !replies.hidden;
+          button.textContent = replies.hidden ? `展开回复 (${count})` : `收起回复 (${count})`;
+        });
+      });
     }
 
     async function fetchComments(reset = false) {
@@ -513,6 +643,7 @@ const { pageSize = 10 } = Astro.props;
         state.comments = reset
           ? payload.data.comments
           : [...state.comments, ...payload.data.comments];
+        state.total = payload.data.total;
         state.hasMore = payload.data.hasMore;
         setStatus('评论区已加载', 'ok');
       } catch (error) {
@@ -528,7 +659,17 @@ const { pageSize = 10 } = Astro.props;
       form.querySelector('[name="nick"]').value = author.nick || '';
       form.querySelector('[name="mail"]').value = author.mail || '';
       form.querySelector('[name="link"]').value = author.link || '';
+      form.querySelector('[name="nick"]').placeholder = '匿名访客';
+      form.querySelector('[name="mail"]').placeholder = 'name@example.com';
+      form.querySelector('[name="content"]').placeholder = '还在等什么？来都来了，键盘敲起。';
       resetStartedAt();
+
+      const textarea = form.querySelector('[name="content"]');
+      const updateCount = () => {
+        if (countEl && textarea) countEl.textContent = String(textarea.value.length);
+      };
+      textarea?.addEventListener('input', updateCount);
+      updateCount();
 
       form.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -560,6 +701,7 @@ const { pageSize = 10 } = Astro.props;
 
           saveAuthor(formData);
           form.querySelector('[name="content"]').value = '';
+          updateCount();
           setReplyTarget('', '');
           resetStartedAt();
           state.page = 1;

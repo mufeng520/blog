@@ -1,0 +1,136 @@
+---
+import BaseLayout from './BaseLayout.astro';
+
+interface Props {
+  title: string;
+  active?: 'overview' | 'comments';
+}
+
+const { title, active = 'overview' } = Astro.props;
+
+const navItems = [
+  {
+    id: 'overview',
+    href: '/admin/',
+    label: '总览',
+    desc: '后台入口',
+  },
+  {
+    id: 'comments',
+    href: '/admin/comments/',
+    label: '评论',
+    desc: '公开、隐藏、标记垃圾',
+  },
+];
+---
+
+<BaseLayout title={`${title} - 后台管理`}>
+  <style>
+    .admin-shell {
+      display: grid;
+      grid-template-columns: 230px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+      padding: 8px 0 28px;
+    }
+
+    .admin-side,
+    .admin-main {
+      border: 1px solid rgba(142, 175, 156, 0.18);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 20px 52px rgba(89, 124, 106, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .admin-side {
+      position: sticky;
+      top: 18px;
+      padding: 18px;
+    }
+
+    .admin-brand {
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(142, 175, 156, 0.18);
+    }
+
+    .admin-brand-title {
+      color: #24332d;
+      font-family: "Noto Serif SC", serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .admin-brand-desc {
+      margin-top: 4px;
+      color: #6c7f75;
+      font-size: 0.82rem;
+    }
+
+    .admin-nav {
+      display: grid;
+      gap: 8px;
+    }
+
+    .admin-nav a {
+      display: grid;
+      gap: 2px;
+      padding: 10px 12px;
+      border-radius: 14px;
+      color: #5d7167;
+      text-decoration: none;
+      transition: color 0.22s ease, background 0.22s ease;
+    }
+
+    .admin-nav a:hover,
+    .admin-nav a.is-active {
+      color: #4d9273;
+      background: rgba(105, 179, 143, 0.1);
+    }
+
+    .admin-nav strong {
+      font-size: 0.92rem;
+    }
+
+    .admin-nav span {
+      font-size: 0.76rem;
+      color: #81978c;
+    }
+
+    .admin-main {
+      min-width: 0;
+      padding: 24px;
+    }
+
+    @media (max-width: 860px) {
+      .admin-shell {
+        grid-template-columns: 1fr;
+      }
+
+      .admin-side {
+        position: static;
+      }
+    }
+  </style>
+
+  <div class="admin-shell">
+    <aside class="admin-side">
+      <div class="admin-brand">
+        <div class="admin-brand-title">后台管理</div>
+        <div class="admin-brand-desc">站点数据入口</div>
+      </div>
+      <nav class="admin-nav" aria-label="后台导航">
+        {navItems.map((item) => (
+          <a href={item.href} class:list={[active === item.id && 'is-active']}>
+            <strong>{item.label}</strong>
+            <span>{item.desc}</span>
+          </a>
+        ))}
+      </nav>
+    </aside>
+    <main class="admin-main">
+      <slot />
+    </main>
+  </div>
+</BaseLayout>

@@ -1,0 +1,94 @@
+---
+import AdminLayout from '../../layouts/AdminLayout.astro';
+---
+
+<AdminLayout title="后台总览" active="overview">
+  <style>
+    .admin-overview {
+      display: grid;
+      gap: 18px;
+    }
+
+    .admin-overview-title {
+      margin: 0;
+      color: #24332d;
+      font-family: "Noto Serif SC", serif;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      line-height: 1.25;
+    }
+
+    .admin-overview-desc {
+      max-width: 720px;
+      color: #6c7f75;
+      line-height: 1.85;
+      font-size: 0.94rem;
+    }
+
+    .admin-modules {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .admin-module {
+      display: grid;
+      gap: 8px;
+      min-height: 142px;
+      padding: 18px;
+      border: 1px solid rgba(142, 175, 156, 0.16);
+      border-radius: 20px;
+      background: rgba(248, 252, 249, 0.82);
+      color: #52685e;
+      text-decoration: none;
+      transition: transform 0.22s ease, border-color 0.22s ease;
+    }
+
+    .admin-module:hover {
+      transform: translateY(-2px);
+      border-color: rgba(105, 179, 143, 0.34);
+    }
+
+    .admin-module strong {
+      color: #24332d;
+      font-size: 1.04rem;
+    }
+
+    .admin-module span {
+      line-height: 1.75;
+      font-size: 0.88rem;
+    }
+
+    .admin-module-status {
+      align-self: end;
+      width: fit-content;
+      padding: 5px 10px;
+      border-radius: 999px;
+      color: #4d9273;
+      background: rgba(105, 179, 143, 0.12);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+  </style>
+
+  <section class="admin-overview">
+    <div>
+      <h1 class="admin-overview-title">后台总览</h1>
+      <p class="admin-overview-desc">
+        这里作为站点数据管理的统一入口。当前先接入评论管理，后续可以继续放入碎碎念、文章元数据、工具数据等模块。
+      </p>
+    </div>
+
+    <div class="admin-modules">
+      <a class="admin-module" href="/admin/comments/">
+        <strong>评论管理</strong>
+        <span>查看评论、隐藏、恢复、标记垃圾或软删除。</span>
+        <div class="admin-module-status">已接入</div>
+      </a>
+      <div class="admin-module" aria-disabled="true">
+        <strong>内容数据</strong>
+        <span>预留给后续站点数据管理。</span>
+        <div class="admin-module-status">预留</div>
+      </div>
+    </div>
+  </section>
+</AdminLayout>
