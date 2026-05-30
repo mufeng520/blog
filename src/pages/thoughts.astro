@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import WalineComments from '../components/WalineComments.astro';
+import NativeComments from '../components/NativeComments.astro';
 import thoughts from '../data/thoughts.json';
 
 type ThoughtItem = {
@@ -257,7 +257,7 @@ const items = [...(thoughts as ThoughtItem[])].sort(
         </div>
         <div class="hero-chip">欢迎留下痕迹</div>
       </div>
-      <WalineComments />
+      <NativeComments />
     </section>
   </div>
 </BaseLayout>

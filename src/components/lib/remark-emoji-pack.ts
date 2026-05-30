@@ -1,5 +1,4 @@
 import { visit } from 'unist-util-visit'
-import emojiPacks from '../data/emoji-packs.json'
 import { getEmojiPackSize } from './emoji-packs'
 
 import type { Plugin } from 'unified'
@@ -24,7 +23,7 @@ export interface RemarkEmojiPackOptions {
  * :kaomoji_开心: → (´▽`)
  */
 const remarkEmojiPack: Plugin<[RemarkEmojiPackOptions?], Root> = (options = {}) => {
-  const { packs = emojiPacks as EmojiPacks, className = 'emoji' } = options
+  const { packs = {} as EmojiPacks, className = 'emoji' } = options
 
   return (tree: Root) => {
     visit(tree, 'text', (node: Text, index, parent) => {

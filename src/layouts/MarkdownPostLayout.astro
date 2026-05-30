@@ -2,7 +2,7 @@
 import BaseLayout from './BaseLayout.astro';
 import { calculateReadingTime } from '../components/lib/reading-time';
 import '../styles/markdown-fresh.css';
-import WalineComments from '../components/WalineComments.astro';
+import NativeComments from '../components/NativeComments.astro';
 
 const { frontmatter, rawContent } = Astro.props as { frontmatter: Record<string, unknown>; rawContent?: (() => string) | string };
 const title = frontmatter.title || '文章';
@@ -405,7 +405,7 @@ const readingTimeMinutes = rawMarkdown ? calculateReadingTime(rawMarkdown) : nul
       <section class="post-comments">
         <h2 class="post-comments-title">评论区</h2>
         <p class="post-comments-desc">如果这篇文章对你有帮助，或者你也有自己的看法，欢迎在下面继续聊。</p>
-        <WalineComments />
+        <NativeComments />
       </section>
     </article>
   </div>

@@ -1,0 +1,392 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="评论管理 - 木风">
+  <style>
+    .comment-admin {
+      display: grid;
+      gap: 18px;
+      padding: 8px 0 28px;
+    }
+
+    .comment-admin-panel,
+    .comment-admin-item {
+      border: 1px solid rgba(142, 175, 156, 0.18);
+      border-radius: 24px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 20px 52px rgba(89, 124, 106, 0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .comment-admin-panel {
+      padding: 24px;
+    }
+
+    .comment-admin-title {
+      margin: 0;
+      color: #24332d;
+      font-family: "Noto Serif SC", serif;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      line-height: 1.25;
+    }
+
+    .comment-admin-desc {
+      margin-top: 10px;
+      color: #6c7f75;
+      line-height: 1.8;
+      font-size: 0.94rem;
+    }
+
+    .comment-admin-controls {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) 170px auto;
+      gap: 12px;
+      margin-top: 20px;
+      align-items: end;
+    }
+
+    .comment-admin-controls label {
+      display: grid;
+      gap: 6px;
+      color: #52685e;
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    .comment-admin-controls input,
+    .comment-admin-controls select {
+      width: 100%;
+      height: 42px;
+      border: 1px solid rgba(142, 175, 156, 0.22);
+      border-radius: 14px;
+      padding: 0 12px;
+      background: rgba(250, 253, 251, 0.9);
+      color: #24332d;
+      font: inherit;
+    }
+
+    .comment-admin-button,
+    .comment-admin-action,
+    .comment-admin-load {
+      border: none;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.22s ease, opacity 0.22s ease;
+    }
+
+    .comment-admin-button,
+    .comment-admin-load {
+      padding: 11px 16px;
+      color: #fff;
+      background: linear-gradient(135deg, #72bc97, #4d9273);
+    }
+
+    .comment-admin-button:hover,
+    .comment-admin-load:hover,
+    .comment-admin-action:hover {
+      transform: translateY(-1px);
+    }
+
+    .comment-admin-status {
+      padding: 12px 14px;
+      border-radius: 16px;
+      color: #7a6540;
+      background: rgba(255, 248, 235, 0.88);
+      border: 1px solid rgba(229, 193, 123, 0.28);
+      font-size: 0.88rem;
+    }
+
+    .comment-admin-status.is-ok {
+      color: #4d9273;
+      background: rgba(105, 179, 143, 0.1);
+      border-color: rgba(105, 179, 143, 0.2);
+    }
+
+    .comment-admin-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .comment-admin-empty {
+      padding: 28px;
+      text-align: center;
+      color: #6c7f75;
+    }
+
+    .comment-admin-item {
+      padding: 18px;
+    }
+
+    .comment-admin-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+      color: #6c7f75;
+      font-size: 0.84rem;
+    }
+
+    .comment-admin-nick {
+      color: #24332d;
+      font-size: 1rem;
+      font-weight: 700;
+    }
+
+    .comment-admin-badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      color: #4d9273;
+      background: rgba(105, 179, 143, 0.12);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+
+    .comment-admin-content {
+      color: #3e5148;
+      line-height: 1.85;
+      font-size: 0.94rem;
+    }
+
+    .comment-admin-content :global(p) {
+      margin: 0 0 10px;
+    }
+
+    .comment-admin-content :global(p:last-child) {
+      margin-bottom: 0;
+    }
+
+    .comment-admin-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    .comment-admin-action {
+      padding: 8px 12px;
+      color: #4d9273;
+      background: rgba(105, 179, 143, 0.12);
+    }
+
+    .comment-admin-action[data-action="delete"],
+    .comment-admin-action[data-action="spam"] {
+      color: #8a5a3e;
+      background: rgba(198, 121, 75, 0.12);
+    }
+
+    .comment-admin-load {
+      justify-self: center;
+    }
+
+    @media (max-width: 768px) {
+      .comment-admin-panel {
+        padding: 20px;
+      }
+
+      .comment-admin-controls {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <section class="comment-admin">
+    <div class="comment-admin-panel">
+      <h1 class="comment-admin-title">评论管理</h1>
+      <p class="comment-admin-desc">
+        输入部署环境里的 `COMMENTS_ADMIN_TOKEN` 后，可以查看、隐藏、恢复、标记垃圾评论或软删除评论。
+      </p>
+
+      <form class="comment-admin-controls" data-admin-controls>
+        <label>
+          <span>管理 Token</span>
+          <input name="token" type="password" autocomplete="current-password" required />
+        </label>
+        <label>
+          <span>状态</span>
+          <select name="status">
+            <option value="">全部</option>
+            <option value="visible">公开</option>
+            <option value="hidden">隐藏</option>
+            <option value="spam">垃圾</option>
+            <option value="deleted">已删除</option>
+          </select>
+        </label>
+        <button class="comment-admin-button" type="submit">加载评论</button>
+      </form>
+    </div>
+
+    <div class="comment-admin-status" data-admin-status>等待加载评论。</div>
+    <div class="comment-admin-list" data-admin-list></div>
+    <button class="comment-admin-load" type="button" data-admin-load hidden>加载更多</button>
+  </section>
+
+  <script>
+    const TOKEN_KEY = 'native-comments-admin-token';
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function formatDate(value) {
+      try {
+        return new Intl.DateTimeFormat('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+        }).format(new Date(value));
+      } catch {
+        return value;
+      }
+    }
+
+    const form = document.querySelector('[data-admin-controls]');
+    const listEl = document.querySelector('[data-admin-list]');
+    const statusEl = document.querySelector('[data-admin-status]');
+    const loadMoreBtn = document.querySelector('[data-admin-load]');
+    const state = {
+      page: 1,
+      pageSize: 20,
+      hasMore: false,
+      loading: false,
+      comments: [],
+      token: localStorage.getItem(TOKEN_KEY) || '',
+      status: '',
+    };
+
+    if (form) {
+      form.querySelector('[name="token"]').value = state.token;
+    }
+
+    function setStatus(message, ok = false) {
+      if (!statusEl) return;
+      statusEl.textContent = message;
+      statusEl.classList.toggle('is-ok', ok);
+    }
+
+    function render() {
+      if (!listEl) return;
+
+      if (!state.comments.length) {
+        listEl.innerHTML = '<div class="comment-admin-panel comment-admin-empty">暂无评论。</div>';
+      } else {
+        listEl.innerHTML = state.comments.map((comment) => `
+          <article class="comment-admin-item">
+            <div class="comment-admin-meta">
+              <span class="comment-admin-nick">${escapeHtml(comment.nick)}</span>
+              <span class="comment-admin-badge">${escapeHtml(comment.status)}</span>
+              <span>${escapeHtml(comment.path)}</span>
+              <span>${escapeHtml(formatDate(comment.createdAt))}</span>
+              ${comment.parentId ? '<span>回复</span>' : '<span>主评论</span>'}
+            </div>
+            <div class="comment-admin-content">${comment.contentHtml || escapeHtml(comment.contentText)}</div>
+            <div class="comment-admin-actions">
+              <button type="button" class="comment-admin-action" data-id="${escapeHtml(comment.id)}" data-action="restore">公开</button>
+              <button type="button" class="comment-admin-action" data-id="${escapeHtml(comment.id)}" data-action="hide">隐藏</button>
+              <button type="button" class="comment-admin-action" data-id="${escapeHtml(comment.id)}" data-action="spam">垃圾</button>
+              <button type="button" class="comment-admin-action" data-id="${escapeHtml(comment.id)}" data-action="delete">删除</button>
+            </div>
+          </article>
+        `).join('');
+      }
+
+      document.querySelectorAll('[data-action][data-id]').forEach((button) => {
+        button.addEventListener('click', async () => {
+          await updateStatus(button.getAttribute('data-id'), button.getAttribute('data-action'));
+        });
+      });
+
+      if (loadMoreBtn) {
+        loadMoreBtn.hidden = !state.hasMore;
+        loadMoreBtn.disabled = state.loading;
+      }
+    }
+
+    async function fetchComments(reset = false) {
+      if (state.loading) return;
+      state.loading = true;
+      if (reset) {
+        state.page = 1;
+        state.comments = [];
+      }
+      setStatus('正在加载评论...');
+      render();
+
+      try {
+        const params = new URLSearchParams({
+          page: String(state.page),
+          pageSize: String(state.pageSize),
+        });
+        if (state.status) params.set('status', state.status);
+
+        const response = await fetch(`/api/admin/comments?${params.toString()}`, {
+          headers: {
+            authorization: `Bearer ${state.token}`,
+          },
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || '评论加载失败。');
+        }
+
+        state.comments = reset
+          ? payload.data.comments
+          : [...state.comments, ...payload.data.comments];
+        state.hasMore = payload.data.hasMore;
+        setStatus(`已加载 ${state.comments.length} / ${payload.data.total} 条评论。`, true);
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : '评论加载失败。');
+      } finally {
+        state.loading = false;
+        render();
+      }
+    }
+
+    async function updateStatus(id, action) {
+      if (!id || !action) return;
+      setStatus('正在更新评论状态...');
+      try {
+        const response = await fetch(`/api/admin/comments/${encodeURIComponent(id)}`, {
+          method: 'PATCH',
+          headers: {
+            'content-type': 'application/json',
+            authorization: `Bearer ${state.token}`,
+          },
+          body: JSON.stringify({ action }),
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || '状态更新失败。');
+        }
+        await fetchComments(true);
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : '状态更新失败。');
+      }
+    }
+
+    form?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const data = new FormData(form);
+      state.token = String(data.get('token') || '').trim();
+      state.status = String(data.get('status') || '');
+      localStorage.setItem(TOKEN_KEY, state.token);
+      await fetchComments(true);
+    });
+
+    loadMoreBtn?.addEventListener('click', async () => {
+      if (!state.hasMore) return;
+      state.page += 1;
+      await fetchComments(false);
+    });
+  </script>
+</BaseLayout>

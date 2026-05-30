@@ -1,0 +1,586 @@
+---
+interface Props {
+  pageSize?: number;
+}
+
+const { pageSize = 10 } = Astro.props;
+---
+
+<div class="native-comments" data-native-comments data-page-size={pageSize}>
+  <div class="native-comments-status" data-comments-status>评论区加载中...</div>
+
+  <form class="native-comments-form" data-comment-form>
+    <div class="native-comments-replying" data-replying hidden>
+      <span data-replying-text></span>
+      <button type="button" data-cancel-reply>取消回复</button>
+    </div>
+
+    <div class="native-comments-fields">
+      <label>
+        <span>昵称</span>
+        <input name="nick" maxlength="32" autocomplete="nickname" required />
+      </label>
+      <label>
+        <span>邮箱</span>
+        <input name="mail" type="email" maxlength="120" autocomplete="email" />
+      </label>
+      <label>
+        <span>网址</span>
+        <input name="link" type="url" maxlength="240" autocomplete="url" placeholder="https://" />
+      </label>
+    </div>
+
+    <label class="native-comments-content">
+      <span>评论</span>
+      <textarea name="content" maxlength="500" rows="5" required></textarea>
+    </label>
+
+    <label class="native-comments-hp" aria-hidden="true">
+      <span>Website</span>
+      <input name="honeyPot" tabindex="-1" autocomplete="off" />
+    </label>
+
+    <input type="hidden" name="parentId" />
+    <input type="hidden" name="startedAt" />
+
+    <div class="native-comments-actions">
+      <span class="native-comments-hint">支持 Markdown，最多 500 字。</span>
+      <button type="submit">发送评论</button>
+    </div>
+  </form>
+
+  <div class="native-comments-list" data-comments-list></div>
+
+  <button class="native-comments-load-more" type="button" data-load-more hidden>
+    加载更多
+  </button>
+</div>
+
+<style>
+  .native-comments {
+    display: grid;
+    gap: 16px;
+  }
+
+  .native-comments-status {
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: rgba(255, 248, 235, 0.88);
+    border: 1px solid rgba(229, 193, 123, 0.28);
+    color: #7a6540;
+    font-size: 0.86rem;
+    line-height: 1.7;
+  }
+
+  .native-comments-status.is-ok {
+    display: none;
+  }
+
+  .native-comments-form,
+  .native-comment {
+    border: 1px solid rgba(142, 175, 156, 0.16);
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.72);
+  }
+
+  .native-comments-form {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .native-comments-replying {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(105, 179, 143, 0.1);
+    color: #4d9273;
+    font-size: 0.86rem;
+  }
+
+  .native-comments-replying button,
+  .native-comments-actions button,
+  .native-comments-load-more,
+  .native-comment-reply-btn {
+    border: none;
+    border-radius: 999px;
+    font: inherit;
+    cursor: pointer;
+    transition: transform 0.22s ease, background 0.22s ease, color 0.22s ease;
+  }
+
+  .native-comments-replying button,
+  .native-comment-reply-btn {
+    padding: 6px 10px;
+    color: #4d9273;
+    background: rgba(105, 179, 143, 0.12);
+    font-size: 0.8rem;
+  }
+
+  .native-comments-replying button:hover,
+  .native-comment-reply-btn:hover {
+    transform: translateY(-1px);
+    background: rgba(105, 179, 143, 0.18);
+  }
+
+  .native-comments-fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .native-comments-form label {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+    color: #52685e;
+    font-size: 0.84rem;
+    font-weight: 600;
+  }
+
+  .native-comments-form input,
+  .native-comments-form textarea {
+    width: 100%;
+    border: 1px solid rgba(142, 175, 156, 0.22);
+    border-radius: 14px;
+    background: rgba(250, 253, 251, 0.9);
+    color: #24332d;
+    font: inherit;
+    font-weight: 400;
+    transition: border-color 0.22s ease, box-shadow 0.22s ease;
+  }
+
+  .native-comments-form input {
+    height: 42px;
+    padding: 0 12px;
+  }
+
+  .native-comments-form textarea {
+    min-height: 128px;
+    padding: 12px;
+    resize: vertical;
+  }
+
+  .native-comments-form input:focus,
+  .native-comments-form textarea:focus {
+    outline: none;
+    border-color: #69b38f;
+    box-shadow: 0 0 0 4px rgba(105, 179, 143, 0.12);
+  }
+
+  .native-comments-hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .native-comments-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .native-comments-hint {
+    color: #7c9287;
+    font-size: 0.82rem;
+  }
+
+  .native-comments-actions button,
+  .native-comments-load-more {
+    padding: 10px 16px;
+    color: #fff;
+    background: linear-gradient(135deg, #72bc97, #4d9273);
+    font-weight: 600;
+  }
+
+  .native-comments-actions button:hover,
+  .native-comments-load-more:hover {
+    transform: translateY(-1px);
+  }
+
+  .native-comments-actions button:disabled,
+  .native-comments-load-more:disabled {
+    cursor: not-allowed;
+    opacity: 0.62;
+    transform: none;
+  }
+
+  .native-comments-list {
+    display: grid;
+    gap: 12px;
+  }
+
+  .native-comments-empty {
+    padding: 22px;
+    border-radius: 18px;
+    color: #6c7f75;
+    background: rgba(248, 252, 249, 0.82);
+    border: 1px dashed rgba(142, 175, 156, 0.28);
+    text-align: center;
+  }
+
+  .native-comment {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .native-comment.is-reply {
+    margin-top: 10px;
+    background: rgba(248, 252, 249, 0.78);
+  }
+
+  .native-comment-avatar {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    color: #fff;
+    background: linear-gradient(135deg, #6aa68f, #456f86);
+    font-size: 0.94rem;
+    font-weight: 700;
+  }
+
+  .native-comment-main {
+    min-width: 0;
+  }
+
+  .native-comment-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+
+  .native-comment-author {
+    color: #24332d;
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .native-comment-author[href]:hover {
+    color: #4d9273;
+  }
+
+  .native-comment-time {
+    color: #81978c;
+    font-size: 0.78rem;
+  }
+
+  .native-comment-body {
+    color: #3e5148;
+    font-size: 0.94rem;
+    line-height: 1.85;
+    word-break: break-word;
+  }
+
+  .native-comment-body :global(p) {
+    margin: 0 0 10px;
+  }
+
+  .native-comment-body :global(p:last-child) {
+    margin-bottom: 0;
+  }
+
+  .native-comment-body :global(a) {
+    color: #4d9273;
+    text-decoration: none;
+    border-bottom: 1px solid rgba(105, 179, 143, 0.24);
+  }
+
+  .native-comment-body :global(code) {
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(105, 179, 143, 0.12);
+    color: #416d58;
+    font-size: 0.88em;
+  }
+
+  .native-comment-foot {
+    margin-top: 10px;
+  }
+
+  .native-comment-replies {
+    grid-column: 2;
+    display: grid;
+    gap: 0;
+  }
+
+  .native-comments-load-more {
+    justify-self: center;
+    margin-top: 4px;
+  }
+
+  @media (max-width: 768px) {
+    .native-comments-fields {
+      grid-template-columns: 1fr;
+    }
+
+    .native-comments-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+
+    .native-comments-actions button {
+      width: 100%;
+    }
+
+    .native-comment {
+      grid-template-columns: 36px 1fr;
+      padding: 14px;
+    }
+
+    .native-comment-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+    }
+  }
+</style>
+
+<script>
+  const AUTHOR_KEY = 'native-comment-author';
+
+  function escapeHtml(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function formatDate(value) {
+    try {
+      return new Intl.DateTimeFormat('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      }).format(new Date(value));
+    } catch {
+      return value;
+    }
+  }
+
+  function getInitial(nick) {
+    const clean = String(nick || '访客').trim();
+    return clean.slice(0, 1).toUpperCase();
+  }
+
+  function normalizePath(pathname) {
+    if (pathname !== '/' && !pathname.endsWith('/')) {
+      return `${pathname}/`;
+    }
+    return pathname;
+  }
+
+  function getAuthor() {
+    try {
+      return JSON.parse(localStorage.getItem(AUTHOR_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  }
+
+  function saveAuthor(formData) {
+    const author = {
+      nick: formData.get('nick') || '',
+      mail: formData.get('mail') || '',
+      link: formData.get('link') || '',
+    };
+    localStorage.setItem(AUTHOR_KEY, JSON.stringify(author));
+  }
+
+  function renderComment(comment, isReply = false) {
+    const author = escapeHtml(comment.nick);
+    const authorContent = comment.link
+      ? `<a class="native-comment-author" href="${escapeHtml(comment.link)}" target="_blank" rel="noopener noreferrer">${author}</a>`
+      : `<span class="native-comment-author">${author}</span>`;
+    const replyButton = isReply
+      ? ''
+      : `<button type="button" class="native-comment-reply-btn" data-reply-id="${escapeHtml(comment.id)}" data-reply-nick="${author}">回复</button>`;
+    const replies = (comment.replies || []).map((reply) => renderComment(reply, true)).join('');
+
+    return `
+      <article class="native-comment${isReply ? ' is-reply' : ''}">
+        <div class="native-comment-avatar" aria-hidden="true">${escapeHtml(getInitial(comment.nick))}</div>
+        <div class="native-comment-main">
+          <div class="native-comment-head">
+            ${authorContent}
+            <time class="native-comment-time">${escapeHtml(formatDate(comment.createdAt))}</time>
+          </div>
+          <div class="native-comment-body">${comment.contentHtml || ''}</div>
+          ${replyButton ? `<div class="native-comment-foot">${replyButton}</div>` : ''}
+        </div>
+        ${replies ? `<div class="native-comment-replies">${replies}</div>` : ''}
+      </article>
+    `;
+  }
+
+  document.querySelectorAll('[data-native-comments]').forEach((root) => {
+    const statusEl = root.querySelector('[data-comments-status]');
+    const form = root.querySelector('[data-comment-form]');
+    const listEl = root.querySelector('[data-comments-list]');
+    const loadMoreBtn = root.querySelector('[data-load-more]');
+    const replyingEl = root.querySelector('[data-replying]');
+    const replyingText = root.querySelector('[data-replying-text]');
+    const cancelReplyBtn = root.querySelector('[data-cancel-reply]');
+    const pageSize = Number(root.getAttribute('data-page-size') || '10');
+    const state = {
+      path: normalizePath(window.location.pathname),
+      page: 1,
+      hasMore: false,
+      loading: false,
+      comments: [],
+    };
+
+    function setStatus(message, type = 'info') {
+      if (!statusEl) return;
+      statusEl.textContent = message;
+      statusEl.classList.toggle('is-ok', type === 'ok');
+    }
+
+    function resetStartedAt() {
+      const startedAt = form?.querySelector('[name="startedAt"]');
+      if (startedAt) startedAt.value = String(Date.now());
+    }
+
+    function setReplyTarget(id, nick) {
+      const parentInput = form?.querySelector('[name="parentId"]');
+      if (parentInput) parentInput.value = id || '';
+      if (replyingEl && replyingText) {
+        if (id) {
+          replyingText.textContent = `正在回复 ${nick}`;
+          replyingEl.hidden = false;
+        } else {
+          replyingText.textContent = '';
+          replyingEl.hidden = true;
+        }
+      }
+      form?.querySelector('[name="content"]')?.focus();
+    }
+
+    function render() {
+      if (!listEl) return;
+      if (!state.comments.length) {
+        listEl.innerHTML = '<div class="native-comments-empty">还没有评论，来留下第一句话吧。</div>';
+      } else {
+        listEl.innerHTML = state.comments.map((comment) => renderComment(comment)).join('');
+      }
+
+      root.querySelectorAll('[data-reply-id]').forEach((button) => {
+        button.addEventListener('click', () => {
+          setReplyTarget(button.getAttribute('data-reply-id'), button.getAttribute('data-reply-nick'));
+        });
+      });
+
+      if (loadMoreBtn) {
+        loadMoreBtn.hidden = !state.hasMore;
+        loadMoreBtn.disabled = state.loading;
+      }
+    }
+
+    async function fetchComments(reset = false) {
+      if (state.loading) return;
+      state.loading = true;
+      if (reset) state.page = 1;
+      setStatus('评论区加载中...');
+      render();
+
+      try {
+        const params = new URLSearchParams({
+          path: state.path,
+          page: String(state.page),
+          pageSize: String(pageSize),
+        });
+        const response = await fetch(`/api/comments?${params.toString()}`);
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          throw new Error(payload.error || '评论加载失败。');
+        }
+
+        state.comments = reset
+          ? payload.data.comments
+          : [...state.comments, ...payload.data.comments];
+        state.hasMore = payload.data.hasMore;
+        setStatus('评论区已加载', 'ok');
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : '评论加载失败。');
+      } finally {
+        state.loading = false;
+        render();
+      }
+    }
+
+    const author = getAuthor();
+    if (form) {
+      form.querySelector('[name="nick"]').value = author.nick || '';
+      form.querySelector('[name="mail"]').value = author.mail || '';
+      form.querySelector('[name="link"]').value = author.link || '';
+      resetStartedAt();
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const submitBtn = form.querySelector('[type="submit"]');
+        const formData = new FormData(form);
+        submitBtn.disabled = true;
+        submitBtn.textContent = '发送中...';
+        setStatus('正在发送评论...');
+
+        try {
+          const response = await fetch('/api/comments', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              path: state.path,
+              parentId: formData.get('parentId') || null,
+              nick: formData.get('nick'),
+              mail: formData.get('mail'),
+              link: formData.get('link'),
+              content: formData.get('content'),
+              honeyPot: formData.get('honeyPot'),
+              startedAt: Number(formData.get('startedAt')),
+            }),
+          });
+          const payload = await response.json();
+          if (!response.ok || !payload.ok) {
+            throw new Error(payload.error || '评论发送失败。');
+          }
+
+          saveAuthor(formData);
+          form.querySelector('[name="content"]').value = '';
+          setReplyTarget('', '');
+          resetStartedAt();
+          state.page = 1;
+          await fetchComments(true);
+          setStatus('评论已发布', 'ok');
+        } catch (error) {
+          setStatus(error instanceof Error ? error.message : '评论发送失败。');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '发送评论';
+        }
+      });
+    }
+
+    cancelReplyBtn?.addEventListener('click', () => setReplyTarget('', ''));
+    loadMoreBtn?.addEventListener('click', async () => {
+      if (!state.hasMore) return;
+      state.page += 1;
+      await fetchComments(false);
+    });
+
+    fetchComments(true);
+  });
+</script>

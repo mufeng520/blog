@@ -9,14 +9,27 @@
     "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/react": "^4.4.2",
-    "@astrojs/rss": "^4.0.14",
-    "@astrojs/vue": "^5.1.4",
+    "@astrojs/react": "^5.0.6",
+    "@astrojs/rss": "^4.0.18",
+    "@astrojs/vercel": "^10.0.8",
+    "@astrojs/vue": "^6.0.1",
+    "@neondatabase/serverless": "^1.1.0",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
-    "astro": "^5.16.7",
+    "astro": "^6.4.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "rehype-autolink-headings": "^7.1.0",
+    "rehype-external-links": "^3.0.0",
+    "rehype-raw": "^7.0.0",
+    "rehype-sanitize": "^6.0.0",
+    "rehype-slug": "^6.0.0",
+    "rehype-stringify": "^10.0.1",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5",
     "vue": "^3.5.26"
   }
 }
