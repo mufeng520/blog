@@ -34,6 +34,61 @@ export type EmojiPacks = Record<string, EmojiPack>
 
 export const DEFAULT_EMOJI_SIZE = 28
 
+export const DEFAULT_EMOJI_PACKS: EmojiPacks = {
+  emoji: {
+    name: '基础表情',
+    type: 'text',
+    items: {
+      开心: '😄',
+      happy: '😄',
+      微笑: '🙂',
+      smile: '🙂',
+      大笑: '😂',
+      laugh: '😂',
+      喜欢: '😍',
+      love: '😍',
+      惊讶: '😮',
+      wow: '😮',
+      思考: '🤔',
+      think: '🤔',
+      难过: '😢',
+      sad: '😢',
+      生气: '😠',
+      angry: '😠',
+      赞: '👍',
+      like: '👍',
+      庆祝: '🎉',
+      party: '🎉',
+      爱心: '❤️',
+      heart: '❤️',
+      星星: '✨',
+      star: '✨',
+    },
+  },
+  kaomoji: {
+    name: '颜文字',
+    type: 'text',
+    items: {
+      开心: '(´▽`)',
+      happy: '(´▽`)',
+      害羞: '(*/ω＼*)',
+      shy: '(*/ω＼*)',
+      摸鱼: '(:3_ヽ)_',
+      moyu: '(:3_ヽ)_',
+      加油: '٩(ˊᗜˋ*)و',
+      cheer: '٩(ˊᗜˋ*)و',
+      围观: '( ･ω･)ﾉ',
+      watch: '( ･ω･)ﾉ',
+      思考: '(。-`ω´-)',
+      think: '(。-`ω´-)',
+      哭哭: '(；´д｀)ゞ',
+      cry: '(；´д｀)ゞ',
+      摊手: '┐(´ー｀)┌',
+      shrug: '┐(´ー｀)┌',
+    },
+  },
+}
+
 /**
  * 获取表情包的默认尺寸
  */

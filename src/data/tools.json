@@ -1,5 +1,21 @@
 [
   {
+    "name": "StickerCraft AI 贴纸工坊",
+    "url": "/tools/stickercraft/",
+    "type": "AI 工具",
+    "status": "已接入",
+    "description": "把提示词、参考图和风格预设组合起来，批量生成贴纸素材，支持透明背景修复、集合拆分和本地图库。",
+    "tags": ["AI", "贴纸", "设计"]
+  },
+  {
+    "name": "MuseUI 视觉设计台",
+    "url": "/tools/muse-ui/",
+    "type": "AI 工具",
+    "status": "已接入",
+    "description": "用于生成 UI 原型、封面、信息图、贴纸和视觉草稿，内置项目管理、画板和本地历史记录。",
+    "tags": ["AI", "UI", "视觉设计"]
+  },
+  {
     "name": "星穹铁道遗器看板",
     "url": "/honkai-relic/",
     "type": "工具",

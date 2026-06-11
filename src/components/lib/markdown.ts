@@ -9,6 +9,7 @@ import remarkRehype from 'remark-rehype'
 import remarkSpoiler from './remark-spoiler'
 import rehypeZoomImage from './rehype-zoom-image'
 import remarkEmojiPack from './remark-emoji-pack'
+import { DEFAULT_EMOJI_PACKS } from './emoji-packs'
 import rehypeStringify from 'rehype-stringify'
 import rehypeExternalLinks from 'rehype-external-links'
 import rehypeAutolinkHeadings from 'rehype-autolink-headings'
@@ -28,7 +29,7 @@ const processor = unified()
   .use(remarkGfm)
   .use(remarkBreaks)
   .use(remarkSpoiler)
-  .use(remarkEmojiPack)
+  .use(remarkEmojiPack, { packs: DEFAULT_EMOJI_PACKS })
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeRaw)
   .use(rehypeSanitize, {
@@ -43,6 +44,11 @@ const processor = unified()
         ['width'],
         ['height'],
         ['crossOrigin'],
+      ],
+      span: [
+        ...(defaultSchema.attributes?.span || []),
+        ['className', 'spoiler'],
+        ['title'],
       ],
     },
   })

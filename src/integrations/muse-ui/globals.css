@@ -1,0 +1,40 @@
+/* Flashing border for newly generated images */
+@keyframes flash-new {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.9); }
+  50% { box-shadow: 0 0 0 6px rgba(20, 184, 166, 0.4); }
+}
+.flash-new {
+  animation: flash-new 1.2s ease-in-out infinite;
+  z-index: 40;
+}
+
+/* Custom Scrollbar */
+body {
+  font-family: 'Inter', sans-serif;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #a8a29e; /* Stone 400 */
+  border-radius: 4px;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #292524; /* Stone 800 */
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #57534e; /* Stone 600 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #78716c; /* Stone 500 */
+}

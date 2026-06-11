@@ -9,10 +9,10 @@ import { z } from 'astro/zod';
 
 // 4. 定义你的集合
 const blog = defineCollection({ 
-    loader: glob({ pattern: "**/*.md", base: "./src/page/posts" }), // 使用 glob 加载器
+    loader: glob({ pattern: "**/*.md", base: "./src/pages/posts" }), // 使用 glob 加载器
     schema: z.object({
       title: z.string(),
-      description: z.string(),
+      description: z.string().default(''),
       // ... 其他字段
     }),
  });

@@ -45,7 +45,7 @@ const { pageSize = 10 } = Astro.props;
     <input type="hidden" name="startedAt" />
 
     <div class="native-comments-actions">
-      <span class="native-comments-hint">支持 Markdown、预设表情、剧透语法，如 || 剧透内容 ||</span>
+      <span class="native-comments-hint">支持 Markdown、预设表情（如 :emoji_happy:）、剧透语法，如 || 剧透内容 ||</span>
       <span class="native-comments-count"><span data-comment-count>0</span> / 1000</span>
       <button type="submit">
         <span>提交留言</span>
@@ -452,6 +452,24 @@ const { pageSize = 10 } = Astro.props;
     background: rgba(105, 179, 143, 0.12);
     color: #416d58;
     font-size: 0.88em;
+  }
+
+  .native-comment-body .spoiler {
+    display: inline;
+    padding: 1px 5px;
+    border-radius: 5px;
+    background: #111827;
+    color: transparent;
+    cursor: help;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    transition: color 0.18s ease, background 0.18s ease;
+  }
+
+  .native-comment-body .spoiler:hover,
+  .native-comment-body .spoiler:active {
+    color: #fff;
+    background: #1f2937;
   }
 
   .native-comment-body img {

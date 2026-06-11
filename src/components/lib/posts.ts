@@ -1,10 +1,29 @@
 import { promises as fs } from 'fs'
 import path from 'path'
-import matter from 'gray-matter'
+import { load as parseYaml } from 'js-yaml'
 import { calculateReadingTime } from './reading-time.ts'
 import { isDev } from './env.ts'
 
-const postsDirectory = path.join(process.cwd(), 'posts')
+const postsDirectory = path.join(process.cwd(), 'src', 'pages', 'posts')
+
+function parseFrontmatter(source: string): { data: Record<string, any>; content: string } {
+  const match = source.match(/^---\s*\r?\n([\s\S]*?)\r?\n---\s*\r?\n?([\s\S]*)$/)
+  if (!match) {
+    return { data: {}, content: source }
+  }
+
+  const data = (parseYaml(match[1]) || {}) as Record<string, any>
+  return {
+    data,
+    content: match[2] || '',
+  }
+}
+
+function getPostDate(data: Record<string, any>): string {
+  const value = data.date || data.pubdate || data.pubDate || data.publishedAt
+  const date = value instanceof Date ? value : new Date(String(value || 0))
+  return Number.isNaN(date.getTime()) ? new Date(0).toISOString() : date.toISOString()
+}
 
 export interface PostMetadata {
   title: string
@@ -64,13 +83,13 @@ export async function getAllPosts(): Promise<PostMetadata[]> {
       const fullPath = path.join(postsDirectory, relativePath)
 
       const fileContents = await fs.readFile(fullPath, 'utf8')
-      const { data, content } = matter(fileContents)
+      const { data, content } = parseFrontmatter(fileContents)
 
       return {
         slug,
         title: data.title || slug,
-        date: new Date(data.date).toISOString(),
-        excerpt: data.excerpt || '',
+        date: getPostDate(data),
+        excerpt: data.excerpt || data.description || '',
         tags: data.tags || [],
         author: data.author || '',
         draft: data.draft || false,
@@ -123,13 +142,13 @@ export async function getPostBySlug(slug: string): Promise<Post | null> {
 
     const fullPath = path.join(postsDirectory, matchingFile)
     const fileContents = await fs.readFile(fullPath, 'utf8')
-    const { data, content } = matter(fileContents)
+    const { data, content } = parseFrontmatter(fileContents)
 
     return {
       slug,
       title: data.title || slug,
-      date: new Date(data.date).toISOString(),
-      excerpt: data.excerpt || '',
+      date: getPostDate(data),
+      excerpt: data.excerpt || data.description || '',
       tags: data.tags || [],
       author: data.author || '',
       draft: data.draft || false,
