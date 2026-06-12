@@ -44,7 +44,7 @@ export default function ProjectStatusControl({
   };
 
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 rounded-lg border border-teal-200 dark:border-teal-800 mr-2">
+    <div className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 rounded-lg border border-teal-200 dark:border-teal-800 sm:mr-2 min-w-0 max-w-[40vw] sm:max-w-none">
       {isEditingName ? (
         <input
           ref={nameInputRef}
@@ -55,19 +55,19 @@ export default function ProjectStatusControl({
             if (event.key === 'Enter') commitRename();
             if (event.key === 'Escape') setIsEditingName(false);
           }}
-          className="text-xs font-bold bg-transparent border-b border-teal-400 dark:border-teal-600 outline-none max-w-[150px] text-teal-700 dark:text-teal-300"
+          className="text-xs font-bold bg-transparent border-b border-teal-400 dark:border-teal-600 outline-none w-24 sm:max-w-[150px] text-teal-700 dark:text-teal-300"
         />
       ) : (
         <button
           onClick={startRename}
-          className="text-xs font-bold max-w-[150px] truncate hover:underline cursor-pointer"
+          className="text-xs font-bold max-w-[22vw] sm:max-w-[150px] truncate hover:underline cursor-pointer"
           title={lang === 'zh' ? zh.rename : 'Click to rename'}
         >
           {currentProject.name}
         </button>
       )}
 
-      <div className="h-3 w-px bg-teal-200 dark:bg-teal-800 mx-1" />
+      <div className="h-3 w-px bg-teal-200 dark:bg-teal-800 mx-0.5 sm:mx-1" />
 
       <button
         onClick={() => {

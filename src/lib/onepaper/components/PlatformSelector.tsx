@@ -27,15 +27,15 @@ const PlatformSelector: React.FC<Props> = ({
   const t = I18N[lang];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       <div>
         <label className="block text-sm font-medium text-stone-600 dark:text-stone-400 mb-2">{t.platform}</label>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-4 gap-1.5 sm:gap-2">
           {PLATFORMS.map((p) => (
             <button
               key={p.id}
               onClick={() => onSelectPlatform(p.id)}
-              className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${
+              className={`flex flex-col items-center justify-center min-h-20 sm:min-h-24 p-2 sm:p-3 rounded-lg border transition-all ${
                 selectedPlatform === p.id
                   ? 'bg-teal-50 dark:bg-teal-500/10 border-teal-500 text-teal-600 dark:text-teal-200'
                   : 'bg-white dark:bg-stone-800 border-stone-200 dark:border-stone-700 text-stone-500 dark:text-stone-400 hover:border-stone-400 dark:hover:border-stone-600'
@@ -43,14 +43,14 @@ const PlatformSelector: React.FC<Props> = ({
             >
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
-                className="w-6 h-6 mb-1" 
+                className="w-5 h-5 sm:w-6 sm:h-6 mb-1" 
                 fill="none" 
                 viewBox="0 0 24 24" 
                 stroke="currentColor" 
                 strokeWidth={1.5}
                 dangerouslySetInnerHTML={{ __html: p.icon }}
               />
-              <span className="text-xs font-semibold">{lang === 'zh' ? p.label_zh : p.label}</span>
+              <span className="text-[11px] sm:text-xs font-semibold leading-tight">{lang === 'zh' ? p.label_zh : p.label}</span>
             </button>
           ))}
         </div>
@@ -75,7 +75,7 @@ const PlatformSelector: React.FC<Props> = ({
         </select>
       </div>
 
-      <div className="p-4 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700">
+      <div className="p-3 sm:p-4 bg-stone-50 dark:bg-stone-800/50 rounded-lg border border-stone-200 dark:border-stone-700">
         <div className="flex items-center justify-between mb-3">
           <label className="text-sm font-medium text-stone-700 dark:text-stone-300">{t.customRes}</label>
           <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">

@@ -2,6 +2,8 @@
   color: #31423a;
   font-size: 1.02rem;
   line-height: 1.9;
+  min-width: 0;
+  overflow-wrap: break-word;
 }
 
 .post-content :global(h1),
@@ -56,6 +58,7 @@
 
 .post-content :global(p) {
   text-wrap: pretty;
+  overflow-wrap: anywhere;
 }
 
 .post-content :global(a) {
@@ -63,6 +66,8 @@
   text-decoration: none;
   border-bottom: 1px solid rgba(105, 179, 143, 0.28);
   transition: color 0.25s ease, border-color 0.25s ease;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .post-content :global(a:hover) {
@@ -78,6 +83,7 @@
 .post-content :global(li) {
   margin-bottom: 0.55rem;
   color: #41544a;
+  overflow-wrap: anywhere;
 }
 
 .post-content :global(li)::marker {
@@ -115,7 +121,10 @@
 }
 
 .post-content :global(pre) {
+  max-width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
   padding: 18px 20px;
   border-radius: 18px;
   border: 1px solid rgba(142, 175, 156, 0.2);
@@ -124,25 +133,41 @@
 }
 
 .post-content :global(pre code) {
+  display: block;
+  min-width: max-content;
   padding: 0;
   background: transparent;
   color: #31423a;
   font-size: inherit;
+  white-space: pre;
+  word-break: normal;
+  overflow-wrap: normal;
 }
 
 .post-content :global(.astro-code) {
+  max-width: 100%;
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
   background: #f3f8f4 !important;
   color: #31423a !important;
 }
 
 .post-content :global(table) {
   width: 100%;
-  overflow: hidden;
   border-collapse: collapse;
   border-radius: 18px;
   border: 1px solid rgba(142, 175, 156, 0.18);
   background: rgba(255, 255, 255, 0.9);
   box-shadow: 0 18px 36px rgba(89, 124, 106, 0.08);
+}
+
+.post-content :global(figure),
+.post-content :global(.expressive-code),
+.post-content :global(.expressive-code figure),
+.post-content :global(.expressive-code .frame) {
+  max-width: 100%;
+  min-width: 0;
 }
 
 .post-content :global(th) {
@@ -179,7 +204,10 @@
 
 .post-content :global(figure.highlight) {
   margin: 25px 0;
-  overflow: hidden;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
   border-radius: 18px;
   box-shadow: 0 18px 36px rgba(89, 124, 106, 0.08);
 }
@@ -221,7 +249,42 @@
   }
 
   .post-content :global(pre) {
-    padding: 15px 16px;
-    font-size: 0.86rem;
+    padding: 14px 12px;
+    border-radius: 12px;
+    font-size: 0.82rem;
+    margin-inline: 0;
+  }
+
+  .post-content :global(pre code) {
+    line-height: 1.72;
+  }
+
+  .post-content :global(blockquote) {
+    padding: 14px 14px;
+    border-radius: 0 12px 12px 0;
+  }
+
+  .post-content :global(table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 12px;
+    white-space: nowrap;
+  }
+
+  .post-content :global(th),
+  .post-content :global(td) {
+    padding: 10px 12px;
+  }
+
+  .post-content :global(img) {
+    margin: 22px auto;
+    border-radius: 12px;
+  }
+
+  .post-content :global(figure.highlight) {
+    border-radius: 12px;
   }
 }

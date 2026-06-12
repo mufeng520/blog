@@ -1,5 +1,6 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import type { OnePaperAppActions, OnePaperAppState } from '../../hooks/useAppLogic';
+import IconLoader from '../IconLoader';
 
 const CanvasBoard = lazy(() => import('../CanvasBoard'));
 const EditorSidebarPanel = lazy(() => import('./EditorSidebarPanel'));
@@ -13,12 +14,46 @@ export default function EditorWorkspaceLayout({
   state,
   actions,
 }: Props) {
+  const [mobilePane, setMobilePane] = useState<'settings' | 'canvas'>('settings');
+
   return (
-    <div className="flex-1 flex overflow-hidden">
-      <Suspense fallback={<div className="w-[360px] shrink-0 border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900" />}>
-        <EditorSidebarPanel state={state} actions={actions} />
-      </Suspense>
-      <div id="main-canvas-area" className="flex-1 bg-stone-50 dark:bg-stone-950 relative flex flex-col min-w-0">
+    <div className="flex-1 flex flex-col md:flex-row overflow-hidden min-h-0">
+      <div className="md:hidden shrink-0 border-b border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 px-3 py-2">
+        <div className="grid grid-cols-2 gap-2 rounded-xl bg-stone-100 dark:bg-stone-800 p-1">
+          <button
+            type="button"
+            onClick={() => setMobilePane('settings')}
+            className={`min-h-10 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+              mobilePane === 'settings'
+                ? 'bg-white dark:bg-stone-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                : 'text-stone-500 dark:text-stone-400'
+            }`}
+          >
+            <IconLoader name="settings" size={16} />
+            {state.lang === 'zh' ? '参数' : 'Settings'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobilePane('canvas')}
+            className={`min-h-10 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-colors ${
+              mobilePane === 'canvas'
+                ? 'bg-white dark:bg-stone-700 text-teal-700 dark:text-teal-300 shadow-sm'
+                : 'text-stone-500 dark:text-stone-400'
+            }`}
+          >
+            <IconLoader name="palette" size={16} />
+            {state.lang === 'zh' ? '画布' : 'Canvas'}
+          </button>
+        </div>
+      </div>
+
+      <div className={`${mobilePane === 'settings' ? 'flex' : 'hidden'} md:flex flex-1 md:flex-none md:w-[360px] min-h-0`}>
+        <Suspense fallback={<div className="w-full md:w-[360px] h-full shrink-0 border-r border-stone-200 bg-white dark:border-stone-800 dark:bg-stone-900" />}>
+          <EditorSidebarPanel state={state} actions={actions} />
+        </Suspense>
+      </div>
+
+      <div id="main-canvas-area" className={`${mobilePane === 'canvas' ? 'flex' : 'hidden'} md:flex flex-1 bg-stone-50 dark:bg-stone-950 relative flex-col min-w-0 min-h-0`}>
         <Suspense fallback={null}>
           <CanvasBoard
             artboards={state.artboards}

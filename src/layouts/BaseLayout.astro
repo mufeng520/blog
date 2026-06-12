@@ -12,7 +12,7 @@ const { title, headerQuote } = Astro.props;
 <html lang="zh">
   <head>
     <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{title}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -40,6 +40,18 @@ const { title, headerQuote } = Astro.props;
         box-sizing: border-box;
       }
 
+      html {
+        width: 100%;
+        overflow-x: hidden;
+      }
+
+      img,
+      video,
+      canvas,
+      svg {
+        max-width: 100%;
+      }
+
       body {
         font-family: "Outfit", "PingFang SC", "Microsoft YaHei", sans-serif;
         background:
@@ -52,6 +64,7 @@ const { title, headerQuote } = Astro.props;
         display: flex;
         flex-direction: column;
         position: relative;
+        width: 100%;
         overflow-x: hidden;
       }
 
@@ -99,6 +112,7 @@ const { title, headerQuote } = Astro.props;
         border-radius: 999px;
         backdrop-filter: blur(20px);
         z-index: 2;
+        min-width: 0;
       }
 
       .header-left {
@@ -187,6 +201,7 @@ const { title, headerQuote } = Astro.props;
         font-weight: 500;
         padding: 10px 14px;
         border-radius: 999px;
+        min-height: 42px;
         transition: color 0.28s ease, background 0.28s ease, transform 0.28s ease;
       }
 
@@ -233,10 +248,12 @@ const { title, headerQuote } = Astro.props;
         position: relative;
         z-index: 1;
         padding: 28px 0 0;
+        min-width: 0;
       }
 
       .page-shell {
         max-width: 1180px;
+        width: 100%;
         margin: 0 auto;
         padding: 0 20px;
       }
@@ -289,16 +306,32 @@ const { title, headerQuote } = Astro.props;
       }
 
       @media (max-width: 768px) {
+        main {
+          padding-top: 20px;
+        }
+
         .header {
           grid-template-columns: 1fr;
-          border-radius: 28px;
-          padding: 16px;
-          gap: 14px;
+          width: calc(100% - 20px);
+          max-width: none;
+          margin-top: 10px;
+          border-radius: 24px;
+          padding: 14px 12px 16px;
+          gap: 12px;
+        }
+
+        .page-shell {
+          max-width: none;
+          padding: 0 10px;
         }
 
         .footer {
-          padding: 20px 16px;
+          width: calc(100% - 20px);
+          max-width: none;
+          margin: 28px auto max(16px, env(safe-area-inset-bottom));
+          padding: 18px 12px;
           font-size: 0.85rem;
+          border-radius: 22px;
         }
 
         .header-left,
@@ -307,9 +340,34 @@ const { title, headerQuote } = Astro.props;
           text-align: center;
         }
 
+        .brand-link strong {
+          font-size: 0.96rem;
+          letter-spacing: 0.02em;
+        }
+
+        .brand-link span {
+          font-size: 0.7rem;
+        }
+
+        .nav-links {
+          width: 100%;
+          gap: 6px;
+        }
+
+        .nav-links a {
+          padding: 8px 10px;
+          min-height: 40px;
+        }
+
         .header-right {
           justify-content: center;
           flex-wrap: wrap;
+        }
+
+        .rss-icon-link {
+          width: 40px;
+          height: 40px;
+          min-height: 40px;
         }
 
         .header-quote {
@@ -319,6 +377,11 @@ const { title, headerQuote } = Astro.props;
 
         .footer-links {
           gap: 8px;
+        }
+
+        .footer-links a {
+          min-height: 40px;
+          padding: 8px 10px;
         }
       }
     </style>

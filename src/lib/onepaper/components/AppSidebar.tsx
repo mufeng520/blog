@@ -269,8 +269,8 @@ const AppSidebar: React.FC<Props> = (props) => {
     const isFree = props.activeRole === 'free';
 
     return (
-        <div className="w-[360px] bg-white dark:bg-stone-900 border-r border-stone-200 dark:border-stone-800 flex flex-col z-10 shrink-0">
-            <div className="flex-1 overflow-y-auto custom-scrollbar p-4 space-y-6">
+        <div className="w-full md:w-[360px] h-full min-h-0 bg-white dark:bg-stone-900 md:border-r border-stone-200 dark:border-stone-800 flex flex-col z-10 shrink-0">
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-3 sm:p-4 space-y-5 sm:space-y-6 overscroll-contain">
                 {/* Role Switcher Dropdown */}
                 <div className="flex items-center gap-2">
                     <div className="relative flex-1" ref={roleDropdownRef}>
@@ -296,7 +296,7 @@ const AppSidebar: React.FC<Props> = (props) => {
 
                         {isRoleDropdownOpen && (
                             <div className="absolute z-30 left-0 right-0 mt-2 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-700 rounded-xl shadow-xl overflow-hidden">
-                            <div className="p-2 grid grid-cols-3 gap-1.5">
+                            <div className="p-2 grid grid-cols-3 gap-1.5 max-h-[60vh] overflow-y-auto custom-scrollbar">
                                 {ROLES.map(role => {
                                     const isActive = role.id === props.activeRole;
                                     return (
@@ -665,7 +665,7 @@ const AppSidebar: React.FC<Props> = (props) => {
                 </>
             </div>
 
-            <div className="p-4 border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 z-20">
+            <div className="shrink-0 p-3 sm:p-4 border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 z-20 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
                 <div className="flex gap-2 mb-3">
                     <select
                         value={props.promptLanguage || ''}

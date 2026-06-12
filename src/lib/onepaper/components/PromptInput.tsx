@@ -212,7 +212,7 @@ const PromptInput: React.FC<Props> = ({
                   ? (lang === 'zh' ? '描述整个应用程序的主题、功能和目标受众...' : 'Describe the overall app theme, function, and target audience...')
                   : t.descPlaceholder
                 }
-                className="w-full bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-200 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 p-2.5 resize-none placeholder-stone-400"
+                className="w-full min-h-28 bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-700 text-stone-900 dark:text-stone-200 text-sm rounded-lg focus:ring-teal-500 focus:border-teal-500 p-2.5 resize-y placeholder-stone-400"
               />
             </div>
           </div>

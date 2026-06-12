@@ -71,6 +71,7 @@ const { pageSize = 10 } = Astro.props;
     gap: 20px;
     width: min(100%, 1080px);
     margin-inline: auto;
+    min-width: 0;
     --comment-border: rgba(17, 24, 39, 0.12);
     --comment-border-strong: rgba(17, 24, 39, 0.2);
     --comment-bg: rgba(255, 255, 255, 0.92);
@@ -120,6 +121,8 @@ const { pageSize = 10 } = Astro.props;
     border-radius: 8px;
     background: var(--comment-bg);
     box-shadow: none;
+    min-width: 0;
+    overflow: hidden;
   }
 
   .native-comments-form {
@@ -262,7 +265,7 @@ const { pageSize = 10 } = Astro.props;
     align-items: center;
     justify-content: center;
     gap: 7px;
-    min-height: 34px;
+    min-height: 40px;
     padding: 8px 13px;
     color: #fff;
     background: var(--comment-primary);
@@ -377,6 +380,7 @@ const { pageSize = 10 } = Astro.props;
     align-items: center;
     gap: 9px;
     min-width: 0;
+    flex-wrap: wrap;
   }
 
   .native-comment-detail {
@@ -387,6 +391,7 @@ const { pageSize = 10 } = Astro.props;
     color: var(--comment-muted-soft);
     font-size: 0.82rem;
     line-height: 1.45;
+    flex-wrap: wrap;
   }
 
   .native-comment-author {
@@ -422,6 +427,7 @@ const { pageSize = 10 } = Astro.props;
     color: #1f2937;
     font-size: 1rem;
     line-height: 1.76;
+    overflow-wrap: anywhere;
     word-break: break-word;
     min-height: 24px;
   }
@@ -444,6 +450,8 @@ const { pageSize = 10 } = Astro.props;
     color: var(--comment-primary);
     text-decoration: none;
     border-bottom: 1px solid rgba(105, 179, 143, 0.24);
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
 
   .native-comment-body code {
@@ -452,6 +460,12 @@ const { pageSize = 10 } = Astro.props;
     background: rgba(105, 179, 143, 0.12);
     color: #416d58;
     font-size: 0.88em;
+  }
+
+  .native-comment-body pre {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .native-comment-body .spoiler {
@@ -577,8 +591,27 @@ const { pageSize = 10 } = Astro.props;
   }
 
   @media (max-width: 768px) {
+    .native-comments {
+      gap: 16px;
+      width: 100%;
+    }
+
+    .native-comments-compose-title,
+    .native-comments-list-title {
+      font-size: 1.02rem;
+    }
+
+    .native-comments-status {
+      padding: 10px 12px;
+      font-size: 0.82rem;
+    }
+
     .native-comments-fields {
       grid-template-columns: 1fr;
+    }
+
+    .native-comments-fields label {
+      padding: 13px 14px 12px;
     }
 
     .native-comments-fields label + label {
@@ -586,18 +619,35 @@ const { pageSize = 10 } = Astro.props;
       border-top: 1px solid rgba(142, 175, 156, 0.14);
     }
 
+    .native-comments-form label {
+      font-size: 0.8rem;
+    }
+
+    .native-comments-form textarea {
+      min-height: 132px;
+      padding: 14px;
+    }
+
     .native-comments-actions {
       align-items: flex-start;
       flex-direction: column;
       gap: 10px;
+      padding: 12px 14px 14px;
+    }
+
+    .native-comments-hint {
+      margin-right: 0;
+      font-size: 0.78rem;
+      line-height: 1.6;
     }
 
     .native-comments-actions button {
       width: 100%;
+      min-height: 44px;
     }
 
     .native-comment {
-      padding: 18px;
+      padding: 16px 14px;
     }
 
     .native-comment-avatar {
@@ -608,6 +658,27 @@ const { pageSize = 10 } = Astro.props;
     .native-comment-replies {
       margin-left: 12px;
       padding-left: 14px;
+    }
+
+    .native-comment-foot {
+      align-items: stretch;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 16px;
+      padding-top: 12px;
+    }
+
+    .native-comment-foot > span:empty {
+      display: none;
+    }
+
+    .native-comment-toggle-replies,
+    .native-comment-reply-btn {
+      width: 100%;
+      min-height: 40px;
+      justify-content: center;
+      margin-left: 0;
+      background: #f3f4f6;
     }
   }
 </style>

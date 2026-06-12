@@ -311,7 +311,7 @@ const CanvasBoard: React.FC<Props> = ({
     const handleSpecUpdate = (id: string, newDs: DesignSystem) => { if (onUpdateArtboard) { const target = artboards.find(a => a.id === id); if (target && target.image.details) { onUpdateArtboard(id, { image: { ...target.image, details: { ...target.image.details, designSystem: newDs } } }); } } };
 
     return (
-        <div className="relative w-full h-full overflow-hidden bg-[#e5e5e5] dark:bg-[#1c1917] select-none">
+        <div className="relative w-full h-full overflow-hidden bg-[#e5e5e5] dark:bg-[#1c1917] select-none touch-pan-x touch-pan-y">
             <div ref={dotGridRef} className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #888 1px, transparent 1px)', backgroundSize: `${Math.max(2, 20 * scale)}px ${Math.max(2, 20 * scale)}px`, backgroundPosition: `${position?.x ?? 0}px ${position?.y ?? 0}px`, transition: 'opacity 0.15s ease-out' }} />
             {isDragOver && (<div className="absolute inset-0 bg-teal-500/20 z-50 flex items-center justify-center border-4 border-teal-500 border-dashed pointer-events-none"><span className="text-2xl font-bold text-teal-600 bg-white/80 px-4 py-2 rounded">{lang === 'zh' ? '释放以上传图片到画布' : 'Drop to add image to canvas'}</span></div>)}
 
@@ -500,14 +500,14 @@ const CanvasBoard: React.FC<Props> = ({
             </div>
 
             {/* Controls */}
-            <div className="absolute bottom-6 right-6 flex items-center gap-2 bg-white dark:bg-stone-800 p-2 rounded-lg shadow-lg border border-stone-200 dark:border-stone-700">
-                <button onClick={() => setScale(s => Math.max(0.1, s - 0.1))} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300">-</button>
-                <span className="text-xs font-mono w-10 text-center text-stone-600 dark:text-stone-300">{Math.round(scale * 100)}%</span>
-                <button onClick={() => setScale(s => Math.min(5, s + 0.1))} className="p-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300">+</button>
-                <div className="w-px h-4 bg-stone-300 dark:bg-stone-600 mx-1"></div>
-                <button onClick={onAutoArrange} className="text-xs px-2 py-1 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300 flex items-center gap-1"><IconLoader name="tidy" size={14} /> {lang === 'zh' ? '整理' : 'Tidy'}</button>
-                <button onClick={fitToScreen} className="text-xs px-2 py-1 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300">{t.fitToScreen}</button>
-                <button onClick={resetView} className="text-xs px-2 py-1 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300">{t.resetView}</button>
+            <div className="absolute left-3 right-3 bottom-3 md:left-auto md:right-6 md:bottom-6 flex items-center gap-2 bg-white dark:bg-stone-800 p-2 rounded-lg shadow-lg border border-stone-200 dark:border-stone-700 overflow-x-auto custom-scrollbar max-w-[calc(100%-1.5rem)] md:max-w-none pb-[max(0.5rem,env(safe-area-inset-bottom))] md:pb-2">
+                <button onClick={() => setScale(s => Math.max(0.1, s - 0.1))} className="shrink-0 min-w-10 min-h-10 p-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300">-</button>
+                <span className="shrink-0 text-xs font-mono w-10 text-center text-stone-600 dark:text-stone-300">{Math.round(scale * 100)}%</span>
+                <button onClick={() => setScale(s => Math.min(5, s + 0.1))} className="shrink-0 min-w-10 min-h-10 p-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300">+</button>
+                <div className="w-px h-4 bg-stone-300 dark:bg-stone-600 mx-1 shrink-0"></div>
+                <button onClick={onAutoArrange} className="shrink-0 min-h-10 text-xs px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300 flex items-center gap-1"><IconLoader name="tidy" size={14} /> {lang === 'zh' ? '整理' : 'Tidy'}</button>
+                <button onClick={fitToScreen} className="shrink-0 min-h-10 text-xs px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300">{t.fitToScreen}</button>
+                <button onClick={resetView} className="shrink-0 min-h-10 text-xs px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300">{t.resetView}</button>
             </div>
 
             {contextMenu && (<div className="fixed bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded shadow-xl py-1 z-[100] w-48" style={{ left: contextMenu.x, top: contextMenu.y }}><button className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2" onClick={handleRegenerateClick}><IconLoader name="refresh" size={14} /> {lang === 'zh' ? '重新生成' : 'Regenerate'}</button><button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2" onClick={() => { onDeleteArtboard(contextMenu.artboardId); setContextMenu(null); }}><IconLoader name="trash" size={14} /> {lang === 'zh' ? '从画布移除' : 'Remove from Canvas'}</button></div>)}
