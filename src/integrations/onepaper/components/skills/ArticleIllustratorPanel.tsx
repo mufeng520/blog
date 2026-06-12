@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ArticleIllustratorConfig, LangType } from '../../types';
-import DesignMdSelector, { type SelectorOption } from '../DesignMdSelector';
+import GenericOptionSelector, { type SelectorOption } from './shared/GenericOptionSelector';
 
 interface Props {
   config: ArticleIllustratorConfig;
@@ -46,7 +46,7 @@ export const ArticleIllustratorPanel: React.FC<Props> = ({ config, onChange, lan
 
   return (
     <div className="space-y-4">
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.type}
         onSelect={(id: string | null) => id && update({ type: id as any })}
         lang={lang}
@@ -56,7 +56,7 @@ export const ArticleIllustratorPanel: React.FC<Props> = ({ config, onChange, lan
         favoritesKey="skill-article-type"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.style}
         onSelect={(id: string | null) => id && update({ style: id })}
         lang={lang}
@@ -66,7 +66,7 @@ export const ArticleIllustratorPanel: React.FC<Props> = ({ config, onChange, lan
         favoritesKey="skill-article-style"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.density}
         onSelect={(id: string | null) => id && update({ density: id as any })}
         lang={lang}

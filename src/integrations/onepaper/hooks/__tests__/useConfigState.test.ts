@@ -1,7 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { useConfigState } from '../useConfigState';
 import { describe, it, expect } from 'vitest';
-import { RESOLUTION_PRESETS, UI_STYLES } from '../../constants';
 
 describe('useConfigState', () => {
     it('should initialize with defaults', () => {

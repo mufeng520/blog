@@ -92,10 +92,10 @@ export function ToolLoading({ toolName }: { toolName: string }) {
       <style>{`@keyframes mufeng-tool-spin{to{transform:rotate(360deg)}}`}</style>
       <div style={cardStyle}>
         <div style={spinnerStyle} />
-        <span style={eyebrowStyle}>木风 · 工具箱</span>
+        <span style={eyebrowStyle}>{'\u6728\u98ce \u00b7 \u5de5\u5177\u7bb1'}</span>
         <h1 style={titleStyle}>{toolName}</h1>
-        <p style={mutedStyle}>正在初始化工具运行时，请稍候…</p>
-        <a href={toolRoutes.index} style={backLinkStyle}>← 返回工具箱</a>
+        <p style={mutedStyle}>{'\u6b63\u5728\u521d\u59cb\u5316\u5de5\u5177\u8fd0\u884c\u65f6\uff0c\u8bf7\u7a0d\u5019...'}</p>
+        <a href={toolRoutes.index} style={backLinkStyle}>{'\u2190 \u8fd4\u56de\u5de5\u5177\u7bb1'}</a>
       </div>
     </div>
   );
@@ -152,15 +152,15 @@ export class ToolRuntimeBoundary extends Component<Props, State> {
       return (
         <div style={errorWrapperStyle}>
           <div style={errorCardStyle}>
-            <span style={errorEyebrowStyle}>运行时报错</span>
-            <h1 style={titleStyle}>{this.props.toolName} 启动失败</h1>
+            <span style={errorEyebrowStyle}>{'\u8fd0\u884c\u65f6\u62a5\u9519'}</span>
+            <h1 style={titleStyle}>{this.props.toolName} {'\u542f\u52a8\u5931\u8d25'}</h1>
             <p style={mutedStyle}>
-              工具在加载过程中遇到了异常。已记录到浏览器控制台，可以稍后重试或联系站长。
+              {'\u5de5\u5177\u5728\u52a0\u8f7d\u8fc7\u7a0b\u4e2d\u9047\u5230\u4e86\u5f02\u5e38\u3002\u5df2\u8bb0\u5f55\u5230\u6d4f\u89c8\u5668\u63a7\u5236\u53f0\uff0c\u53ef\u4ee5\u7a0d\u540e\u91cd\u8bd5\u6216\u8054\u7cfb\u7ad9\u957f\u3002'}
             </p>
             <pre style={preStyle}>
               {this.state.error.stack || this.state.error.message}
             </pre>
-            <a href={toolRoutes.index} style={backLinkStyle}>← 返回工具箱</a>
+            <a href={toolRoutes.index} style={backLinkStyle}>{'\u2190 \u8fd4\u56de\u5de5\u5177\u7bb1'}</a>
           </div>
         </div>
       );

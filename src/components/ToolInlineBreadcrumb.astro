@@ -1,0 +1,35 @@
+---
+import { toolRoutes } from '../lib/tool-routes';
+
+interface Props {
+  toolName: string;
+  toolType?: string;
+  accent?: string;
+  toolsHref?: string;
+  class?: string;
+}
+
+const {
+  toolName,
+  toolType = 'Tool',
+  accent = '#4d9273',
+  toolsHref = toolRoutes.index,
+  class: className = '',
+} = Astro.props;
+---
+
+<nav
+  class:list={['mufeng-tool-bar', 'mufeng-tool-bar--inline', className]}
+  style={`--mufeng-tool-accent:${accent};`}
+  aria-label="Current location"
+>
+  <a class="mufeng-tool-bar__home" href="/" aria-label="Back to home">
+    <img src="/favicon.ico" alt="" width="22" height="22" />
+    <span>&#x6728;&#x98ce;</span>
+  </a>
+  <span class="mufeng-tool-bar__sep">.</span>
+  <a class="mufeng-tool-bar__crumb" href={toolsHref}>&#x5de5;&#x5177;&#x7bb1;</a>
+  <span class="mufeng-tool-bar__sep">/</span>
+  <span class="mufeng-tool-bar__title" aria-current="page">{toolName}</span>
+  <span class="mufeng-tool-bar__type">{toolType}</span>
+</nav>

@@ -1,37 +1,31 @@
 
-import React, { useRef, useState, useEffect } from 'react';
+import React, { Suspense, lazy, useRef, useState, useEffect } from 'react';
 import PlatformSelector from './PlatformSelector';
 import MediaSelector from './MediaSelector';
 import PromptInput from './PromptInput';
 import StyleSelector from './StyleSelector';
 import DesignTokenSelector from './DesignTokenSelector';
-import DesignMdSelector from './DesignMdSelector';
 import BackgroundSelector from './BackgroundSelector';
 import { I18N, UI_STYLES } from '../constants';
-import { getAPISettings } from '../services/apiKeyStore';
-import type { LangType, PlatformType, ResolutionPreset, UIStyle, DesignTokens, BackgroundConfig, PageRequest, LayoutElement, CreatorRole, MediaAspectRatio, MediaResolutionPreset, MediaType, SkillConfig, SkillType } from '../types';
+import type { LangType, PlatformType, ResolutionPreset, UIStyle, DesignTokens, BackgroundConfig, PageRequest, LayoutElement, CreatorRole, MediaAspectRatio, MediaResolutionPreset, MediaType, SkillConfig, APIConfig } from '../types';
+import { getSkillGenerateLabel, isOnePaperSkill } from '../skills/skillRegistry';
 
-// Skill Panels
-import { CoverImagePanel } from './skills/CoverImagePanel';
-import { InfographicPanel } from './skills/InfographicPanel';
-import { XHSImagesPanel } from './skills/XHSImagesPanel';
-import { ComicPanel } from './skills/ComicPanel';
-import { ArticleIllustratorPanel } from './skills/ArticleIllustratorPanel';
-import { SlideDeckPanel } from './skills/SlideDeckPanel';
-import { LogoPanel } from './skills/LogoPanel';
 import { ROLES, RoleIcon } from './RoleSelectorModal';
-import StickerCraftControlPanel from '../../stickercraft/components/ControlPanel';
-import type { StickerCraftRuntime } from '../../stickercraft/hooks/useStickerCraftRuntime';
-import StickerApiSettingsButton from './sticker/StickerApiSettingsButton';
 
-const SKILL_TYPES: SkillType[] = ['cover-image', 'infographic', 'xhs-images', 'comic', 'article-illustrator', 'slide-deck', 'logo', 'sticker-design'];
-const isSkillRole = (role: CreatorRole) => SKILL_TYPES.includes(role as SkillType);
+const CoverImagePanel = lazy(() => import('./skills/CoverImagePanel').then(module => ({ default: module.CoverImagePanel })));
+const InfographicPanel = lazy(() => import('./skills/InfographicPanel').then(module => ({ default: module.InfographicPanel })));
+const XHSImagesPanel = lazy(() => import('./skills/XHSImagesPanel').then(module => ({ default: module.XHSImagesPanel })));
+const ComicPanel = lazy(() => import('./skills/ComicPanel').then(module => ({ default: module.ComicPanel })));
+const ArticleIllustratorPanel = lazy(() => import('./skills/ArticleIllustratorPanel').then(module => ({ default: module.ArticleIllustratorPanel })));
+const SlideDeckPanel = lazy(() => import('./skills/SlideDeckPanel').then(module => ({ default: module.SlideDeckPanel })));
+const LogoPanel = lazy(() => import('./skills/LogoPanel').then(module => ({ default: module.LogoPanel })));
+const StickerDesignPanel = lazy(() => import('./skills/StickerDesignPanel').then(module => ({ default: module.StickerDesignPanel })));
+const DesignMdSelector = lazy(() => import('./DesignMdSelector'));
 
 interface Props {
     // Role
     activeRole: CreatorRole;
     setActiveRole: (r: CreatorRole) => void;
-    stickerRuntime?: StickerCraftRuntime;
 
     // Skill Mode
     skillMode: boolean;
@@ -151,6 +145,7 @@ const AppSidebar: React.FC<Props> = (props) => {
     const refImageInputRef = useRef<HTMLInputElement>(null);
 
     const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+    const [enabledImageApis, setEnabledImageApis] = useState<APIConfig[]>([]);
     const roleDropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -164,6 +159,24 @@ const AppSidebar: React.FC<Props> = (props) => {
             return () => document.removeEventListener('mousedown', handleClick);
         }
     }, [isRoleDropdownOpen]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadImageApis = async () => {
+            const { getAPISettings } = await import('../services/apiKeyStore');
+            if (!isMounted) return;
+            setEnabledImageApis(getAPISettings().imageAPIs.filter(api => api.enabled));
+        };
+
+        loadImageApis();
+        window.addEventListener('focus', loadImageApis);
+
+        return () => {
+            isMounted = false;
+            window.removeEventListener('focus', loadImageApis);
+        };
+    }, []);
 
     const activeRoleDef = ROLES.find(r => r.id === props.activeRole);
 
@@ -251,8 +264,7 @@ const AppSidebar: React.FC<Props> = (props) => {
     const isDesigner = props.activeRole === 'designer';
     const isMedia = props.activeRole === 'media';
     const isGame = props.activeRole === 'game';
-    const isSkill = isSkillRole(props.activeRole);
-    const isStickerWorkspace = props.activeRole === 'sticker-design';
+    const isSkill = isOnePaperSkill(props.activeRole);
     const isFree = props.activeRole === 'free';
 
     return (
@@ -343,8 +355,8 @@ const AppSidebar: React.FC<Props> = (props) => {
                 )}
 
                 {/* Skill Panels */}
-                {isSkill && props.skillConfig && !isStickerWorkspace && (
-                    <>
+                {isSkill && props.skillConfig && (
+                    <Suspense fallback={null}>
                         {props.activeRole === 'cover-image' && props.skillConfig.coverImage && (
                             <CoverImagePanel
                                 config={props.skillConfig.coverImage}
@@ -394,28 +406,16 @@ const AppSidebar: React.FC<Props> = (props) => {
                                 lang={props.lang}
                             />
                         )}
-                    </>
-                )}
-
-                {isStickerWorkspace && props.stickerRuntime && (
-                    <div className="space-y-4">
-                        <StickerApiSettingsButton />
-                        <StickerCraftControlPanel
-                            onGenerate={props.stickerRuntime.handleGenerate}
-                            isGenerating={props.stickerRuntime.isGenerating}
-                            customStyles={props.stickerRuntime.customStyles}
-                            onAddCustomStyle={props.stickerRuntime.handleAddCustomStyle}
-                            onRemoveCustomStyle={props.stickerRuntime.handleRemoveCustomStyle}
-                        />
-                        {props.stickerRuntime.error && (
-                            <div className="rounded-xl border border-rose-100 bg-rose-50 p-3 text-center text-xs font-semibold leading-relaxed text-rose-600">
-                                {props.stickerRuntime.error}
-                            </div>
+                        {props.activeRole === 'sticker-design' && props.skillConfig.stickerDesign && (
+                            <StickerDesignPanel
+                                config={props.skillConfig.stickerDesign}
+                                onChange={(cfg) => props.onSkillConfigChange?.({ ...props.skillConfig!, stickerDesign: cfg })}
+                                lang={props.lang}
+                            />
                         )}
-                    </div>
+                    </Suspense>
                 )}
 
-                {!isStickerWorkspace && (
                 <>
                 <div className="h-px bg-stone-100 dark:bg-stone-800"></div>
 
@@ -452,7 +452,7 @@ const AppSidebar: React.FC<Props> = (props) => {
                 )}
 
                 {(isDesigner || isMedia) && (!isSkill) && (
-                    <>
+                    <Suspense fallback={null}>
                         {/* Design.md Template Selector */}
                         {isDesigner && (
                             <DesignMdSelector
@@ -488,7 +488,7 @@ const AppSidebar: React.FC<Props> = (props) => {
                                 lang={props.lang}
                             />
                         )}
-                    </>
+                    </Suspense>
                 )}
 
                 {!isFree && (
@@ -655,10 +655,8 @@ const AppSidebar: React.FC<Props> = (props) => {
 
                 <div className="h-20"></div> */}
                 </>
-                )}
             </div>
 
-            {!isStickerWorkspace && (
             <div className="p-4 border-t border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 z-20">
                 <div className="flex gap-2 mb-3">
                     <select
@@ -681,7 +679,7 @@ const AppSidebar: React.FC<Props> = (props) => {
                         className="flex-1 text-xs bg-stone-100 dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded px-2 py-1.5 text-stone-600 dark:text-stone-300"
                     >
                         <option value="">{props.lang === 'zh' ? '默认模型' : 'Default Model'}</option>
-                        {getAPISettings().imageAPIs.filter(a => a.enabled).map(api => (
+                        {enabledImageApis.map(api => (
                             <option key={api.id} value={api.id}>{api.name || api.imageModel || api.id}</option>
                         ))}
                     </select>
@@ -704,18 +702,8 @@ const AppSidebar: React.FC<Props> = (props) => {
                         <>
                             <IconLoader name="magic-wand" size={16} />
                             {(() => {
-                                const skillLabels: Record<string, { zh: string; en: string }> = {
-                                    'cover-image': { zh: '生成封面图', en: 'Generate Cover' },
-                                    'infographic': { zh: '生成信息图', en: 'Generate Infographic' },
-                                    'xhs-images': { zh: '生成小红书配图', en: 'Generate XHS Images' },
-                                    'comic': { zh: '生成漫画', en: 'Generate Comic' },
-                                    'article-illustrator': { zh: '生成文章插图', en: 'Generate Illustrations' },
-                                    'slide-deck': { zh: '生成幻灯片', en: 'Generate Slides' },
-                                    'logo': { zh: '生成 Logo', en: 'Generate Logo' },
-                                };
-                                if (isSkill && skillLabels[props.activeRole]) {
-                                    const lbl = skillLabels[props.activeRole];
-                                    return props.lang === 'zh' ? lbl.zh : lbl.en;
+                                if (isSkill) {
+                                    return getSkillGenerateLabel(props.activeRole, props.lang);
                                 }
                                 if (props.isBatchMode) return props.lang === 'zh' ? '批量生成' : 'Batch Generate';
                                 if (isDesigner) return props.lang === 'zh' ? '生成 UI 设计' : 'Generate UI Design';
@@ -733,7 +721,6 @@ const AppSidebar: React.FC<Props> = (props) => {
                 )}
                 {props.error && <p className="text-xs text-red-500 mt-2 text-center">{props.error}</p>}
             </div>
-            )}
         </div>
     );
 };

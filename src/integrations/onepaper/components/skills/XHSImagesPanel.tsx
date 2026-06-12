@@ -1,6 +1,6 @@
 import React from 'react';
 import type { XHSImagesConfig, LangType } from '../../types';
-import DesignMdSelector, { type SelectorOption } from '../DesignMdSelector';
+import GenericOptionSelector, { type SelectorOption } from './shared/GenericOptionSelector';
 
 interface Props {
   config: XHSImagesConfig;
@@ -51,7 +51,7 @@ export const XHSImagesPanel: React.FC<Props> = ({ config, onChange, lang }) => {
 
   return (
     <div className="space-y-4">
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.style}
         onSelect={(id: string | null) => id && update({ style: id as any })}
         lang={lang}
@@ -61,7 +61,7 @@ export const XHSImagesPanel: React.FC<Props> = ({ config, onChange, lang }) => {
         favoritesKey="skill-xhs-style"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.layout}
         onSelect={(id: string | null) => id && update({ layout: id as any })}
         lang={lang}
@@ -71,7 +71,7 @@ export const XHSImagesPanel: React.FC<Props> = ({ config, onChange, lang }) => {
         favoritesKey="skill-xhs-layout"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.strategy}
         onSelect={(id: string | null) => id && update({ strategy: id as any })}
         lang={lang}

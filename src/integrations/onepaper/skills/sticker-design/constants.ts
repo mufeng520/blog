@@ -6,6 +6,64 @@ export interface SkillOption {
   promptModifier: string;
 }
 
+export interface StickerAspectOption extends SkillOption {
+  id: '1:1' | '3:4' | '4:3' | '9:16' | '16:9';
+  width: number;
+  height: number;
+}
+
+export type StickerFormat = 'single' | 'three-views' | 'sheet';
+
+export const STICKER_FORMATS: SkillOption[] = [
+  {
+    id: 'single',
+    name: 'Single Sticker',
+    name_zh: '单张贴纸',
+    description: 'One finished sticker focused on a single subject.',
+    promptModifier: 'Format: Create one finished die-cut sticker with a single clear focal subject.',
+  },
+  {
+    id: 'three-views',
+    name: 'Three Views',
+    name_zh: '三视图设定',
+    description: 'Front, side, and back views for character or product sticker design.',
+    promptModifier: 'Format: Create a sticker concept sheet with exactly three views of the same subject: front view, side view, and back view. Keep scale, silhouette, colors, and identity consistent across all views.',
+  },
+  {
+    id: 'sheet',
+    name: 'Sticker Sheet',
+    name_zh: '贴纸集合',
+    description: 'Multiple related stickers arranged as a cohesive sheet.',
+    promptModifier: 'Format: Create a cohesive sticker sheet with multiple related stickers arranged on one canvas. All stickers must share one style, palette, and visual identity.',
+  },
+];
+
+export type StickerTextStyle = 'none' | 'caption' | 'headline';
+
+export const STICKER_TEXT_STYLES: SkillOption[] = [
+  {
+    id: 'none',
+    name: 'No Fixed Text',
+    name_zh: '不固定文字',
+    description: 'The prompt can stay purely visual unless you add text in the main description.',
+    promptModifier: 'Text: Do not add forced lettering unless the main content explicitly requests text.',
+  },
+  {
+    id: 'caption',
+    name: 'Small Caption',
+    name_zh: '短句标签',
+    description: 'Short readable words integrated around the sticker subject.',
+    promptModifier: 'Text: Use the provided text as a short readable caption or tag, integrated around the subject without covering key details.',
+  },
+  {
+    id: 'headline',
+    name: 'Bold Lettering',
+    name_zh: '醒目字贴',
+    description: 'Typography is a major visual element of the sticker.',
+    promptModifier: 'Text: Treat the provided text as the main bold lettering element. Make it expressive, legible, and aligned with the selected sticker style.',
+  },
+];
+
 // --- Sticker Style ---
 export type StickerStyle = 'flat' | 'chibi' | 'puffy-3d' | 'enamel-pin' | 'chrome-badge' | 'die-cut' | 'vintage';
 
@@ -236,5 +294,54 @@ export const STICKER_BACKGROUNDS: SkillOption[] = [
     name_zh: '图案背景',
     description: 'Decorative pattern background for presentation.',
     promptModifier: 'Background: Decorative pattern background (dots, stripes, or subtle geometric pattern) for presentation purposes, not part of the sticker itself.',
+  },
+];
+
+// --- Canvas Aspect ---
+export const STICKER_ASPECTS: StickerAspectOption[] = [
+  {
+    id: '1:1',
+    name: '1:1 Square',
+    name_zh: '1:1 方形',
+    description: 'Standard sticker and emoji format.',
+    promptModifier: 'Canvas: 1:1 square composition, centered sticker with balanced margins.',
+    width: 512,
+    height: 512,
+  },
+  {
+    id: '3:4',
+    name: '3:4 Portrait',
+    name_zh: '3:4 竖版',
+    description: 'Portrait sticker card format.',
+    promptModifier: 'Canvas: 3:4 portrait composition, taller crop with the sticker centered vertically.',
+    width: 450,
+    height: 600,
+  },
+  {
+    id: '4:3',
+    name: '4:3 Landscape',
+    name_zh: '4:3 横版',
+    description: 'Landscape sticker card format.',
+    promptModifier: 'Canvas: 4:3 landscape composition, wider crop with generous side margins.',
+    width: 600,
+    height: 450,
+  },
+  {
+    id: '9:16',
+    name: '9:16 Story',
+    name_zh: '9:16 长图',
+    description: 'Tall social story format.',
+    promptModifier: 'Canvas: 9:16 vertical story composition, tall poster-like sticker presentation.',
+    width: 450,
+    height: 800,
+  },
+  {
+    id: '16:9',
+    name: '16:9 Wide',
+    name_zh: '16:9 宽屏',
+    description: 'Wide presentation format.',
+    promptModifier: 'Canvas: 16:9 widescreen composition, centered sticker with strong horizontal balance.',
+    width: 800,
+    height: 450,
   },
 ];

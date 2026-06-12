@@ -1,7 +1,8 @@
 ﻿---
 export const prerender = false;
 
-import OnePaperIsland from '../../../../components/OnePaperIsland';
+import EditorIsland from '../../../../integrations/onepaper/islands/EditorIsland';
+import ToolInlineBreadcrumb from '../../../../components/ToolInlineBreadcrumb.astro';
 import ToolAppLayout from '../../../../layouts/ToolAppLayout.astro';
 import { onePaperFocusedShell } from '../../../../lib/tool-shells';
 
@@ -17,5 +18,32 @@ const shell = {
 ---
 
 <ToolAppLayout {...shell}>
-  <OnePaperIsland view="editor" projectId={projectId} client:only="react" />
+  <div class="onepaper-editor-shell">
+    <div class="onepaper-editor-shell__breadcrumb">
+      <ToolInlineBreadcrumb toolName="OnePaper" toolType="AI &#x89c6;&#x89c9;&#x8bbe;&#x8ba1;" accent="#0f766e" />
+    </div>
+    <EditorIsland projectId={projectId} showBreadcrumb={false} client:only="react" />
+  </div>
 </ToolAppLayout>
+
+<style>
+  .onepaper-editor-shell {
+    position: relative;
+    min-height: 100vh;
+  }
+
+  .onepaper-editor-shell__breadcrumb {
+    position: absolute;
+    top: 10px;
+    left: 16px;
+    z-index: 30;
+    max-width: min(58vw, 560px);
+    pointer-events: auto;
+  }
+
+  @media (max-width: 900px) {
+    .onepaper-editor-shell__breadcrumb {
+      display: none;
+    }
+  }
+</style>

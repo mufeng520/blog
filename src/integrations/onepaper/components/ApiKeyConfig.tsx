@@ -5,10 +5,6 @@ import {
   TEXT_MODEL_PRESETS, IMAGE_MODEL_PRESETS,
 } from '../services/apiKeyStore';
 import type { APIConfig, AIProvider } from '../types';
-import {
-  callGeminiTextAPI, callOpenAITextAPI,
-  callGeminiImageAPI, callOpenAIImageAPI, callOpenAIChatImageAPI,
-} from '../services/aiService';
 import recommendedProxies from '../data/recommended-proxies.json';
 
 interface Props {
@@ -203,22 +199,23 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
     setTestResult(null);
     const start = Date.now();
     try {
+      const aiService = await import('../services/aiService');
       if (type === 'text') {
         if (api.provider === 'gemini') {
-          await callGeminiTextAPI(api, { prompt: 'Hi' });
+          await aiService.callGeminiTextAPI(api, { prompt: 'Hi' });
         } else {
-          await callOpenAITextAPI(api, { prompt: 'Hi' });
+          await aiService.callOpenAITextAPI(api, { prompt: 'Hi' });
         }
       } else {
         if (api.provider === 'gemini') {
-          await callGeminiImageAPI(api, { prompt: 'A simple blue circle on white background', aspectRatio: '1:1' });
+          await aiService.callGeminiImageAPI(api, { prompt: 'A simple blue circle on white background', aspectRatio: '1:1' });
         } else {
           // Try images.generations first, fallback to chat.completions if proxy requires it
           try {
-            await callOpenAIImageAPI(api, { prompt: 'A simple blue circle on white background', aspectRatio: '1:1' });
+            await aiService.callOpenAIImageAPI(api, { prompt: 'A simple blue circle on white background', aspectRatio: '1:1' });
           } catch (e: any) {
             if (e.message?.includes('messages is required')) {
-              await callOpenAIChatImageAPI(api, { prompt: 'A simple blue circle on white background', aspectRatio: '1:1' });
+              await aiService.callOpenAIChatImageAPI(api, { prompt: 'A simple blue circle on white background', aspectRatio: '1:1' });
             } else {
               throw e;
             }

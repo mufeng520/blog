@@ -1,66 +1,12 @@
+const rawTemplateLoaders = import.meta.glob('./*.md', { query: '?raw', import: 'default' }) as Record<string, () => Promise<string>>;
+
+const loadRawTemplate = async (contentPath: string): Promise<string> => {
+    const loader = rawTemplateLoaders[`./${contentPath}.md`];
+    return loader ? loader() : '';
+};
+
 // Auto-generated style registry from baoyu-skills import
 
-import aged_academiaMd from './aged-academia.md?raw';
-import blueprintMd from './blueprint.md?raw';
-import bold_editorialMd from './bold-editorial.md?raw';
-import bold_graphicMd from './bold-graphic.md?raw';
-import chalkboardMd from './chalkboard.md?raw';
-import claymationMd from './claymation.md?raw';
-import cm_chalkMd from './cm-chalk.md?raw';
-import cm_ink_brushMd from './cm-ink-brush.md?raw';
-import cm_ligne_claireMd from './cm-ligne-claire.md?raw';
-import cm_mangaMd from './cm-manga.md?raw';
-import cm_realisticMd from './cm-realistic.md?raw';
-import corporateMd from './corporate.md?raw';
-import corporate_memphisMd from './corporate-memphis.md?raw';
-import craft_handmadeMd from './craft-handmade.md?raw';
-import cv_coolMd from './cv-cool.md?raw';
-import cv_darkMd from './cv-dark.md?raw';
-import cv_earthMd from './cv-earth.md?raw';
-import cv_elegantMd from './cv-elegant.md?raw';
-import cv_monoMd from './cv-mono.md?raw';
-import cv_pastelMd from './cv-pastel.md?raw';
-import cv_retroMd from './cv-retro.md?raw';
-import cv_vividMd from './cv-vivid.md?raw';
-import cv_warmMd from './cv-warm.md?raw';
-import cyberpunk_neonMd from './cyberpunk-neon.md?raw';
-import dark_atmosphericMd from './dark-atmospheric.md?raw';
-import editorial_infographicMd from './editorial-infographic.md?raw';
-import fantasy_animationMd from './fantasy-animation.md?raw';
-import ig_chalkboardMd from './ig-chalkboard.md?raw';
-import ig_pixel_artMd from './ig-pixel-art.md?raw';
-import ikea_manualMd from './ikea-manual.md?raw';
-import intuition_machineMd from './intuition-machine.md?raw';
-import kawaiiMd from './kawaii.md?raw';
-import knollingMd from './knolling.md?raw';
-import lego_brickMd from './lego-brick.md?raw';
-import minimalMd from './minimal.md?raw';
-import morandi_journalMd from './morandi-journal.md?raw';
-import notionMd from './notion.md?raw';
-import origamiMd from './origami.md?raw';
-import pixel_artMd from './pixel-art.md?raw';
-import pop_laboratoryMd from './pop-laboratory.md?raw';
-import retro_pop_gridMd from './retro-pop-grid.md?raw';
-import scientificMd from './scientific.md?raw';
-import sketch_notesMd from './sketch-notes.md?raw';
-import storybook_watercolorMd from './storybook-watercolor.md?raw';
-import subway_mapMd from './subway-map.md?raw';
-import technical_schematicMd from './technical-schematic.md?raw';
-import ui_wireframeMd from './ui-wireframe.md?raw';
-import vector_illustrationMd from './vector-illustration.md?raw';
-import vintageMd from './vintage.md?raw';
-import watercolorMd from './watercolor.md?raw';
-import xhs_boldMd from './xhs-bold.md?raw';
-import xhs_cuteMd from './xhs-cute.md?raw';
-import xhs_freshMd from './xhs-fresh.md?raw';
-import xhs_popMd from './xhs-pop.md?raw';
-import xhs_study_notesMd from './xhs-study-notes.md?raw';
-import playful_mascot_doodleMd from './playful-mascot-doodle.md?raw';
-import teenage_skate_scribbleMd from './teenage-skate-scribble.md?raw';
-import neon_kinetic_typographicMd from './neon-kinetic-typographic.md?raw';
-import soft_analog_future_editorialMd from './soft-analog-future-editorial.md?raw';
-import gothic_cat_doodle_collageMd from './gothic-cat-doodle-collage.md?raw';
-import pop_bubble_letter_photoMd from './pop-bubble-letter-photo.md?raw';
 
 export interface VisualStyleTemplate {
     id: string;
@@ -69,7 +15,7 @@ export interface VisualStyleTemplate {
     category: 'Tech' | 'Dark' | 'Artistic' | 'Playful' | 'Minimal' | 'Warm' | 'Cool' | 'Comic' | 'Specialized';
     description: string;
     description_zh: string;
-    content: string;
+    contentPath: string;
 }
 
 export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
@@ -80,7 +26,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Warm',
         description: 'Vintage science aesthetic with sepia tones, aged paper textures, and classical scholarly atmosphere.',
         description_zh: 'Vintage science aesthetic with sepia tones, aged paper textures, and classical scholarly atmosphere.',
-        content: aged_academiaMd,
+        contentPath: 'aged-academia',
     },
     {
         id: 'blueprint',
@@ -89,7 +35,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Tech',
         description: 'Precise technical blueprint style with engineering precision, grid overlays, and analytical visual presentation.',
         description_zh: 'Precise technical blueprint style with engineering precision, grid overlays, and analytical visual presentation.',
-        content: blueprintMd,
+        contentPath: 'blueprint',
     },
     {
         id: 'bold-editorial',
@@ -98,7 +44,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'High-impact magazine-style layouts with bold typography, dramatic contrast, and editorial authority.',
         description_zh: 'High-impact magazine-style layouts with bold typography, dramatic contrast, and editorial authority.',
-        content: bold_editorialMd,
+        contentPath: 'bold-editorial',
     },
     {
         id: 'bold-graphic',
@@ -107,7 +53,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Comic halftone style with bold outlines, dot patterns, and graphic novel intensity.',
         description_zh: 'Comic halftone style with bold outlines, dot patterns, and graphic novel intensity.',
-        content: bold_graphicMd,
+        contentPath: 'bold-graphic',
     },
     {
         id: 'chalkboard',
@@ -116,7 +62,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Specialized',
         description: 'Warm educational aesthetic with chalk-on-blackboard textures, colorful handwriting, and classroom atmosphere.',
         description_zh: 'Warm educational aesthetic with chalk-on-blackboard textures, colorful handwriting, and classroom atmosphere.',
-        content: chalkboardMd,
+        contentPath: 'chalkboard',
     },
     {
         id: 'claymation',
@@ -125,7 +71,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: '3D clay figure aesthetic with stop-motion warmth, rounded organic forms, and playful tactile surfaces.',
         description_zh: '3D clay figure aesthetic with stop-motion warmth, rounded organic forms, and playful tactile surfaces.',
-        content: claymationMd,
+        contentPath: 'claymation',
     },
     {
         id: 'cm-chalk',
@@ -134,7 +80,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: 'Educational comic style with chalkboard backgrounds, hand-drawn characters, and warm classroom vibes.',
         description_zh: 'Educational comic style with chalkboard backgrounds, hand-drawn characters, and warm classroom vibes.',
-        content: cm_chalkMd,
+        contentPath: 'cm-chalk',
     },
     {
         id: 'cm-ink-brush',
@@ -143,7 +89,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Chinese ink wash painting style with brush strokes, ink gradients, and traditional Eastern aesthetics.',
         description_zh: 'Chinese ink wash painting style with brush strokes, ink gradients, and traditional Eastern aesthetics.',
-        content: cm_ink_brushMd,
+        contentPath: 'cm-ink-brush',
     },
     {
         id: 'cm-ligne-claire',
@@ -152,7 +98,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Comic',
         description: 'European comic tradition with uniform lines, flat colors, and clean geometric storytelling.',
         description_zh: 'European comic tradition with uniform lines, flat colors, and clean geometric storytelling.',
-        content: cm_ligne_claireMd,
+        contentPath: 'cm-ligne-claire',
     },
     {
         id: 'cm-manga',
@@ -161,7 +107,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Japanese manga/anime aesthetic with expressive characters, dynamic poses, and vibrant energy.',
         description_zh: 'Japanese manga/anime aesthetic with expressive characters, dynamic poses, and vibrant energy.',
-        content: cm_mangaMd,
+        contentPath: 'cm-manga',
     },
     {
         id: 'cm-realistic',
@@ -170,7 +116,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Comic',
         description: 'Digital painting comic style with realistic proportions, sophisticated shading, and cinematic depth.',
         description_zh: 'Digital painting comic style with realistic proportions, sophisticated shading, and cinematic depth.',
-        content: cm_realisticMd,
+        contentPath: 'cm-realistic',
     },
     {
         id: 'corporate',
@@ -179,7 +125,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Tech',
         description: 'Professional business style with navy/gold palette, structured layouts, and institutional reliability.',
         description_zh: 'Professional business style with navy/gold palette, structured layouts, and institutional reliability.',
-        content: corporateMd,
+        contentPath: 'corporate',
     },
     {
         id: 'corporate-memphis',
@@ -188,7 +134,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: 'Flat vector people with vibrant geometric fills, disproportionate figures, and playful business energy.',
         description_zh: 'Flat vector people with vibrant geometric fills, disproportionate figures, and playful business energy.',
-        content: corporate_memphisMd,
+        contentPath: 'corporate-memphis',
     },
     {
         id: 'craft-handmade',
@@ -197,7 +143,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Hand-drawn paper craft aesthetic with warm pastels, cream backgrounds, and organic imperfect shapes.',
         description_zh: 'Hand-drawn paper craft aesthetic with warm pastels, cream backgrounds, and organic imperfect shapes.',
-        content: craft_handmadeMd,
+        contentPath: 'craft-handmade',
     },
     {
         id: 'cv-cool',
@@ -206,7 +152,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Cool',
         description: 'Crisp cool-toned palette with blues, teals, and silvers creating a refreshing, modern atmosphere.',
         description_zh: 'Crisp cool-toned palette with blues, teals, and silvers creating a refreshing, modern atmosphere.',
-        content: cv_coolMd,
+        contentPath: 'cv-cool',
     },
     {
         id: 'cv-dark',
@@ -215,7 +161,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Dark',
         description: 'Cinematic dark palette with deep purples, electric accents, and atmospheric premium depth.',
         description_zh: 'Cinematic dark palette with deep purples, electric accents, and atmospheric premium depth.',
-        content: cv_darkMd,
+        contentPath: 'cv-dark',
     },
     {
         id: 'cv-earth',
@@ -224,7 +170,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Warm',
         description: 'Natural earth-toned palette with browns, ochres, and sage greens evoking organic warmth.',
         description_zh: 'Natural earth-toned palette with browns, ochres, and sage greens evoking organic warmth.',
-        content: cv_earthMd,
+        contentPath: 'cv-earth',
     },
     {
         id: 'cv-elegant',
@@ -233,7 +179,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Cool',
         description: 'Refined sophisticated palette with muted luxury tones, champagne golds, and understated class.',
         description_zh: 'Refined sophisticated palette with muted luxury tones, champagne golds, and understated class.',
-        content: cv_elegantMd,
+        contentPath: 'cv-elegant',
     },
     {
         id: 'cv-mono',
@@ -242,7 +188,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Minimal',
         description: 'Pure monochrome palette with black, white, and grays for maximum contrast and timeless clarity.',
         description_zh: 'Pure monochrome palette with black, white, and grays for maximum contrast and timeless clarity.',
-        content: cv_monoMd,
+        contentPath: 'cv-mono',
     },
     {
         id: 'cv-pastel',
@@ -251,7 +197,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Minimal',
         description: 'Soft pastel palette with gentle pinks, lavenders, and mints creating a dreamy, delicate mood.',
         description_zh: 'Soft pastel palette with gentle pinks, lavenders, and mints creating a dreamy, delicate mood.',
-        content: cv_pastelMd,
+        contentPath: 'cv-pastel',
     },
     {
         id: 'cv-retro',
@@ -260,7 +206,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Nostalgic retro palette with sepia tones, warm oranges, and vintage film aesthetics.',
         description_zh: 'Nostalgic retro palette with sepia tones, warm oranges, and vintage film aesthetics.',
-        content: cv_retroMd,
+        contentPath: 'cv-retro',
     },
     {
         id: 'cv-vivid',
@@ -269,7 +215,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Cool',
         description: 'Bold vivid palette with saturated primaries creating energetic, attention-grabbing compositions.',
         description_zh: 'Bold vivid palette with saturated primaries creating energetic, attention-grabbing compositions.',
-        content: cv_vividMd,
+        contentPath: 'cv-vivid',
     },
     {
         id: 'cv-warm',
@@ -278,7 +224,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Warm',
         description: 'Friendly warm palette with oranges, golds, and terracottas for approachable human-centered design.',
         description_zh: 'Friendly warm palette with oranges, golds, and terracottas for approachable human-centered design.',
-        content: cv_warmMd,
+        contentPath: 'cv-warm',
     },
     {
         id: 'cyberpunk-neon',
@@ -287,7 +233,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Dark',
         description: 'Neon glow on dark backgrounds with futuristic aesthetic, circuit patterns, and digital glitch effects.',
         description_zh: 'Neon glow on dark backgrounds with futuristic aesthetic, circuit patterns, and digital glitch effects.',
-        content: cyberpunk_neonMd,
+        contentPath: 'cyberpunk-neon',
     },
     {
         id: 'dark-atmospheric',
@@ -296,7 +242,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Dark',
         description: 'Cinematic dark mode with deep colors, glowing accents, and mysterious atmospheric depth.',
         description_zh: 'Cinematic dark mode with deep colors, glowing accents, and mysterious atmospheric depth.',
-        content: dark_atmosphericMd,
+        contentPath: 'dark-atmospheric',
     },
     {
         id: 'editorial-infographic',
@@ -305,7 +251,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Tech',
         description: 'Clean data storytelling with editorial precision, structured information, and publication-ready layouts.',
         description_zh: 'Clean data storytelling with editorial precision, structured information, and publication-ready layouts.',
-        content: editorial_infographicMd,
+        contentPath: 'editorial-infographic',
     },
     {
         id: 'fantasy-animation',
@@ -314,7 +260,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Whimsical magical aesthetic with soft glows, enchanted elements, and storybook wonder.',
         description_zh: 'Whimsical magical aesthetic with soft glows, enchanted elements, and storybook wonder.',
-        content: fantasy_animationMd,
+        contentPath: 'fantasy-animation',
     },
     {
         id: 'ig-chalkboard',
@@ -323,7 +269,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Specialized',
         description: 'Colorful chalkboard infographic style with educational diagrams and vibrant chalk markings.',
         description_zh: 'Colorful chalkboard infographic style with educational diagrams and vibrant chalk markings.',
-        content: ig_chalkboardMd,
+        contentPath: 'ig-chalkboard',
     },
     {
         id: 'ig-pixel-art',
@@ -332,7 +278,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: 'Retro 8-bit pixel aesthetic with limited palettes, staircase edges, and nostalgic gaming feel.',
         description_zh: 'Retro 8-bit pixel aesthetic with limited palettes, staircase edges, and nostalgic gaming feel.',
-        content: ig_pixel_artMd,
+        contentPath: 'ig-pixel-art',
     },
     {
         id: 'ikea-manual',
@@ -341,7 +287,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Specialized',
         description: 'ikea-manual visual style',
         description_zh: 'ikea-manual visual style',
-        content: ikea_manualMd,
+        contentPath: 'ikea-manual',
     },
     {
         id: 'intuition-machine',
@@ -350,7 +296,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Tech',
         description: 'Technical dense style with cool tones, precise data presentation, and academic rigor.',
         description_zh: 'Technical dense style with cool tones, precise data presentation, and academic rigor.',
-        content: intuition_machineMd,
+        contentPath: 'intuition-machine',
     },
     {
         id: 'kawaii',
@@ -359,7 +305,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: 'Japanese cute aesthetic with pastels, rounded forms, hearts, sparkles, and overwhelming adorableness.',
         description_zh: 'Japanese cute aesthetic with pastels, rounded forms, hearts, sparkles, and overwhelming adorableness.',
-        content: kawaiiMd,
+        contentPath: 'kawaii',
     },
     {
         id: 'knolling',
@@ -368,7 +314,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Specialized',
         description: 'Organized flat-lay photography style with aligned objects, top-down perspective, and systematic arrangement.',
         description_zh: 'Organized flat-lay photography style with aligned objects, top-down perspective, and systematic arrangement.',
-        content: knollingMd,
+        contentPath: 'knolling',
     },
     {
         id: 'lego-brick',
@@ -377,7 +323,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: 'Toy brick construction aesthetic with bright plastic colors, blocky forms, and playful assembly.',
         description_zh: 'Toy brick construction aesthetic with bright plastic colors, blocky forms, and playful assembly.',
-        content: lego_brickMd,
+        contentPath: 'lego-brick',
     },
     {
         id: 'minimal',
@@ -386,7 +332,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Tech',
         description: 'Ultra-clean minimalism with generous whitespace, essential elements only, and maximum clarity.',
         description_zh: 'Ultra-clean minimalism with generous whitespace, essential elements only, and maximum clarity.',
-        content: minimalMd,
+        contentPath: 'minimal',
     },
     {
         id: 'morandi-journal',
@@ -395,7 +341,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Muted Morandi tones with dusty pinks, sage greens, and warm grays in a diary-like intimate format.',
         description_zh: 'Muted Morandi tones with dusty pinks, sage greens, and warm grays in a diary-like intimate format.',
-        content: morandi_journalMd,
+        contentPath: 'morandi-journal',
     },
     {
         id: 'notion',
@@ -404,7 +350,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Tech',
         description: 'SaaS dashboard aesthetic with clean data focus, card-based organization, and productivity tool styling.',
         description_zh: 'SaaS dashboard aesthetic with clean data focus, card-based organization, and productivity tool styling.',
-        content: notionMd,
+        contentPath: 'notion',
     },
     {
         id: 'origami',
@@ -413,7 +359,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Paper folding art with geometric precision, shadow layers, and delicate Japanese craft aesthetics.',
         description_zh: 'Paper folding art with geometric precision, shadow layers, and delicate Japanese craft aesthetics.',
-        content: origamiMd,
+        contentPath: 'origami',
     },
     {
         id: 'pixel-art',
@@ -422,7 +368,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: 'Retro 8-bit pixel art with visible pixel grid, limited color palette, and nostalgic gaming atmosphere.',
         description_zh: 'Retro 8-bit pixel art with visible pixel grid, limited color palette, and nostalgic gaming atmosphere.',
-        content: pixel_artMd,
+        contentPath: 'pixel-art',
     },
     {
         id: 'pop-laboratory',
@@ -431,7 +377,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Scientific playful style with blueprint grids, coordinate markers, and lab precision with personality.',
         description_zh: 'Scientific playful style with blueprint grids, coordinate markers, and lab precision with personality.',
-        content: pop_laboratoryMd,
+        contentPath: 'pop-laboratory',
     },
     {
         id: 'retro-pop-grid',
@@ -440,7 +386,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: '1970s retro pop art with Swiss grid discipline, thick outlines, and bold saturated colors.',
         description_zh: '1970s retro pop art with Swiss grid discipline, thick outlines, and bold saturated colors.',
-        content: retro_pop_gridMd,
+        contentPath: 'retro-pop-grid',
     },
     {
         id: 'scientific',
@@ -449,7 +395,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Tech',
         description: 'Academic precision with clean layouts, technical typography, and research-grade visual presentation.',
         description_zh: 'Academic precision with clean layouts, technical typography, and research-grade visual presentation.',
-        content: scientificMd,
+        contentPath: 'scientific',
     },
     {
         id: 'sketch-notes',
@@ -458,7 +404,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Hand-drawn learning aesthetic with doodle elements, annotation marks, and personal notebook warmth.',
         description_zh: 'Hand-drawn learning aesthetic with doodle elements, annotation marks, and personal notebook warmth.',
-        content: sketch_notesMd,
+        contentPath: 'sketch-notes',
     },
     {
         id: 'storybook-watercolor',
@@ -467,7 +413,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Soft painted watercolor with whimsical storytelling, gentle blends, and fairy-tale atmosphere.',
         description_zh: 'Soft painted watercolor with whimsical storytelling, gentle blends, and fairy-tale atmosphere.',
-        content: storybook_watercolorMd,
+        contentPath: 'storybook-watercolor',
     },
     {
         id: 'subway-map',
@@ -476,7 +422,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Specialized',
         description: 'Transit diagram aesthetic with color-coded lines, node connections, and schematic route visualization.',
         description_zh: 'Transit diagram aesthetic with color-coded lines, node connections, and schematic route visualization.',
-        content: subway_mapMd,
+        contentPath: 'subway-map',
     },
     {
         id: 'technical-schematic',
@@ -485,7 +431,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Tech',
         description: 'Engineering blueprint style with geometric precision, grid patterns, and technical annotations.',
         description_zh: 'Engineering blueprint style with geometric precision, grid patterns, and technical annotations.',
-        content: technical_schematicMd,
+        contentPath: 'technical-schematic',
     },
     {
         id: 'ui-wireframe',
@@ -494,7 +440,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Tech',
         description: 'Grayscale prototype aesthetic with placeholder boxes, connection lines, and low-fidelity clarity.',
         description_zh: 'Grayscale prototype aesthetic with placeholder boxes, connection lines, and low-fidelity clarity.',
-        content: ui_wireframeMd,
+        contentPath: 'ui-wireframe',
     },
     {
         id: 'vector-illustration',
@@ -503,7 +449,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Tech',
         description: 'Clean vector graphics with bold outlines, flat fills, and modern editorial illustration.',
         description_zh: 'Clean vector graphics with bold outlines, flat fills, and modern editorial illustration.',
-        content: vector_illustrationMd,
+        contentPath: 'vector-illustration',
     },
     {
         id: 'vintage',
@@ -512,7 +458,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Retro nostalgia with aged textures, warm sepia tones, and historical authenticity.',
         description_zh: 'Retro nostalgia with aged textures, warm sepia tones, and historical authenticity.',
-        content: vintageMd,
+        contentPath: 'vintage',
     },
     {
         id: 'watercolor',
@@ -521,7 +467,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Soft painting aesthetic with fluid washes, gentle color bleeds, and artistic spontaneity.',
         description_zh: 'Soft painting aesthetic with fluid washes, gentle color bleeds, and artistic spontaneity.',
-        content: watercolorMd,
+        contentPath: 'watercolor',
     },
     {
         id: 'xhs-bold',
@@ -530,7 +476,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Specialized',
         description: 'High-impact social media style with bold colors, strong contrasts, and attention-grabbing compositions.',
         description_zh: 'High-impact social media style with bold colors, strong contrasts, and attention-grabbing compositions.',
-        content: xhs_boldMd,
+        contentPath: 'xhs-bold',
     },
     {
         id: 'xhs-cute',
@@ -539,7 +485,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: 'Adorable social aesthetic with soft pastels, rounded elements, and universally appealing charm.',
         description_zh: 'Adorable social aesthetic with soft pastels, rounded elements, and universally appealing charm.',
-        content: xhs_cuteMd,
+        contentPath: 'xhs-cute',
     },
     {
         id: 'xhs-fresh',
@@ -548,7 +494,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Warm',
         description: 'Clean natural social style with refreshing greens, airy layouts, and organic vitality.',
         description_zh: 'Clean natural social style with refreshing greens, airy layouts, and organic vitality.',
-        content: xhs_freshMd,
+        contentPath: 'xhs-fresh',
     },
     {
         id: 'xhs-pop',
@@ -557,7 +503,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: 'Vibrant social energy with saturated colors, dynamic layouts, and youthful exuberance.',
         description_zh: 'Vibrant social energy with saturated colors, dynamic layouts, and youthful exuberance.',
-        content: xhs_popMd,
+        contentPath: 'xhs-pop',
     },
     {
         id: 'xhs-study-notes',
@@ -566,7 +512,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Warm',
         description: 'Handwritten academic style with blue pen, red annotations, yellow highlighters, and realistic notes.',
         description_zh: 'Handwritten academic style with blue pen, red annotations, yellow highlighters, and realistic notes.',
-        content: xhs_study_notesMd,
+        contentPath: 'xhs-study-notes',
     },
     {
         id: 'playful-mascot-doodle',
@@ -575,7 +521,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: 'Vibrant hand-drawn aesthetic with friendly mascot characters, bold typography, and playful doodle elements.',
         description_zh: '充满活力的手绘风格，带有友好吉祥物角色、大胆字体和趣味涂鸦元素。',
-        content: playful_mascot_doodleMd,
+        contentPath: 'playful-mascot-doodle',
     },
     {
         id: 'teenage-skate-scribble',
@@ -584,7 +530,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Artistic',
         description: 'Edgy rebellious street art aesthetic inspired by skate culture, graffiti, and DIY punk attitude.',
         description_zh: '受滑板文化、涂鸦和DIY朋克态度启发的叛逆街头艺术风格。',
-        content: teenage_skate_scribbleMd,
+        contentPath: 'teenage-skate-scribble',
     },
     {
         id: 'neon-kinetic-typographic',
@@ -593,7 +539,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Dark',
         description: 'High-energy futuristic typographic style with glowing neon text, motion blur, and kinetic energy.',
         description_zh: '高能未来主义字体风格，带有发光霓虹文字、动态模糊和动能感。',
-        content: neon_kinetic_typographicMd,
+        contentPath: 'neon-kinetic-typographic',
     },
     {
         id: 'soft-analog-future-editorial',
@@ -602,7 +548,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Warm',
         description: 'Sophisticated editorial blending analog film warmth with futuristic minimalism and soft focus.',
         description_zh: '将模拟胶片温暖与未来极简主义和柔焦相结合的精致编辑风格。',
-        content: soft_analog_future_editorialMd,
+        contentPath: 'soft-analog-future-editorial',
     },
     {
         id: 'gothic-cat-doodle-collage',
@@ -611,7 +557,7 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Dark',
         description: 'Dark whimsical aesthetic combining gothic Victorian elements with cute cat illustrations and mystical doodles.',
         description_zh: '将哥特维多利亚元素与可爱猫咪插画和神秘涂鸦相结合的暗黑奇趣风格。',
-        content: gothic_cat_doodle_collageMd,
+        contentPath: 'gothic-cat-doodle-collage',
     },
     {
         id: 'pop-bubble-letter-photo',
@@ -620,12 +566,17 @@ export const VISUAL_STYLE_TEMPLATES: VisualStyleTemplate[] = [
         category: 'Playful',
         description: 'Vibrant 2000s-era aesthetic with bold bubble letters, photo cutouts, and playful decorative elements.',
         description_zh: '充满活力的2000年代风格，带有大胆泡泡字母、照片剪贴和趣味装饰元素。',
-        content: pop_bubble_letter_photoMd,
+        contentPath: 'pop-bubble-letter-photo',
     }
 ];
 
 export const getVisualStyleList = () =>
-    VISUAL_STYLE_TEMPLATES.map(({ content, ...meta }) => meta);
+    VISUAL_STYLE_TEMPLATES;
 
 export const getVisualStyleById = (id: string): VisualStyleTemplate | undefined =>
     VISUAL_STYLE_TEMPLATES.find(t => t.id === id);
+
+export const loadVisualStyleContent = async (id: string): Promise<string> => {
+    const template = getVisualStyleById(id);
+    return template ? loadRawTemplate(template.contentPath) : '';
+};

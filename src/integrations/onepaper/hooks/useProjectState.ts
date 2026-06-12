@@ -1,7 +1,6 @@
 ﻿import { useState, useEffect } from 'react';
 import type { Project, SavedProject, LangType, Artboard } from '../types';
 import { getProjects, createProject, getProjectById, saveProject, deleteProject } from '../services/idbProjectService';
-import { getHistory } from '../services/idbHistoryService';
 
 // Helper to hydrate artboards will be needed here or passed in. 
 // Since hydrate logic depends on generic 'Artboard' type, we can keep it here or in a util. 
@@ -37,7 +36,8 @@ export const useProjectState = (
     lang: LangType,
     addNotification: (msg: string, type?: 'success' | 'error') => void,
     setArtboards: (val: Artboard[] | ((prev: Artboard[]) => Artboard[])) => void,
-    initialProjectId?: string
+    initialProjectId?: string,
+    onProjectLoaded?: (project: Project) => void
 ) => {
     const [projects, setProjects] = useState<Project[]>([]);
     const [savedProjects, setSavedProjects] = useState<SavedProject[]>([]);
@@ -103,6 +103,7 @@ export const useProjectState = (
             });
 
             setCurrentProjectId(projectId);
+            onProjectLoaded?.(project);
             addNotification(lang === 'zh' ? '项目已加载' : 'Project Loaded', 'success');
             return project; // Return for further processing
         } catch (e) {
@@ -121,7 +122,7 @@ export const useProjectState = (
             });
 
             const savedProject = await saveProject(newProject.id, {
-                config: {},
+                config: configState,
                 artboards,
                 thumbnailUrl: thumbnailUrl || undefined
             });

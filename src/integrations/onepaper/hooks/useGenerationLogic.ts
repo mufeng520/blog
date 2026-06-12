@@ -1,18 +1,7 @@
 import { useState } from 'react';
 import type { GeneratedImage, GenerationConfig, LayoutElement, DesignSystem } from '../types';
-import { extractStyleFromImages, generatePageList, constructPrompt, generateDesignSpecJson, generateUIReference, analyzeLayoutImage, optimizeDescription } from '../services/geminiService';
-import { getAPISettings } from '../services/apiKeyStore';
 import type { LangType } from '../types';
-import { buildSkillPrompt } from '../skills/promptBuilders';
-import type { SkillConstants } from '../skills/promptBuilders';
-import * as CoverConstants from '../skills/cover-image/constants';
-import * as InfographicConstants from '../skills/infographic/constants';
-import * as XHSConstants from '../skills/xhs-images/constants';
-import * as ComicConstants from '../skills/comic/constants';
-import * as ArticleConstants from '../skills/article-illustrator/constants';
-import * as SlideConstants from '../skills/slide-deck/constants';
-import * as LogoConstants from '../skills/logo/constants';
-import * as StickerConstants from '../skills/sticker-design/constants';
+import { loadGeminiService, loadSkillPromptTools } from './useGenerationDependencies';
 
 const getAspectRatio = (width: number, height: number): string => {
     const ratio = width / height;
@@ -126,6 +115,7 @@ export const useGenerationLogic = (
     const handleExtractStyle = async (files: File[]) => {
         setIsExtractingStyle(true); setError(null);
         try {
+            const { extractStyleFromImages } = await loadGeminiService();
             const s = await extractStyleFromImages(files);
             config.setCustomStyles((prev: any[]) => [...prev, s]);
             config.setStyle(s);
@@ -139,6 +129,7 @@ export const useGenerationLogic = (
 
         setIsAnalyzingLayout(true); setError(null);
         try {
+            const { analyzeLayoutImage } = await loadGeminiService();
             const result = await analyzeLayoutImage(canvas.layoutImage, config.description);
             config.setDescription(result);
             canvas.setLayoutAnalysis(result);
@@ -153,6 +144,7 @@ export const useGenerationLogic = (
         if (!config.description.trim()) { setError(lang === 'zh' ? '请填写描述' : 'Enter description'); return; }
         config.setIsAutoGeneratingPages(true); setError(null);
         try {
+            const { generatePageList } = await loadGeminiService();
             const list = await generatePageList(config.description, config.platform, lang);
             config.setPages(list);
         } catch (err: any) { setError(err.message); }
@@ -163,6 +155,7 @@ export const useGenerationLogic = (
         if (!config.description.trim()) return;
         setIsAiGeneratingDescription(true); setError(null);
         try {
+            const { optimizeDescription } = await loadGeminiService();
             const desc = await optimizeDescription(config.description, config.platform, lang, {
                 activeRole: config.activeRole,
                 skillMode: config.skillMode,
@@ -191,9 +184,10 @@ export const useGenerationLogic = (
         };
 
         const batchId = `single-${Date.now()}`;
-        const promptToUse = overridePrompt || constructPrompt(genConfig, false, !!layoutImageToUse);
 
         try {
+            const { constructPrompt, generateUIReference } = await loadGeminiService();
+            const promptToUse = overridePrompt || constructPrompt(genConfig, false, !!layoutImageToUse);
             const asset = await generateUIReference({
                 prompt: promptToUse,
                 config: genConfig,
@@ -233,6 +227,7 @@ export const useGenerationLogic = (
         setBatchProgress(lang === 'zh' ? '正在生成设计规范...' : 'Generating Design Spec...');
 
         try {
+            const { constructPrompt, generateDesignSpecJson, generateUIReference } = await loadGeminiService();
             const genConfig: GenerationConfig = {
                 platform: config.platform, resolution: effectiveResolution, customSize: config.customSize,
                 style: config.style, description: config.description, pageName: 'Design System',
@@ -300,6 +295,7 @@ export const useGenerationLogic = (
         canvas.setArtboardGroups(prev => [...prev, { id: batchId, label: config.description.substring(0, 20) || `Batch`, x: groupX, y: groupY, width: 0, height: 0 }]);
 
         try {
+            const { constructPrompt, generateUIReference } = await loadGeminiService();
             for (let i = 0; i < total; i++) {
                 const page = config.pages[i];
                 setBatchProgress(`${lang === 'zh' ? '正在生成' : 'Generating'} ${i + 1}/${total}: ${page.name}`);
@@ -359,62 +355,9 @@ export const useGenerationLogic = (
         finally { setIsGenerating(false); setBatchProgress(''); setProgressValue(0); }
     };
 
-    // --- Skill Constants Aggregator ---
-    const getSkillConstants = (): SkillConstants => ({
-        coverImage: {
-            types: CoverConstants.COVER_TYPES,
-            palettes: CoverConstants.COVER_PALETTES,
-            renderings: CoverConstants.COVER_RENDERINGS,
-            texts: CoverConstants.COVER_TEXTS,
-            moods: CoverConstants.COVER_MOODS,
-            fonts: CoverConstants.COVER_FONTS,
-        },
-        infographic: {
-            layouts: InfographicConstants.INFOGRAPHIC_LAYOUTS,
-            styles: InfographicConstants.INFOGRAPHIC_STYLES,
-        },
-        xhsImages: {
-            styles: XHSConstants.XHS_STYLES,
-            layouts: XHSConstants.XHS_LAYOUTS,
-            strategies: XHSConstants.XHS_STRATEGIES,
-        },
-        comic: {
-            artStyles: ComicConstants.COMIC_ART_STYLES,
-            tones: ComicConstants.COMIC_TONES,
-            layouts: ComicConstants.COMIC_LAYOUTS,
-            presets: ComicConstants.COMIC_PRESETS,
-        },
-        articleIllustrator: {
-            types: ArticleConstants.ARTICLE_TYPES,
-            styles: ArticleConstants.ARTICLE_STYLES,
-            densities: ArticleConstants.ARTICLE_DENSITIES,
-        },
-        slideDeck: {
-            presets: SlideConstants.SLIDE_PRESETS,
-            audiences: SlideConstants.SLIDE_AUDIENCES,
-        },
-        logo: {
-            types: LogoConstants.LOGO_TYPES,
-            styles: LogoConstants.LOGO_STYLES,
-            palettes: LogoConstants.LOGO_PALETTES,
-            industries: LogoConstants.LOGO_INDUSTRIES,
-            moods: LogoConstants.LOGO_MOODS,
-        },
-        stickerDesign: {
-            styles: StickerConstants.STICKER_STYLES,
-            shapes: StickerConstants.STICKER_SHAPES,
-            themes: StickerConstants.STICKER_THEMES,
-            sizes: StickerConstants.STICKER_SIZES,
-            backgrounds: StickerConstants.STICKER_BACKGROUNDS,
-        },
-    });
-
     // --- Skill Mode: Single Image Generation ---
     const handleSkillSingleGeneration = async (skillType: string, skillConfig: any, currentProjectId: string | null) => {
         setIsGenerating(true); setProgressValue(20); setError(null);
-        const constants = getSkillConstants();
-        const prompt = buildSkillPrompt(skillType as any, config.description, skillConfig, constants);
-        const promptStr = typeof prompt === 'string' ? prompt : prompt.prompt;
 
         // Resolve skill-specific resolution override
         let skillResolution = effectiveResolution;
@@ -428,19 +371,25 @@ export const useGenerationLogic = (
             };
             const dims = logoSizeMap[skillConfig.logo.size] || logoSizeMap['1:1'];
             skillResolution = { id: `logo-${skillConfig.logo.size}`, name: `Logo ${skillConfig.logo.size}`, width: dims.width, height: dims.height, type: config.platform as any };
-        } else if (skillType === 'sticker-design' && skillConfig.stickerDesign?.aspect) {
-            const stickerSizeMap: Record<string, { width: number; height: number }> = {
-                '1:1': { width: 512, height: 512 },
-                '3:4': { width: 450, height: 600 },
-                '4:3': { width: 600, height: 450 },
-                '9:16': { width: 450, height: 800 },
-                '16:9': { width: 800, height: 450 },
-            };
-            const dims = stickerSizeMap[skillConfig.stickerDesign.aspect] || stickerSizeMap['1:1'];
-            skillResolution = { id: `sticker-${skillConfig.stickerDesign.aspect}`, name: `Sticker ${skillConfig.stickerDesign.aspect}`, width: dims.width, height: dims.height, type: config.platform as any };
         }
 
         try {
+            const { buildSkillPrompt, constants } = await loadSkillPromptTools();
+            const { generateUIReference } = await loadGeminiService();
+            if (skillType === 'sticker-design' && skillConfig.stickerDesign?.aspect) {
+                const aspect = constants.stickerDesign?.aspects?.find((item: any) => item.id === skillConfig.stickerDesign.aspect);
+                const dims = aspect || { width: 512, height: 512 };
+                skillResolution = {
+                    id: `sticker-${skillConfig.stickerDesign.aspect}`,
+                    name: `Sticker ${skillConfig.stickerDesign.aspect}`,
+                    width: dims.width,
+                    height: dims.height,
+                    type: config.platform as any,
+                };
+            }
+            const prompt = buildSkillPrompt(skillType as any, config.description, skillConfig, constants);
+            const promptStr = typeof prompt === 'string' ? prompt : prompt.prompt;
+
             const genConfig: GenerationConfig = {
                 platform: config.platform, resolution: skillResolution, customSize: { width: skillResolution.width, height: skillResolution.height, active: true },
                 style: config.style, description: config.description, pageName: config.pageName || 'Skill Output',
@@ -466,7 +415,8 @@ export const useGenerationLogic = (
                 details: {
                     platform: config.platform, resolution: `${dims.width}x${dims.height}`, style: config.style.name,
                     tokens: config.designTokens, fullPrompt: asset.prompt, batchId: `skill-${skillType}-${Date.now()}`,
-                    originalDescription: config.description, projectId: currentProjectId || undefined
+                    originalDescription: config.description, projectId: currentProjectId || undefined,
+                    activeRole: skillType as any, skillType: skillType as any, skillConfig,
                 }
             };
 
@@ -487,7 +437,6 @@ export const useGenerationLogic = (
     // --- Skill Mode: Multi-Image Sequence Generation ---
     const handleSkillSequenceGeneration = async (skillType: string, skillConfig: any, currentProjectId: string | null) => {
         setIsGenerating(true); setError(null); setProgressValue(0);
-        const constants = getSkillConstants();
         const batchId = `skill-${skillType}-${Date.now()}`;
 
         const pages = config.pages;
@@ -507,6 +456,8 @@ export const useGenerationLogic = (
         canvas.setArtboardGroups(prev => [...prev, { id: batchId, label: `${skillType} - ${groupLabel}`, x: groupX, y: groupY, width: 0, height: 0 }]);
 
         try {
+            const { buildSkillPrompt, constants } = await loadSkillPromptTools();
+            const { generateUIReference } = await loadGeminiService();
             for (let i = 0; i < pageCount; i++) {
                 const page = pages[i];
                 const pageContent = page.description || config.description;
@@ -546,7 +497,8 @@ export const useGenerationLogic = (
                     details: {
                         platform: config.platform, resolution: `${dims.width}x${dims.height}`, style: config.style.name,
                         tokens: config.designTokens, fullPrompt: asset.prompt, batchId,
-                        originalDescription: pageContent, projectId: currentProjectId || undefined
+                        originalDescription: pageContent, projectId: currentProjectId || undefined,
+                        activeRole: skillType as any, skillType: skillType as any, skillConfig,
                     }
                 };
 
@@ -569,7 +521,7 @@ export const useGenerationLogic = (
         } finally { setIsGenerating(false); setBatchProgress(''); setProgressValue(0); }
     };
 
-    const handlePrepareGeneration = (devMode: boolean, currentProjectId: string | null) => {
+    const handlePrepareGeneration = async (devMode: boolean, currentProjectId: string | null) => {
         // Skill Mode Branch — reuses isBatchMode + pages for multi-image skills
         if (config.skillMode && config.skillConfig) {
             const skillType = config.skillConfig.type;
@@ -588,6 +540,7 @@ export const useGenerationLogic = (
             return;
         }
 
+        const { constructPrompt } = await loadGeminiService();
         const constructed = constructPrompt({
             ...config,
             designMd: config.designMdContent || undefined,
@@ -595,6 +548,7 @@ export const useGenerationLogic = (
             layoutDensity: config.layoutDensityContent || undefined,
         } as any, false, !!canvas.layoutImage);
         if (devMode) {
+            const { getAPISettings } = await import('../services/apiKeyStore');
             const settings = getAPISettings();
             const enabledImageAPIs = settings.imageAPIs.filter(a => a.enabled);
             let targetAPI = enabledImageAPIs[0];
@@ -659,12 +613,13 @@ export const useGenerationLogic = (
             ...mediaFields,
         };
 
-        let finalPrompt = '';
-        if (!prompt.trim()) { finalPrompt = constructPrompt(genConfig, !!ref, !!layout); }
-        else { finalPrompt = `**PRIMARY EDIT INSTRUCTION**: ${prompt}\n\n**CONTEXT (Background Info)**: ${genConfig.description}`; }
-        if (mask) finalPrompt += "\n\n**INSTRUCTION**: Edit ONLY the area designated by the provided mask. Keep the rest of the UI exactly the same.";
-
         try {
+            const { constructPrompt, generateUIReference } = await loadGeminiService();
+            let finalPrompt = '';
+            if (!prompt.trim()) { finalPrompt = constructPrompt(genConfig, !!ref, !!layout); }
+            else { finalPrompt = `**PRIMARY EDIT INSTRUCTION**: ${prompt}\n\n**CONTEXT (Background Info)**: ${genConfig.description}`; }
+            if (mask) finalPrompt += "\n\n**INSTRUCTION**: Edit ONLY the area designated by the provided mask. Keep the rest of the UI exactly the same.";
+
             let editBase = ref;
             if (!editBase && regenState.mode === 'refine' && targetBoard.image.url) { editBase = targetBoard.image.url; }
 

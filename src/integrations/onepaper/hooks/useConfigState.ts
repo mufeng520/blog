@@ -1,58 +1,29 @@
-import { useState } from 'react';
-import type { PlatformType, ResolutionPreset, UIStyle, DesignTokens, BackgroundConfig, PageRequest, CreatorRole, MediaAspectRatio, MediaType, MediaResolutionPreset, SkillConfig, SkillType, CoverImageConfig, InfographicConfig, XHSImagesConfig, ComicConfig, ArticleIllustratorConfig, SlideDeckConfig, LogoConfig, StickerDesignConfig } from '../types';
-import { RESOLUTION_PRESETS, UI_STYLES, MEDIA_RESOLUTIONS } from '../constants';
+import { useRef, useState } from 'react';
+import type { PlatformType, ResolutionPreset, UIStyle, DesignTokens, BackgroundConfig, PageRequest, CreatorRole, MediaAspectRatio, MediaType, MediaResolutionPreset, SkillConfig, SkillType } from '../types';
+import {
+    DEFAULT_RESOLUTION,
+    DEFAULT_STYLE,
+    getDefaultMediaResolutionForRatio,
+    getDefaultResolutionForPlatform,
+} from '../config/runtimeDefaults';
+import { isOnePaperSkill } from '../skills/skillTypes';
 
 export const useConfigState = () => {
 
     // Creator Role
     const [activeRole, setActiveRole] = useState<CreatorRole>('designer');
 
-    // Skill Mode
-    const SKILL_TYPES: SkillType[] = ['cover-image', 'infographic', 'xhs-images', 'comic', 'article-illustrator', 'slide-deck', 'logo', 'sticker-design'];
-    const isSkillRole = (role: CreatorRole) => SKILL_TYPES.includes(role as SkillType);
     const [skillMode, setSkillMode] = useState(false);
     const [activeSkill, setActiveSkill] = useState<SkillType | null>(null);
     const [skillConfig, setSkillConfig] = useState<SkillConfig | null>(null);
-
-    // Default skill configs
-    const defaultCoverConfig: CoverImageConfig = {
-        type: 'conceptual', palette: 'warm', rendering: 'flat-vector',
-        text: 'title-only', mood: 'balanced', font: 'clean',
-        title: '', subtitle: '', aspect: '16:9'
-    };
-    const defaultInfographicConfig: InfographicConfig = {
-        layout: 'bento-grid', style: 'craft-handmade', aspect: 'landscape'
-    };
-    const defaultXHSConfig: XHSImagesConfig = {
-        style: 'cute', layout: 'balanced', strategy: 'info-dense'
-    };
-    const defaultComicConfig: ComicConfig = {
-        art: 'manga', tone: 'neutral', layout: 'standard',
-        preset: 'custom', aspect: '3:4', pageCount: 6
-    };
-    const defaultArticleConfig: ArticleIllustratorConfig = {
-        type: 'infographic', style: 'notion', density: 'balanced'
-    };
-    const defaultSlideConfig: SlideDeckConfig = {
-        preset: 'blueprint', audience: 'general'
-    };
-    const defaultLogoConfig: LogoConfig = {
-        type: 'combination', style: 'flat', palette: 'dual-tone',
-        industry: 'general', mood: 'professional', size: '1:1',
-        brandName: '', slogan: ''
-    };
-    const defaultStickerConfig: StickerDesignConfig = {
-        style: 'flat', shape: 'custom', theme: 'character',
-        size: 'medium', background: 'transparent',
-        subjectName: '', expression: '', aspect: '1:1'
-    };
+    const roleChangeRequestRef = useRef(0);
 
     // Config
     const [platform, setPlatform] = useState<PlatformType>('mobile');
-    const [resolution, setResolution] = useState<ResolutionPreset>(RESOLUTION_PRESETS[1]);
+    const [resolution, setResolution] = useState<ResolutionPreset>(DEFAULT_RESOLUTION);
     const [customSize, setCustomSize] = useState({ width: 390, height: 844, active: false });
     const [customStyles, setCustomStyles] = useState<UIStyle[]>([]);
-    const [style, setStyle] = useState<UIStyle>(UI_STYLES[2]);
+    const [style, setStyle] = useState<UIStyle>(DEFAULT_STYLE);
     const [description, setDescription] = useState('');
     const [pageName, setPageName] = useState('');
     const [keywords, setKeywords] = useState<string[]>([]);
@@ -81,7 +52,7 @@ export const useConfigState = () => {
 
     // Media Mode
     const [mediaAspectRatio, setMediaAspectRatio] = useState<MediaAspectRatio>('3:4');
-    const [mediaResolution, setMediaResolution] = useState<MediaResolutionPreset>(MEDIA_RESOLUTIONS.find(r => r.ratio === '3:4')!);
+    const [mediaResolution, setMediaResolution] = useState<MediaResolutionPreset>(getDefaultMediaResolutionForRatio('3:4'));
     const [mediaType, setMediaType] = useState<MediaType>('poster');
 
     // Images (Inputs)
@@ -91,37 +62,18 @@ export const useConfigState = () => {
 
     // Actions
     const handleRoleChange = (role: CreatorRole) => {
+        const requestId = roleChangeRequestRef.current + 1;
+        roleChangeRequestRef.current = requestId;
         setActiveRole(role);
-        if (isSkillRole(role)) {
+        if (isOnePaperSkill(role)) {
             setSkillMode(true);
-            setActiveSkill(role as SkillType);
-            // Initialize default config for the skill
-            switch (role) {
-                case 'cover-image':
-                    setSkillConfig({ type: 'cover-image', coverImage: defaultCoverConfig });
-                    break;
-                case 'infographic':
-                    setSkillConfig({ type: 'infographic', infographic: defaultInfographicConfig });
-                    break;
-                case 'xhs-images':
-                    setSkillConfig({ type: 'xhs-images', xhsImages: defaultXHSConfig });
-                    break;
-                case 'comic':
-                    setSkillConfig({ type: 'comic', comic: defaultComicConfig });
-                    break;
-                case 'article-illustrator':
-                    setSkillConfig({ type: 'article-illustrator', articleIllustrator: defaultArticleConfig });
-                    break;
-                case 'slide-deck':
-                    setSkillConfig({ type: 'slide-deck', slideDeck: defaultSlideConfig });
-                    break;
-                case 'logo':
-                    setSkillConfig({ type: 'logo', logo: defaultLogoConfig });
-                    break;
-                case 'sticker-design':
-                    setSkillConfig({ type: 'sticker-design', stickerDesign: defaultStickerConfig });
-                    break;
-            }
+            setActiveSkill(role);
+            setSkillConfig(null);
+            import('../skills/skillRegistry').then(({ createDefaultSkillConfig }) => {
+                if (roleChangeRequestRef.current === requestId) {
+                    setSkillConfig(createDefaultSkillConfig(role));
+                }
+            });
         } else {
             setSkillMode(false);
             setActiveSkill(null);
@@ -131,14 +83,12 @@ export const useConfigState = () => {
 
     const handlePlatformChange = (p: PlatformType) => {
         setPlatform(p);
-        const firstRes = RESOLUTION_PRESETS.find(d => d.type === p);
-        if (firstRes) setResolution(firstRes);
+        setResolution(getDefaultResolutionForPlatform(p));
     };
 
     const handleMediaAspectRatioChange = (ratio: MediaAspectRatio) => {
         setMediaAspectRatio(ratio);
-        const firstRes = MEDIA_RESOLUTIONS.find(r => r.ratio === ratio);
-        if (firstRes) setMediaResolution(firstRes);
+        setMediaResolution(getDefaultMediaResolutionForRatio(ratio));
     };
 
     return {

@@ -136,16 +136,24 @@ export type StickerShape = 'custom' | 'circle' | 'square' | 'rounded' | 'star' |
 export type StickerTheme = 'character' | 'emoji' | 'text-quote' | 'object' | 'animal' | 'food' | 'nature';
 export type StickerSize = 'small' | 'medium' | 'large' | 'sheet';
 export type StickerBackground = 'transparent' | 'white' | 'colored' | 'pattern';
+export type StickerFormat = 'single' | 'three-views' | 'sheet';
+export type StickerTextStyle = 'none' | 'caption' | 'headline';
 
 export interface StickerDesignConfig {
   style: StickerStyle;
   shape: StickerShape;
   theme: StickerTheme;
   size: StickerSize;
+  format?: StickerFormat;
   background: StickerBackground;
   subjectName: string;
   expression: string;
   aspect: MediaAspectRatio;
+  sheetCount?: number;
+  text?: string;
+  textStyle?: StickerTextStyle;
+  whiteBorder?: boolean;
+  facialFeatures?: boolean;
 }
 
 // --- Unified Skill Config ---
@@ -309,12 +317,14 @@ export interface GeneratedImage {
     style: string;
     tokens: DesignTokens;
     fullPrompt: string;
+    activeRole?: CreatorRole;
+    skillType?: SkillType;
+    skillConfig?: SkillConfig;
     isDesignSpec?: boolean;
     batchId?: string; // NEW: To group images generated together
     originalDescription?: string; // NEW: Persist original description for regeneration context
     projectId?: string; // NEW: To filter by project
     designSystem?: DesignSystem; // NEW: Store the JSON spec if generated via code
-    stickerCraft?: any; // StickerCraft-specific generation, split, and upload metadata
     // NEW: Store snapshots of reference images used for this generation
     referenceImages?: {
       label: string;
@@ -429,6 +439,13 @@ export interface AppConfigExport {
   forceChinese: boolean;
   promptLanguage: string | null;
   preferredImageApiId: string | null;
+  activeRole: CreatorRole;
+  skillMode: boolean;
+  activeSkill: SkillType | null;
+  skillConfig: SkillConfig | null;
+  mediaAspectRatio: MediaAspectRatio;
+  mediaResolution: MediaResolutionPreset;
+  mediaType: MediaType;
   isBatchMode: boolean;
   batchOutputMode: 'separate' | 'grid';
   specMode: 'image' | 'code';

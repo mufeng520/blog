@@ -3,8 +3,6 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { GeneratedImage, LangType, Project } from '../types';
 import { I18N } from '../constants';
 import DesignSpecRenderer from './DesignSpecRenderer';
-import JSZip from 'jszip';
-import { getHistoryPaginated } from '../services/idbHistoryService';
 import type { HistoryPaginatedResponse } from '../services/idbHistoryService';
 
 interface Props {
@@ -47,6 +45,7 @@ const GalleryManager: React.FC<Props> = ({ history, onUpdateHistory, onSelect, o
         const loadInitialHistory = async () => {
             setIsLoadingHistory(true);
             try {
+                const { getHistoryPaginated } = await import('../services/idbHistoryService');
                 const response = await getHistoryPaginated(1, 20);
                 setLocalHistory(response.items);
                 setHasMore(response.hasMore);
@@ -77,6 +76,7 @@ const GalleryManager: React.FC<Props> = ({ history, onUpdateHistory, onSelect, o
         setIsLoadingMore(true);
         try {
             const nextPage = currentPage + 1;
+            const { getHistoryPaginated } = await import('../services/idbHistoryService');
             const response = await getHistoryPaginated(nextPage, 20);
             const newHistory = [...localHistory, ...response.items];
             setLocalHistory(newHistory);
@@ -196,6 +196,7 @@ const GalleryManager: React.FC<Props> = ({ history, onUpdateHistory, onSelect, o
     const handleBatchDownload = async () => {
         if (selectedIds.length === 0) return;
 
+        const { default: JSZip } = await import('jszip');
         const zip = new JSZip();
         let count = 0;
 

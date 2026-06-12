@@ -1,6 +1,5 @@
 ﻿import { useState, useEffect } from 'react';
 import type { Artboard, ArtboardGroup, GeneratedImage, LayoutElement } from '../types';
-import { getHistory, saveImageToHistory, deleteFromHistory, clearHistory as clearDbHistory } from '../services/idbHistoryService';
 import type { LangType } from '../types';
 
 export const useCanvasState = (
@@ -65,6 +64,7 @@ export const useCanvasState = (
     // Actions
     const handleSaveToHistory = async (img: GeneratedImage) => {
         try {
+            const { getHistory, saveImageToHistory } = await import('../services/idbHistoryService');
             await saveImageToHistory(img);
             const updated = await getHistory();
             setHistory(updated);
@@ -75,11 +75,13 @@ export const useCanvasState = (
     };
 
     const handleDeleteHistory = async (id: string) => {
+        const { deleteFromHistory, getHistory } = await import('../services/idbHistoryService');
         await deleteFromHistory(id);
         setHistory(await getHistory());
     };
 
     const handleClearHistory = async () => {
+        const { clearHistory: clearDbHistory } = await import('../services/idbHistoryService');
         await clearDbHistory();
         setHistory([]);
     };

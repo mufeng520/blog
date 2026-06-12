@@ -1,6 +1,6 @@
 import React from 'react';
 import type { LogoConfig, LangType } from '../../types';
-import DesignMdSelector, { type SelectorOption } from '../DesignMdSelector';
+import GenericOptionSelector, { type SelectorOption } from './shared/GenericOptionSelector';
 
 interface Props {
   config: LogoConfig;
@@ -113,57 +113,72 @@ export const LogoPanel: React.FC<Props> = ({ config, onChange, lang }) => {
       </div>
 
       {/* Logo Type */}
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.type}
-        onSelect={(id) => update({ type: id as any })}
+        onSelect={(id: string | null) => id && update({ type: id as any })}
         lang={lang}
         options={toOptions(LOGO_TYPES)}
         label="Logo Type"
         label_zh="Logo 类型"
+        showPreview={false}
+        showClear={false}
+        confirmOnSelect
         favoritesKey="logo-type-favorites"
       />
 
       {/* Visual Style */}
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.style}
-        onSelect={(id) => update({ style: id as any })}
+        onSelect={(id: string | null) => id && update({ style: id as any })}
         lang={lang}
         options={toOptions(LOGO_STYLES)}
         label="Visual Style"
         label_zh="视觉风格"
+        showPreview={false}
+        showClear={false}
+        confirmOnSelect
         favoritesKey="logo-style-favorites"
       />
 
       {/* Color Palette */}
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.palette}
-        onSelect={(id) => update({ palette: id as any })}
+        onSelect={(id: string | null) => id && update({ palette: id as any })}
         lang={lang}
         options={toOptions(LOGO_PALETTES)}
         label="Color Palette"
         label_zh="配色方案"
+        showPreview={false}
+        showClear={false}
+        confirmOnSelect
         favoritesKey="logo-palette-favorites"
       />
 
       {/* Industry */}
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.industry}
-        onSelect={(id) => update({ industry: id as any })}
+        onSelect={(id: string | null) => id && update({ industry: id as any })}
         lang={lang}
         options={toOptions(LOGO_INDUSTRIES)}
         label="Industry"
         label_zh="行业场景"
+        showPreview={false}
+        showClear={false}
+        confirmOnSelect
         favoritesKey="logo-industry-favorites"
       />
 
       {/* Mood */}
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.mood}
-        onSelect={(id) => update({ mood: id as any })}
+        onSelect={(id: string | null) => id && update({ mood: id as any })}
         lang={lang}
         options={toOptions(LOGO_MOODS)}
         label="Mood"
         label_zh="气质调性"
+        showPreview={false}
+        showClear={false}
+        confirmOnSelect
         favoritesKey="logo-mood-favorites"
       />
 

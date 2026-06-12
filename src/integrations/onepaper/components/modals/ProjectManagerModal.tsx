@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { I18N } from '../../constants';
 import type { LangType, Project } from '../../types';
 import IconLoader from '../IconLoader';
-import html2canvas from 'html2canvas';
 
 interface Props {
     isOpen: boolean;
@@ -48,6 +47,7 @@ const ProjectManagerModal: React.FC<Props> = ({
         try {
             const canvasElement = document.getElementById('main-canvas-area');
             if (canvasElement) {
+                const { default: html2canvas } = await import('html2canvas');
                 const canvas = await html2canvas(canvasElement, {
                     useCORS: true,
                     scale: 0.2,

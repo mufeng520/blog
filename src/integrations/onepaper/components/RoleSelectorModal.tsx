@@ -1,5 +1,6 @@
 import React from 'react';
 import type { CreatorRole, LangType } from '../types';
+import { ONEPAPER_SKILL_DEFINITIONS } from '../skills/skillRegistry';
 
 interface RoleDef {
   id: CreatorRole;
@@ -9,7 +10,7 @@ interface RoleDef {
   description_zh: string;
 }
 
-const ROLES: RoleDef[] = [
+const BASE_ROLES: RoleDef[] = [
   {
     id: 'designer', label: 'UI Design', label_zh: 'UI 设计',
     description: 'UI mockups & wireframes', description_zh: 'UI 原型与线框图'
@@ -22,42 +23,23 @@ const ROLES: RoleDef[] = [
   //   id: 'game', label: 'Game', label_zh: '游戏制作者',
   //   description: 'Game assets & icons', description_zh: '游戏素材与图标'
   // },
-  {
-    id: 'cover-image', label: 'Cover', label_zh: '封面图',
-    description: 'Article & book covers', description_zh: '文章与书籍封面'
-  },
-  {
-    id: 'infographic', label: 'Info', label_zh: '信息图',
-    description: 'Data visualizations', description_zh: '数据可视化'
-  },
-  {
-    id: 'xhs-images', label: 'XHS', label_zh: '小红书',
-    description: 'Social media carousels', description_zh: '社交媒体轮播图'
-  },
-  {
-    id: 'comic', label: 'Comic', label_zh: '漫画',
-    description: 'Knowledge comics', description_zh: '知识漫画'
-  },
-  {
-    id: 'article-illustrator', label: 'Illus', label_zh: '插图',
-    description: 'Article illustrations', description_zh: '文章插图'
-  },
-  {
-    id: 'slide-deck', label: 'Slides', label_zh: '幻灯片',
-    description: 'Presentation slides', description_zh: '演示幻灯片'
-  },
-  {
-    id: 'logo', label: 'Logo', label_zh: 'Logo',
-    description: 'Brand logo design', description_zh: 'Logo 设计'
-  },
-  {
-    id: 'sticker-design', label: 'Sticker', label_zh: '贴纸',
-    description: 'Sticker & emoji design', description_zh: '贴纸与表情设计'
-  },
-  {
-    id: 'free', label: 'Free', label_zh: '自由模式',
-    description: 'Free prompt mode', description_zh: '自由输入，直接生成'
-  },
+];
+
+const FREE_ROLE: RoleDef = {
+  id: 'free', label: 'Free', label_zh: '自由模式',
+  description: 'Free prompt mode', description_zh: '自由输入，直接生成'
+};
+
+const ROLES: RoleDef[] = [
+  ...BASE_ROLES,
+  ...ONEPAPER_SKILL_DEFINITIONS.map(({ id, label, label_zh, description, description_zh }) => ({
+    id,
+    label,
+    label_zh,
+    description,
+    description_zh,
+  })),
+  FREE_ROLE,
 ];
 
 // ─── SVG Icons (24×24 viewBox) ───

@@ -2,7 +2,6 @@
 import React, { useEffect, useState } from 'react';
 import type { GeneratedImage, LangType } from '../../types';
 import { I18N } from '../../constants';
-import { getAssetDetails } from '../../services/idbHistoryService';
 
 interface Props {
     image: GeneratedImage | null;
@@ -27,11 +26,14 @@ const ImageDetailsModal: React.FC<Props> = ({ image, onClose, lang }) => {
         if (isLazy) {
             setLoading(true);
             setDisplayImage(image); // Show placeholder initially
-            getAssetDetails(image.id).then(fullAsset => {
-                if (fullAsset) {
-                    setDisplayImage(fullAsset);
-                }
-            }).finally(() => setLoading(false));
+            import('../../services/idbHistoryService')
+                .then(({ getAssetDetails }) => getAssetDetails(image.id))
+                .then(fullAsset => {
+                    if (fullAsset) {
+                        setDisplayImage(fullAsset);
+                    }
+                })
+                .finally(() => setLoading(false));
         } else {
             setDisplayImage(image);
             setLoading(false);

@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ComicConfig, LangType } from '../../types';
-import DesignMdSelector, { type SelectorOption } from '../DesignMdSelector';
+import GenericOptionSelector, { type SelectorOption } from './shared/GenericOptionSelector';
 
 interface Props {
   config: ComicConfig;
@@ -61,7 +61,7 @@ export const ComicPanel: React.FC<Props> = ({ config, onChange, lang }) => {
 
   return (
     <div className="space-y-4">
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.preset}
         onSelect={(id: string | null) => id && update({ preset: id as any })}
         lang={lang}
@@ -73,7 +73,7 @@ export const ComicPanel: React.FC<Props> = ({ config, onChange, lang }) => {
 
       {config.preset === 'custom' && (
         <>
-          <DesignMdSelector
+          <GenericOptionSelector
             selectedId={config.art}
             onSelect={(id: string | null) => id && update({ art: id as any })}
             lang={lang}
@@ -83,7 +83,7 @@ export const ComicPanel: React.FC<Props> = ({ config, onChange, lang }) => {
             favoritesKey="skill-comic-art"
           />
 
-          <DesignMdSelector
+          <GenericOptionSelector
             selectedId={config.tone}
             onSelect={(id: string | null) => id && update({ tone: id as any })}
             lang={lang}
@@ -95,7 +95,7 @@ export const ComicPanel: React.FC<Props> = ({ config, onChange, lang }) => {
         </>
       )}
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.layout}
         onSelect={(id: string | null) => id && update({ layout: id as any })}
         lang={lang}
@@ -105,7 +105,7 @@ export const ComicPanel: React.FC<Props> = ({ config, onChange, lang }) => {
         favoritesKey="skill-comic-layout"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.aspect}
         onSelect={(id: string | null) => id && update({ aspect: id as any })}
         lang={lang}

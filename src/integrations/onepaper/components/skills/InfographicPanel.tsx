@@ -1,6 +1,6 @@
 import React from 'react';
 import type { InfographicConfig, LangType } from '../../types';
-import DesignMdSelector, { type SelectorOption } from '../DesignMdSelector';
+import GenericOptionSelector, { type SelectorOption } from './shared/GenericOptionSelector';
 
 interface Props {
   config: InfographicConfig;
@@ -74,7 +74,7 @@ export const InfographicPanel: React.FC<Props> = ({ config, onChange, lang }) =>
 
   return (
     <div className="space-y-4">
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.layout}
         onSelect={(id: string | null) => id && update({ layout: id as any })}
         lang={lang}
@@ -84,7 +84,7 @@ export const InfographicPanel: React.FC<Props> = ({ config, onChange, lang }) =>
         favoritesKey="skill-info-layout"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.style}
         onSelect={(id: string | null) => id && update({ style: id as any })}
         lang={lang}
@@ -94,7 +94,7 @@ export const InfographicPanel: React.FC<Props> = ({ config, onChange, lang }) =>
         favoritesKey="skill-info-style"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.aspect}
         onSelect={(id: string | null) => id && update({ aspect: id as any })}
         lang={lang}

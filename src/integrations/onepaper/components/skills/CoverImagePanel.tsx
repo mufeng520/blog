@@ -1,6 +1,6 @@
 import React from 'react';
 import type { CoverImageConfig, LangType } from '../../types';
-import DesignMdSelector, { type SelectorOption } from '../DesignMdSelector';
+import GenericOptionSelector, { type SelectorOption } from './shared/GenericOptionSelector';
 
 interface Props {
   config: CoverImageConfig;
@@ -80,7 +80,7 @@ export const CoverImagePanel: React.FC<Props> = ({ config, onChange, lang }) => 
 
   return (
     <div className="space-y-4">
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.type}
         onSelect={(id: string | null) => id && update({ type: id as any })}
         lang={lang}
@@ -90,7 +90,7 @@ export const CoverImagePanel: React.FC<Props> = ({ config, onChange, lang }) => 
         favoritesKey="skill-cover-type"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.palette}
         onSelect={(id: string | null) => id && update({ palette: id as any })}
         lang={lang}
@@ -100,7 +100,7 @@ export const CoverImagePanel: React.FC<Props> = ({ config, onChange, lang }) => 
         favoritesKey="skill-cover-palette"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.rendering}
         onSelect={(id: string | null) => id && update({ rendering: id as any })}
         lang={lang}
@@ -110,7 +110,7 @@ export const CoverImagePanel: React.FC<Props> = ({ config, onChange, lang }) => 
         favoritesKey="skill-cover-rendering"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.text}
         onSelect={(id: string | null) => id && update({ text: id as any })}
         lang={lang}
@@ -144,7 +144,7 @@ export const CoverImagePanel: React.FC<Props> = ({ config, onChange, lang }) => 
         </div>
       )}
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.mood}
         onSelect={(id: string | null) => id && update({ mood: id as any })}
         lang={lang}
@@ -154,7 +154,7 @@ export const CoverImagePanel: React.FC<Props> = ({ config, onChange, lang }) => 
         favoritesKey="skill-cover-mood"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.font}
         onSelect={(id: string | null) => id && update({ font: id as any })}
         lang={lang}
@@ -164,7 +164,7 @@ export const CoverImagePanel: React.FC<Props> = ({ config, onChange, lang }) => 
         favoritesKey="skill-cover-font"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.aspect}
         onSelect={(id: string | null) => id && update({ aspect: id as any })}
         lang={lang}

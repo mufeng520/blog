@@ -1,10 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { DESIGN_MD_TEMPLATES, getDesignMdById } from '../skills/designs';
-import type { DesignMdTemplate } from '../skills/designs';
-import { VISUAL_STYLE_TEMPLATES, getVisualStyleById } from '../skills/styles';
-import type { VisualStyleTemplate } from '../skills/styles';
-import { LAYOUT_DENSITY_TEMPLATES, getLayoutDensityById } from '../skills/layouts';
-import type { LayoutDensityTemplate } from '../skills/layouts';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { LangType } from '../types';
 
 // ─── Generic Option Type ───
@@ -15,6 +9,7 @@ export interface SelectorOption {
     description: string;
     description_zh: string;
     content?: string;
+    contentPath?: string;
     category?: string;
 }
 
@@ -23,7 +18,7 @@ interface Props {
     selectedId: string | null;
     onSelect: (id: string | null, content: string | null) => void;
     lang: LangType;
-    variant?: 'design' | 'visual' | 'layout';
+    variant?: TemplateVariant;
     // ── Generic mode (overrides variant when provided) ──
     options?: SelectorOption[];
     label?: string;
@@ -40,7 +35,48 @@ interface Props {
     favoritesKey?: string; // custom localStorage key for favorites in generic mode
 }
 
-type TemplateItem = DesignMdTemplate | VisualStyleTemplate | LayoutDensityTemplate;
+type TemplateVariant = 'design' | 'visual' | 'layout';
+type TemplateItem = SelectorOption & { content?: string; contentPath?: string };
+type TemplateLoaderResult = {
+    templates: TemplateItem[];
+    loadContent?: (id: string) => Promise<string>;
+};
+
+const templateLoaders: Record<TemplateVariant, () => Promise<TemplateLoaderResult>> = {
+    design: async () => {
+        const module = await import('../skills/designs');
+        return {
+            templates: module.DESIGN_MD_TEMPLATES,
+            loadContent: module.loadDesignMdContent,
+        };
+    },
+    visual: async () => {
+        const module = await import('../skills/styles');
+        return {
+            templates: module.VISUAL_STYLE_TEMPLATES,
+            loadContent: module.loadVisualStyleContent,
+        };
+    },
+    layout: async () => {
+        const module = await import('../skills/layouts');
+        return {
+            templates: module.LAYOUT_DENSITY_TEMPLATES,
+            loadContent: module.loadLayoutDensityContent,
+        };
+    },
+};
+
+const toSelectorOptions = (items: TemplateItem[]): SelectorOption[] =>
+    items.map(t => ({
+        id: t.id,
+        name: t.name,
+        name_zh: t.name_zh,
+        description: t.description,
+        description_zh: t.description_zh,
+        content: t.content,
+        contentPath: t.contentPath,
+        category: t.category,
+    }));
 
 const getFavorites = (key: string): string[] => {
     try {
@@ -77,23 +113,65 @@ const DesignMdSelector: React.FC<Props> = ({
 }) => {
     const isGeneric = !!customOptions && customOptions.length > 0;
     const isZh = lang === 'zh';
+    const [loadedOptions, setLoadedOptions] = useState<SelectorOption[]>([]);
+    const [loadedVariant, setLoadedVariant] = useState<TemplateVariant | null>(null);
+    const [contentLoader, setContentLoader] = useState<((id: string) => Promise<string>) | null>(null);
+    const [contentCache, setContentCache] = useState<Record<string, string>>({});
+    const [loadingContentId, setLoadingContentId] = useState<string | null>(null);
+    const [confirmingId, setConfirmingId] = useState<string | null>(null);
+    const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
 
     // ── Data source ──
-    const templates: SelectorOption[] = useMemo(() => {
-        if (isGeneric) return customOptions!;
-        const list = variant === 'design' ? DESIGN_MD_TEMPLATES
-            : variant === 'visual' ? VISUAL_STYLE_TEMPLATES
-            : LAYOUT_DENSITY_TEMPLATES;
-        return list.map(t => ({
-            id: t.id,
-            name: t.name,
-            name_zh: t.name_zh,
-            description: t.description,
-            description_zh: t.description_zh,
-            content: t.content,
-            category: t.category,
-        }));
-    }, [isGeneric, customOptions, variant]);
+    useEffect(() => {
+        const shouldLoadTemplates = isOpen || !!selectedId;
+
+        if (isGeneric) {
+            setLoadedOptions([]);
+            setLoadedVariant(null);
+            setContentLoader(null);
+            setContentCache({});
+            setIsLoadingTemplates(false);
+            return;
+        }
+
+        if (!shouldLoadTemplates || loadedVariant === variant) {
+            setIsLoadingTemplates(false);
+            return;
+        }
+
+        let cancelled = false;
+        setIsLoadingTemplates(true);
+        templateLoaders[variant]()
+            .then(result => {
+                if (!cancelled) {
+                    setLoadedOptions(toSelectorOptions(result.templates));
+                    setContentLoader(() => result.loadContent || null);
+                    setContentCache({});
+                    setLoadedVariant(variant);
+                }
+            })
+            .catch(error => {
+                console.error(`Failed to load ${variant} templates`, error);
+                if (!cancelled) {
+                    setLoadedOptions([]);
+                    setLoadedVariant(null);
+                    setContentLoader(null);
+                    setContentCache({});
+                }
+            })
+            .finally(() => {
+                if (!cancelled) setIsLoadingTemplates(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [isGeneric, isOpen, loadedVariant, selectedId, variant]);
+
+    const templates: SelectorOption[] = useMemo(() => (
+        isGeneric ? customOptions! : loadedVariant === variant ? loadedOptions : []
+    ), [isGeneric, customOptions, loadedOptions, loadedVariant, variant]);
 
     const getById = (id: string): SelectorOption | null => {
         return templates.find(t => t.id === id) || null;
@@ -129,12 +207,6 @@ const DesignMdSelector: React.FC<Props> = ({
                 ? (isZh ? '选择一种视觉美学风格，为生成的 UI 注入整体氛围和艺术质感' : 'Choose a visual aesthetic style to infuse the generated UI with overall mood and artistic texture')
                 : (isZh ? '选择一种布局密度策略，控制元素间距、屏幕信息量和结构组织方式' : 'Choose a layout density strategy to control element spacing, screen information density, and structural organization');
 
-    const sourceText = isZh ? '来自于开源项目' : 'From open source project';
-    const sourceLink = isGeneric ? null
-        : variant === 'design'
-            ? { text: 'Design.md', href: 'https://github.com/VoltAgent/awesome-design-md' }
-            : { text: 'baoyu-skills', href: 'https://github.com/tao-bio/awesome-baoyu-skills' };
-
     // ── Favorites ──
     const favoritesKey = customFavoritesKey
         ? customFavoritesKey
@@ -147,7 +219,6 @@ const DesignMdSelector: React.FC<Props> = ({
                     : 'layout-density-favorites';
 
     // ── State ──
-    const [isOpen, setIsOpen] = useState(false);
     const [activeTemplate, setActiveTemplate] = useState<SelectorOption | null>(null);
     const [search, setSearch] = useState('');
     const [tab, setTab] = useState<'all' | 'favorites'>('all');
@@ -172,12 +243,63 @@ const DesignMdSelector: React.FC<Props> = ({
         return () => document.removeEventListener('keydown', handleKey);
     }, [isOpen]);
 
-    const handleConfirm = (t: SelectorOption) => {
-        onSelect(t.id, t.content || null);
+    const resolveTemplateContent = useCallback(async (t: SelectorOption): Promise<string | null> => {
+        if (t.content) return t.content;
+        if (contentCache[t.id] !== undefined) return contentCache[t.id] || null;
+        if (!contentLoader) return null;
+
+        const content = await contentLoader(t.id);
+        setContentCache(prev => ({ ...prev, [t.id]: content || '' }));
+        return content || null;
+    }, [contentCache, contentLoader]);
+
+    useEffect(() => {
+        if (!showPreview || !activeTemplate || activeTemplate.content) return;
+        if (contentCache[activeTemplate.id] !== undefined || !contentLoader) return;
+
+        let cancelled = false;
+        const activeId = activeTemplate.id;
+        setLoadingContentId(activeId);
+
+        contentLoader(activeId)
+            .then(content => {
+                if (!cancelled) {
+                    setContentCache(prev => ({ ...prev, [activeId]: content || '' }));
+                }
+            })
+            .catch(error => {
+                console.error(`Failed to load ${variant} template content`, error);
+                if (!cancelled) {
+                    setContentCache(prev => ({ ...prev, [activeId]: '' }));
+                }
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setLoadingContentId(current => current === activeId ? null : current);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeTemplate, contentCache, contentLoader, showPreview, variant]);
+
+    const handleConfirm = async (t: SelectorOption) => {
+        setConfirmingId(t.id);
+        let content: string | null = null;
+
+        try {
+            content = await resolveTemplateContent(t);
+        } catch (error) {
+            console.error(`Failed to load ${variant} template content`, error);
+        }
+
         setIsOpen(false);
         setActiveTemplate(null);
         setSearch('');
         setTab('all');
+        setConfirmingId(null);
+        onSelect(t.id, content);
     };
 
     const handleClear = () => {
@@ -232,6 +354,14 @@ const DesignMdSelector: React.FC<Props> = ({
             setActiveTemplate(t);
         }
     };
+
+    const activeTemplateContent = activeTemplate
+        ? activeTemplate.content ?? contentCache[activeTemplate.id] ?? ''
+        : '';
+    const isActiveTemplateContentLoading = !!activeTemplate
+        && !activeTemplate.content
+        && loadingContentId === activeTemplate.id
+        && contentCache[activeTemplate.id] === undefined;
 
     return (
         <div className="space-y-2 relative">
@@ -365,14 +495,20 @@ const DesignMdSelector: React.FC<Props> = ({
                                 </div>
                             )}
 
-                            {/* sourceLink hidden */}
                         </div>
 
                         {/* Body */}
                         <div className={`flex-1 overflow-hidden ${showPreview ? 'flex' : ''}`}>
                             {/* Left: Template Grid */}
                             <div className={`overflow-y-auto p-6 ${showPreview ? 'flex-1' : 'w-full h-full'}`}>
-                                {filteredTemplates.length === 0 ? (
+                                {isLoadingTemplates ? (
+                                    <div className="flex flex-col items-center justify-center h-full min-h-56 text-stone-400 dark:text-stone-600">
+                                        <svg className="w-10 h-10 mb-3 animate-spin opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                                        </svg>
+                                        <p className="text-sm font-medium">{isZh ? '正在加载模板' : 'Loading templates'}</p>
+                                    </div>
+                                ) : filteredTemplates.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center h-full text-stone-400 dark:text-stone-600">
                                         <svg className="w-12 h-12 mb-3 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -467,10 +603,16 @@ const DesignMdSelector: React.FC<Props> = ({
                                                     </p>
                                                 </div>
                                                 <div className="relative">
-                                                    <pre className="text-[11px] text-stone-600 dark:text-stone-400 whitespace-pre-wrap font-mono leading-relaxed bg-white dark:bg-stone-900 rounded-lg p-3 border border-stone-200 dark:border-stone-800 max-h-[60vh] overflow-y-auto custom-scrollbar">
-                                                        {(activeTemplate.content || '').slice(0, 1200)}
-                                                        {(activeTemplate.content || '').length > 1200 ? '\n...' : ''}
-                                                    </pre>
+                                                    {isActiveTemplateContentLoading ? (
+                                                        <div className="flex items-center justify-center min-h-40 text-xs text-stone-400 dark:text-stone-500 bg-white dark:bg-stone-900 rounded-lg p-3 border border-stone-200 dark:border-stone-800">
+                                                            {isZh ? '正在加载内容...' : 'Loading content...'}
+                                                        </div>
+                                                    ) : (
+                                                        <pre className="text-[11px] text-stone-600 dark:text-stone-400 whitespace-pre-wrap font-mono leading-relaxed bg-white dark:bg-stone-900 rounded-lg p-3 border border-stone-200 dark:border-stone-800 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                                                            {activeTemplateContent.slice(0, 1200)}
+                                                            {activeTemplateContent.length > 1200 ? '\n...' : ''}
+                                                        </pre>
+                                                    )}
                                                 </div>
                                             </div>
                                         ) : (
@@ -489,9 +631,10 @@ const DesignMdSelector: React.FC<Props> = ({
                                         <div className="p-4 border-t border-stone-200 dark:border-stone-800">
                                             <button
                                                 onClick={() => handleConfirm(activeTemplate)}
-                                                className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-500 text-white text-sm font-semibold transition-colors"
+                                                disabled={confirmingId === activeTemplate.id}
+                                                className="w-full py-2.5 rounded-lg bg-teal-600 hover:bg-teal-500 disabled:bg-teal-700/60 disabled:cursor-wait text-white text-sm font-semibold transition-colors"
                                             >
-                                                {isZh ? '使用此模板' : 'Use This Template'}
+                                                {confirmingId === activeTemplate.id ? (isZh ? '正在加载...' : 'Loading...') : (isZh ? '使用此模板' : 'Use This Template')}
                                             </button>
                                         </div>
                                     )}

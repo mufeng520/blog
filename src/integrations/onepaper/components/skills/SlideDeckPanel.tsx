@@ -1,6 +1,6 @@
 import React from 'react';
 import type { SlideDeckConfig, LangType } from '../../types';
-import DesignMdSelector, { type SelectorOption } from '../DesignMdSelector';
+import GenericOptionSelector, { type SelectorOption } from './shared/GenericOptionSelector';
 
 interface Props {
   config: SlideDeckConfig;
@@ -48,7 +48,7 @@ export const SlideDeckPanel: React.FC<Props> = ({ config, onChange, lang }) => {
 
   return (
     <div className="space-y-4">
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.preset}
         onSelect={(id: string | null) => id && update({ preset: id as any })}
         lang={lang}
@@ -58,7 +58,7 @@ export const SlideDeckPanel: React.FC<Props> = ({ config, onChange, lang }) => {
         favoritesKey="skill-slide-preset"
       />
 
-      <DesignMdSelector
+      <GenericOptionSelector
         selectedId={config.audience}
         onSelect={(id: string | null) => id && update({ audience: id as any })}
         lang={lang}

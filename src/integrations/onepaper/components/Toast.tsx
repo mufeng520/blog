@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import IconLoader from './IconLoader';
 
 export interface ToastMessage {
@@ -31,7 +31,7 @@ export const ToastContainer: React.FC<ToastContainerProps> = ({ notifications, o
 
                     <span className="text-sm font-medium flex-1">{n.message}</span>
 
-                    <button onClick={() => onClose(n.id)} className="ml-2 hover:opacity-70 p-1">
+                    <button type="button" onClick={() => onClose(n.id)} className="ml-2 hover:opacity-70 p-1">
                         <IconLoader name="x" size={14} />
                     </button>
                 </div>
@@ -62,7 +62,6 @@ export const ConfirmationDialog: React.FC<ConfirmationProps> = ({ isOpen, title,
             >
                 <div className="flex items-start gap-4">
                     <div className="p-3 bg-red-100 dark:bg-red-900/30 rounded-full text-red-600 dark:text-red-400 shrink-0">
-                        {/* We can use the 'info' icon for generic queries, or specific alert icon. Let's use info or maybe add alert icon? We have 'info'. */}
                         <IconLoader name="info" size={24} />
                     </div>
                     <div>
@@ -73,17 +72,19 @@ export const ConfirmationDialog: React.FC<ConfirmationProps> = ({ isOpen, title,
 
                 <div className="flex justify-end gap-3 mt-8">
                     <button
+                        type="button"
                         onClick={onCancel}
                         className="px-4 py-2 rounded-lg text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-700 font-medium transition-colors text-sm"
                     >
-                        {lang === 'zh' ? '取消' : 'Cancel'}
+                        {lang === 'zh' ? '\u53d6\u6d88' : 'Cancel'}
                     </button>
                     <button
+                        type="button"
                         onClick={onConfirm}
                         autoFocus
                         className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 font-medium shadow-lg shadow-red-500/30 transition-all hover:scale-105 text-sm"
                     >
-                        {lang === 'zh' ? '确认' : 'Confirm'}
+                        {lang === 'zh' ? '\u786e\u8ba4' : 'Confirm'}
                     </button>
                 </div>
             </div>
