@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import IconLoader from '../IconLoader';
 import { getStudio } from '../../studios';
 import type { LangType, Project } from '../../types';
-import { toolRoutes } from '../../../../lib/tool-routes';
+import { toolRoutes } from '../../../tool-routes';
 import { getHomeCopy } from './homeCopy';
 
 type Props = {

@@ -151,6 +151,17 @@ export const RoleIcon: React.FC<{ roleId: CreatorRole; className?: string }> = (
           <path d="M9.5 9.5L8 8M14.5 14.5L16 16M14.5 9.5L16 8M9.5 14.5L8 16" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
         </svg>
       );
+    case 'animation-sequence':
+      return (
+        <svg {...props}>
+          <rect x="3" y="5" width="5" height="14" rx="1" stroke="currentColor" strokeWidth="1.5" />
+          <rect x="9.5" y="5" width="5" height="14" rx="1" stroke="currentColor" strokeWidth="1.5" />
+          <rect x="16" y="5" width="5" height="14" rx="1" stroke="currentColor" strokeWidth="1.5" />
+          <path d="M4.5 8h2M11 8h2M17.5 8h2M4.5 16h2M11 16h2M17.5 16h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+          <path d="M6 12h11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="2 2" />
+          <path d="M15 10l2 2-2 2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      );
     case 'free':
       return (
         <svg {...props}>

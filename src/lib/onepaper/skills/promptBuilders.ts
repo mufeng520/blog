@@ -1,4 +1,5 @@
 import type {
+  AnimationSequenceConfig,
   CoverImageConfig, InfographicConfig, XHSImagesConfig,
   ComicConfig, ArticleIllustratorConfig, SlideDeckConfig,
   LogoConfig, StickerDesignConfig, SkillType
@@ -375,6 +376,78 @@ export function buildStickerDesignPrompt(
 }
 
 // ============================================================
+// 9. Animation Sequence Prompt Builder
+// ============================================================
+export function buildAnimationSequencePrompt(
+  content: string,
+  config: AnimationSequenceConfig,
+  constants: {
+    styles: any[];
+    motions: any[];
+    framings: any[];
+    continuity: any[];
+  },
+  frameIndex?: number,
+  refImage?: string
+): { prompt: string; refImage?: string } {
+  const styleMod = getModifier(constants.styles, config.style);
+  const motionMod = getModifier(constants.motions, config.motion);
+  const framingMod = getModifier(constants.framings, config.framing);
+  const continuityMod = getModifier(constants.continuity, config.continuity);
+  const frameLabel = frameIndex === undefined
+    ? `STORYBOARD SHEET (${config.frameCount} keyframes in one image)`
+    : `KEYFRAME ${frameIndex + 1} OF ${config.frameCount}`;
+
+  return {
+    prompt: `
+Create an animation sequence image.
+
+OUTPUT MODE: ${frameLabel}
+ASPECT RATIO: ${config.aspect}
+TARGET TIMING: ${config.durationSeconds}s at ${config.fps} fps
+KEYFRAME COUNT: ${config.frameCount}
+
+VISUAL STYLE: ${config.style}
+${styleMod}
+
+MOTION TYPE: ${config.motion}
+${motionMod}
+
+FRAMING: ${config.framing}
+${framingMod}
+
+CONTINUITY MODE: ${config.continuity}
+${continuityMod}
+
+ANIMATION DISCIPLINE:
+- Treat every generated image as a frame from the same animated shot or storyboard.
+- Preserve stable character identity, costume, object geometry, palette, lighting direction, and background anchors.
+- Show readable motion progression with clear silhouettes.
+- Avoid random redesigns, abrupt scene changes, inconsistent face details, or unrelated props.
+- If text appears, keep it minimal and consistent across frames.
+
+${frameIndex === undefined ? `
+STORYBOARD SHEET REQUIREMENTS:
+- Compose ${config.frameCount} clearly separated keyframes in one image.
+- Number each frame from 1 to ${config.frameCount}.
+- Show the start pose, motion progression, and final pose.
+- Include small motion arrows or timing marks only when they improve clarity.
+` : `
+FRAME-SPECIFIC REQUIREMENTS:
+- This is frame ${frameIndex + 1} of ${config.frameCount}; do not create a collage.
+- Generate only this single frame as a full-quality standalone image.
+- Position this frame within the overall motion arc at ${(frameIndex / Math.max(config.frameCount - 1, 1)).toFixed(2)} progress.
+${refImage ? '- Use the previous frame reference to preserve exact visual continuity while advancing the motion.' : '- Establish the first frame clearly so later frames can inherit its design.'}
+`}
+
+CONTENT / ACTION TO ANIMATE:
+${content}
+    `.trim(),
+    refImage,
+  };
+}
+
+// ============================================================
 // Master dispatcher
 // ============================================================
 export interface SkillConstants {
@@ -427,6 +500,12 @@ export interface SkillConstants {
     backgrounds: any[];
     aspects?: any[];
   };
+  animationSequence?: {
+    styles: any[];
+    motions: any[];
+    framings: any[];
+    continuity: any[];
+  };
 }
 
 export function buildSkillPrompt(
@@ -453,6 +532,8 @@ export function buildSkillPrompt(
       return buildLogoPrompt(content, config.logo, constants.logo!);
     case 'sticker-design':
       return buildStickerDesignPrompt(content, config.stickerDesign, constants.stickerDesign!);
+    case 'animation-sequence':
+      return buildAnimationSequencePrompt(content, config.animationSequence, constants.animationSequence!, meta?.pageIndex, meta?.refImage);
     default:
       throw new Error(`Unknown skill type: ${skillType}`);
   }

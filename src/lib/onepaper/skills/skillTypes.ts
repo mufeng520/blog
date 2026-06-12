@@ -9,6 +9,7 @@ export const ONEPAPER_SKILL_TYPES: SkillType[] = [
   'slide-deck',
   'logo',
   'sticker-design',
+  'animation-sequence',
 ];
 
 export function isOnePaperSkill(role: CreatorRole): role is SkillType {

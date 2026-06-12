@@ -12,6 +12,20 @@ const getAspectRatio = (width: number, height: number): string => {
     return '9:16';
 };
 
+const getSkillAspectDimensions = (aspect: string): { width: number; height: number } => {
+    const aspectMap: Record<string, { width: number; height: number }> = {
+        '1:1': { width: 1024, height: 1024 },
+        '3:4': { width: 900, height: 1200 },
+        '4:3': { width: 1200, height: 900 },
+        '9:16': { width: 720, height: 1280 },
+        '16:9': { width: 1280, height: 720 },
+        '2:3': { width: 800, height: 1200 },
+        '3:2': { width: 1200, height: 800 },
+    };
+
+    return aspectMap[aspect] || aspectMap['16:9'];
+};
+
 // Interfaces for dependencies to ensure type safety
 interface ConfigState {
     platform: any; resolution: any; customSize: any; style: any; description: string; pageName: string; keywords: any;
@@ -387,6 +401,16 @@ export const useGenerationLogic = (
                     type: config.platform as any,
                 };
             }
+            if (skillType === 'animation-sequence' && skillConfig.animationSequence?.aspect) {
+                const dims = getSkillAspectDimensions(skillConfig.animationSequence.aspect);
+                skillResolution = {
+                    id: `animation-${skillConfig.animationSequence.aspect}`,
+                    name: `Animation ${skillConfig.animationSequence.aspect}`,
+                    width: dims.width,
+                    height: dims.height,
+                    type: config.platform as any,
+                };
+            }
             const prompt = buildSkillPrompt(skillType as any, config.description, skillConfig, constants);
             const promptStr = typeof prompt === 'string' ? prompt : prompt.prompt;
 
@@ -439,15 +463,32 @@ export const useGenerationLogic = (
         setIsGenerating(true); setError(null); setProgressValue(0);
         const batchId = `skill-${skillType}-${Date.now()}`;
 
-        const pages = config.pages;
+        const pages = skillType === 'animation-sequence' && config.pages.length === 0 && skillConfig.animationSequence?.frameCount
+            ? Array.from({ length: skillConfig.animationSequence.frameCount }, (_, index) => ({
+                id: `animation-frame-${index + 1}`,
+                name: `Keyframe ${index + 1}`,
+                description: `${config.description}\n\nGenerate keyframe ${index + 1} of ${skillConfig.animationSequence.frameCount}.`,
+            }))
+            : config.pages;
         const pageCount = pages.length;
         if (pageCount === 0) {
-            setError(lang === 'zh' ? '请先在批量模式下添加页面内容' : 'Please add pages in batch mode first');
+            setError(lang === 'zh' ? '请先填写分镜内容或设置帧数' : 'Please add storyboard pages or set a frame count');
             setIsGenerating(false);
             return;
         }
 
         let refImage: string | undefined = undefined;
+        let skillResolution = effectiveResolution;
+        if (skillType === 'animation-sequence' && skillConfig.animationSequence?.aspect) {
+            const dims = getSkillAspectDimensions(skillConfig.animationSequence.aspect);
+            skillResolution = {
+                id: `animation-${skillConfig.animationSequence.aspect}`,
+                name: `Animation ${skillConfig.animationSequence.aspect}`,
+                width: dims.width,
+                height: dims.height,
+                type: config.platform as any,
+            };
+        }
         const groupX = 50 + (canvas.artboardGroups.length * 100);
         const groupY = 50 + (canvas.artboardGroups.length * 100);
         let localX = groupX;
@@ -473,7 +514,7 @@ export const useGenerationLogic = (
                 const promptStr = typeof promptResult === 'string' ? promptResult : promptResult.prompt;
 
                 const genConfig: GenerationConfig = {
-                    platform: config.platform, resolution: effectiveResolution, customSize: config.customSize,
+                    platform: config.platform, resolution: skillResolution, customSize: { width: skillResolution.width, height: skillResolution.height, active: true },
                     style: config.style, description: pageContent, pageName,
                     keywords: config.keywords, highQuality: config.highQuality, enableDesignTokens: false,
                     designTokens: config.designTokens, background: config.background, forceChinese: config.forceChinese,

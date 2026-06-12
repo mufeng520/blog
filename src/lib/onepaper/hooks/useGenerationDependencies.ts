@@ -13,6 +13,7 @@ export async function loadSkillPromptTools() {
     slideDeck,
     logo,
     stickerDesign,
+    animationSequence,
   ] = await Promise.all([
     import('../skills/promptBuilders'),
     import('../skills/cover-image/constants'),
@@ -23,6 +24,7 @@ export async function loadSkillPromptTools() {
     import('../skills/slide-deck/constants'),
     import('../skills/logo/constants'),
     import('../skills/sticker-design/constants'),
+    import('../skills/animation-sequence/constants'),
   ]);
 
   const constants: SkillConstants = {
@@ -74,6 +76,12 @@ export async function loadSkillPromptTools() {
       textStyles: stickerDesign.STICKER_TEXT_STYLES,
       backgrounds: stickerDesign.STICKER_BACKGROUNDS,
       aspects: stickerDesign.STICKER_ASPECTS,
+    },
+    animationSequence: {
+      styles: animationSequence.ANIMATION_SEQUENCE_STYLES,
+      motions: animationSequence.ANIMATION_SEQUENCE_MOTIONS,
+      framings: animationSequence.ANIMATION_SEQUENCE_FRAMINGS,
+      continuity: animationSequence.ANIMATION_SEQUENCE_CONTINUITY,
     },
   };
 

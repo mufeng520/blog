@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { toolRoutes } from '../../../lib/tool-routes';
+import { toolRoutes } from '../../tool-routes';
 import { createProject, deleteProject, getProjects, saveProject } from '../services/idbProjectService';
 import type { LangType, Project } from '../types';
 import type { HomeNotification } from './homeTypes';

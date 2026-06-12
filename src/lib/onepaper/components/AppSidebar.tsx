@@ -20,6 +20,7 @@ const ArticleIllustratorPanel = lazy(() => import('./skills/ArticleIllustratorPa
 const SlideDeckPanel = lazy(() => import('./skills/SlideDeckPanel').then(module => ({ default: module.SlideDeckPanel })));
 const LogoPanel = lazy(() => import('./skills/LogoPanel').then(module => ({ default: module.LogoPanel })));
 const StickerDesignPanel = lazy(() => import('./skills/StickerDesignPanel').then(module => ({ default: module.StickerDesignPanel })));
+const AnimationSequencePanel = lazy(() => import('./skills/AnimationSequencePanel').then(module => ({ default: module.AnimationSequencePanel })));
 const DesignMdSelector = lazy(() => import('./DesignMdSelector'));
 
 interface Props {
@@ -410,6 +411,13 @@ const AppSidebar: React.FC<Props> = (props) => {
                             <StickerDesignPanel
                                 config={props.skillConfig.stickerDesign}
                                 onChange={(cfg) => props.onSkillConfigChange?.({ ...props.skillConfig!, stickerDesign: cfg })}
+                                lang={props.lang}
+                            />
+                        )}
+                        {props.activeRole === 'animation-sequence' && props.skillConfig.animationSequence && (
+                            <AnimationSequencePanel
+                                config={props.skillConfig.animationSequence}
+                                onChange={(cfg) => props.onSkillConfigChange?.({ ...props.skillConfig!, animationSequence: cfg })}
                                 lang={props.lang}
                             />
                         )}

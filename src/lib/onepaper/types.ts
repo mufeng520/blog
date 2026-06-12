@@ -2,13 +2,13 @@
 export type PlatformType = 'mobile' | 'pc' | 'tablet' | 'browser';
 export type LangType = 'en' | 'zh';
 export type StudioType = 'ui-designer' | 'media-studio' | 'game-studio';
-export type CreatorRole = 'designer' | 'media' | 'game' | 'cover-image' | 'infographic' | 'xhs-images' | 'comic' | 'article-illustrator' | 'slide-deck' | 'logo' | 'sticker-design' | 'free';
+export type CreatorRole = 'designer' | 'media' | 'game' | 'cover-image' | 'infographic' | 'xhs-images' | 'comic' | 'article-illustrator' | 'slide-deck' | 'logo' | 'sticker-design' | 'animation-sequence' | 'free';
 
 // ==========================================
 // SKILL SYSTEM
 // ==========================================
 
-export type SkillType = 'cover-image' | 'infographic' | 'xhs-images' | 'comic' | 'article-illustrator' | 'slide-deck' | 'logo' | 'sticker-design';
+export type SkillType = 'cover-image' | 'infographic' | 'xhs-images' | 'comic' | 'article-illustrator' | 'slide-deck' | 'logo' | 'sticker-design' | 'animation-sequence';
 
 export interface SkillOption {
   id: string;
@@ -156,6 +156,23 @@ export interface StickerDesignConfig {
   facialFeatures?: boolean;
 }
 
+// --- Animation Sequence ---
+export type AnimationSequenceStyle = 'clean-vector' | 'anime' | 'cinematic' | 'storybook' | 'motion-graphics' | 'pixel-art';
+export type AnimationSequenceMotion = 'subtle-loop' | 'character-action' | 'camera-move' | 'transformation' | 'explainer-flow';
+export type AnimationSequenceFraming = 'wide' | 'medium' | 'close-up' | 'mixed';
+export type AnimationSequenceContinuity = 'strict' | 'flexible';
+
+export interface AnimationSequenceConfig {
+  style: AnimationSequenceStyle;
+  motion: AnimationSequenceMotion;
+  framing: AnimationSequenceFraming;
+  continuity: AnimationSequenceContinuity;
+  aspect: MediaAspectRatio;
+  frameCount: number;
+  fps: number;
+  durationSeconds: number;
+}
+
 // --- Unified Skill Config ---
 export interface SkillConfig {
   type: SkillType;
@@ -167,6 +184,7 @@ export interface SkillConfig {
   slideDeck?: SlideDeckConfig;
   logo?: LogoConfig;
   stickerDesign?: StickerDesignConfig;
+  animationSequence?: AnimationSequenceConfig;
 }
 
 export type MediaAspectRatio = '1:1' | '3:4' | '4:3' | '9:16' | '16:9' | '2:3' | '3:2';

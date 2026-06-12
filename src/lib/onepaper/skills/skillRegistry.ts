@@ -1,4 +1,5 @@
 import type {
+  AnimationSequenceConfig,
   ArticleIllustratorConfig,
   ComicConfig,
   CoverImageConfig,
@@ -96,6 +97,17 @@ const defaultStickerConfig: StickerDesignConfig = {
   facialFeatures: true,
 };
 
+const defaultAnimationSequenceConfig: AnimationSequenceConfig = {
+  style: 'clean-vector',
+  motion: 'subtle-loop',
+  framing: 'medium',
+  continuity: 'strict',
+  aspect: '16:9',
+  frameCount: 6,
+  fps: 12,
+  durationSeconds: 2,
+};
+
 export const ONEPAPER_SKILL_DEFINITIONS: OnePaperSkillDefinition[] = [
   {
     id: 'cover-image',
@@ -177,6 +189,16 @@ export const ONEPAPER_SKILL_DEFINITIONS: OnePaperSkillDefinition[] = [
     generateLabel_zh: '生成贴纸',
     defaultConfig: { type: 'sticker-design', stickerDesign: defaultStickerConfig },
   },
+  {
+    id: 'animation-sequence',
+    label: 'Animation',
+    label_zh: '动画序列',
+    description: 'Keyframes & storyboards',
+    description_zh: '关键帧与分镜序列',
+    generateLabel: 'Generate Animation Frames',
+    generateLabel_zh: '生成动画序列',
+    defaultConfig: { type: 'animation-sequence', animationSequence: defaultAnimationSequenceConfig },
+  },
 ];
 
 export function getOnePaperSkillDefinition(skillType: SkillType): OnePaperSkillDefinition {
@@ -205,5 +227,6 @@ export function createDefaultSkillConfig(skillType: SkillType): SkillConfig {
     slideDeck: config.slideDeck ? { ...config.slideDeck } : undefined,
     logo: config.logo ? { ...config.logo } : undefined,
     stickerDesign: config.stickerDesign ? { ...config.stickerDesign } : undefined,
+    animationSequence: config.animationSequence ? { ...config.animationSequence } : undefined,
   };
 }
