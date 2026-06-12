@@ -1,4 +1,5 @@
 import React, { Component, type ErrorInfo, type ReactNode } from 'react';
+import { toolRoutes } from '../lib/tool-routes';
 
 type Props = {
   children: ReactNode;
@@ -94,7 +95,7 @@ export function ToolLoading({ toolName }: { toolName: string }) {
         <span style={eyebrowStyle}>木风 · 工具箱</span>
         <h1 style={titleStyle}>{toolName}</h1>
         <p style={mutedStyle}>正在初始化工具运行时，请稍候…</p>
-        <a href="/tools/" style={backLinkStyle}>← 返回工具箱</a>
+        <a href={toolRoutes.index} style={backLinkStyle}>← 返回工具箱</a>
       </div>
     </div>
   );
@@ -159,7 +160,7 @@ export class ToolRuntimeBoundary extends Component<Props, State> {
             <pre style={preStyle}>
               {this.state.error.stack || this.state.error.message}
             </pre>
-            <a href="/tools/" style={backLinkStyle}>← 返回工具箱</a>
+            <a href={toolRoutes.index} style={backLinkStyle}>← 返回工具箱</a>
           </div>
         </div>
       );

@@ -1,0 +1,10 @@
+﻿---
+import OnePaperIsland from '../../components/OnePaperIsland';
+import ToolAppLayout from '../../layouts/ToolAppLayout.astro';
+import { onePaperShell } from '../../lib/tool-shells';
+---
+
+<ToolAppLayout {...onePaperShell}>
+  <OnePaperIsland view="home" client:only="react" />
+</ToolAppLayout>
+

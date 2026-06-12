@@ -1,17 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import tools from '../data/tools.json';
+import { independentToolCatalogItems, type ToolCatalogItem } from '../lib/tool-apps';
 
-type ToolItem = {
-  name: string;
-  url: string;
-  type: string;
-  status: string;
-  description: string;
-  tags?: string[];
-};
-
-const items = tools as ToolItem[];
+const items = [
+  ...independentToolCatalogItems,
+  ...(tools as ToolCatalogItem[]),
+];
 ---
 
 <BaseLayout title="工具箱 - 木风">

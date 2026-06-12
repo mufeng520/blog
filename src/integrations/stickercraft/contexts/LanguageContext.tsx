@@ -10,11 +10,16 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const LanguageProvider: React.FC<{ children: ReactNode; initialLanguage?: Language }> = ({ children, initialLanguage }) => {
   const [language, setLanguageState] = useState<Language>(() => {
     const saved = localStorage.getItem('stickerCraft_language') as Language | null;
-    return saved || 'zh';
+    return initialLanguage || saved || 'zh';
   });
+
+  useEffect(() => {
+    if (!initialLanguage) return;
+    setLanguageState(initialLanguage);
+  }, [initialLanguage]);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);

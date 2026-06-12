@@ -11,7 +11,7 @@ const LEGACY_CUSTOM_STYLES_KEY = "stickerCraft_customStyles";
 let generatedImagesSaveQueue = Promise.resolve();
 let customStylesSaveQueue = Promise.resolve();
 
-interface PersistedStickerCraftData {
+export interface PersistedStickerCraftData {
   images: GeneratedImage[];
   customStyles: StickerStyle[];
 }
@@ -41,6 +41,29 @@ const openStickerCraftDb = (): Promise<IDBDatabase> => {
   });
 };
 
+const openExistingStickerCraftDb = async (): Promise<IDBDatabase | null> => {
+  if (typeof indexedDB === "undefined") {
+    return null;
+  }
+
+  const databases = (indexedDB as any).databases;
+  if (typeof databases === "function") {
+    try {
+      const knownDatabases = await databases.call(indexedDB);
+      const hasStickerCraftDb = Array.isArray(knownDatabases)
+        && knownDatabases.some((database: { name?: string }) => database.name === DB_NAME);
+
+      if (!hasStickerCraftDb) {
+        return null;
+      }
+    } catch (error) {
+      console.warn("Could not inspect IndexedDB databases before StickerCraft migration.", error);
+    }
+  }
+
+  return openStickerCraftDb();
+};
+
 const getRequestResult = <T>(request: IDBRequest<T>): Promise<T> => (
   new Promise((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
@@ -60,6 +83,23 @@ const getAllFromStore = async <T>(storeName: string): Promise<T[]> => {
   const db = await openStickerCraftDb();
 
   try {
+    const transaction = db.transaction(storeName, "readonly");
+    const store = transaction.objectStore(storeName);
+    return await getRequestResult<T[]>(store.getAll());
+  } finally {
+    db.close();
+  }
+};
+
+const getAllFromExistingStore = async <T>(storeName: string): Promise<T[]> => {
+  const db = await openExistingStickerCraftDb();
+  if (!db) return [];
+
+  try {
+    if (!db.objectStoreNames.contains(storeName)) {
+      return [];
+    }
+
     const transaction = db.transaction(storeName, "readonly");
     const store = transaction.objectStore(storeName);
     return await getRequestResult<T[]>(store.getAll());
@@ -126,6 +166,30 @@ const loadLegacyData = (): PersistedStickerCraftData => ({
   images: sortImagesNewestFirst(readLegacyCollection<GeneratedImage>(LEGACY_IMAGES_KEY)),
   customStyles: readLegacyCollection<StickerStyle>(LEGACY_CUSTOM_STYLES_KEY),
 });
+
+export const loadStickerCraftMigrationData = async (): Promise<PersistedStickerCraftData> => {
+  const legacyData = loadLegacyData();
+
+  try {
+    const indexedDbImages = sortImagesNewestFirst(
+      await getAllFromExistingStore<GeneratedImage>(GENERATED_IMAGES_STORE),
+    );
+    const indexedDbCustomStyles = await getAllFromExistingStore<StickerStyle>(CUSTOM_STYLES_STORE);
+
+    return {
+      images: sortImagesNewestFirst(mergeById(indexedDbImages, legacyData.images)),
+      customStyles: mergeById(indexedDbCustomStyles, legacyData.customStyles),
+    };
+  } catch (error) {
+    console.warn("StickerCraft migration source read failed. Falling back to legacy localStorage data.", error);
+    return legacyData;
+  }
+};
+
+export const clearStickerCraftLegacyLocalStorage = () => {
+  removeLegacyKey(LEGACY_IMAGES_KEY);
+  removeLegacyKey(LEGACY_CUSTOM_STYLES_KEY);
+};
 
 export const loadPersistedStickerCraftData = async (): Promise<PersistedStickerCraftData> => {
   const legacyData = loadLegacyData();

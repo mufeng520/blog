@@ -1,415 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Header from './components/Header';
 import ControlPanel from './components/ControlPanel';
 import GeneratedGrid from './components/GeneratedGrid';
-import { ModelType, AspectRatio } from './types';
-import type { StickerRequest, GeneratedImage, StickerStyle, CropAdjustments } from './types';
-import { generateStickers } from './services/geminiService';
-import {
-  recropStickerFromSource,
-  repairStickerTransparency,
-  splitStickerCollectionByGridDetailed,
-  splitStickerCollectionDetailed,
-} from './services/imageProcessing';
-import type { SplitStickerCollectionResult } from './services/imageProcessing';
-import { loadPersistedStickerCraftData, saveCustomStyles, saveGeneratedImages } from './services/storageService';
-import { STICKER_STYLES } from './constants';
+import type { GeneratedImage } from './types';
 import { X, Download, BadgeCheck, FileImage, Layers3, ShieldCheck } from 'lucide-react';
 import { useLanguage } from './contexts/LanguageContext';
+import { useStickerCraftRuntime } from './hooks/useStickerCraftRuntime';
+import type { StickerCraftPersistence } from './hooks/useStickerCraftRuntime';
 
-const App: React.FC = () => {
+export interface StickerCraftWorkspaceProps {
+  embedded?: boolean;
+  persistence?: StickerCraftPersistence;
+}
+
+export const StickerCraftWorkspace: React.FC<StickerCraftWorkspaceProps> = ({
+  embedded = false,
+  persistence,
+}) => {
   const { t, language } = useLanguage();
-  
-  const [images, setImages] = useState<GeneratedImage[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set());
-  const [transparencyRepairIds, setTransparencyRepairIds] = useState<Set<string>>(new Set());
-  const [splittingCollectionIds, setSplittingCollectionIds] = useState<Set<string>>(new Set());
-  const [pendingQuantity, setPendingQuantity] = useState(0); // Track how many images are being generated
-  const [previewImage, setPreviewImage] = useState<GeneratedImage | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [hasHydratedStorage, setHasHydratedStorage] = useState(false);
-  
-  // Custom Styles State
-  const [customStyles, setCustomStyles] = useState<StickerStyle[]>([]);
-
-  // Load generated stickers and custom styles from IndexedDB on mount.
-  useEffect(() => {
-    let isMounted = true;
-
-    loadPersistedStickerCraftData()
-      .then(({ images: persistedImages, customStyles: persistedCustomStyles }) => {
-        if (!isMounted) return;
-        setImages(persistedImages);
-        setCustomStyles(persistedCustomStyles);
-      })
-      .catch((storageError) => {
-        console.error("Failed to load persisted StickerCraft data", storageError);
-        if (isMounted) {
-          setError("Could not load saved stickers from browser storage.");
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setHasHydratedStorage(true);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Save custom styles whenever they change after the initial IndexedDB hydration.
-  useEffect(() => {
-    if (!hasHydratedStorage) return;
-
-    saveCustomStyles(customStyles).catch((storageError) => {
-      console.error("Failed to save custom styles to IndexedDB", storageError);
-      setError("Custom styles could not be saved to browser storage.");
-    });
-  }, [customStyles, hasHydratedStorage]);
-
-  // Save generated images whenever they change after the initial IndexedDB hydration.
-  useEffect(() => {
-    if (!hasHydratedStorage) return;
-
-    saveGeneratedImages(images).catch((storageError) => {
-      console.error("Failed to save images to IndexedDB", storageError);
-      setError("Generated stickers could not be saved to browser storage.");
-    });
-  }, [images, hasHydratedStorage]);
-
-  useEffect(() => {
-    if (!previewImage) return;
-
-    const latestPreviewImage = images.find((image) => image.id === previewImage.id);
-    if (latestPreviewImage && latestPreviewImage !== previewImage) {
-      setPreviewImage(latestPreviewImage);
-    } else if (hasHydratedStorage && !latestPreviewImage) {
-      setPreviewImage(null);
-    }
-  }, [images, previewImage, hasHydratedStorage]);
-
-  const handleAddCustomStyle = (style: StickerStyle) => {
-    setCustomStyles(prev => [...prev, style]);
-  };
-
-  const handleRemoveCustomStyle = (id: string) => {
-    setCustomStyles(prev => prev.filter(s => s.id !== id));
-  };
-
-  const handleGenerate = async (requests: StickerRequest[]) => {
-    // Calculate total expected images
-    const totalQty = requests.reduce((acc, req) => acc + req.quantity, 0);
-    setPendingQuantity(totalQty);
-    setIsGenerating(true);
-    setError(null);
-    
-    try {
-      const allStyles = [...STICKER_STYLES, ...customStyles];
-      
-      // Process requests
-      const batchPromises = requests.map(request => 
-        generateStickers(request, allStyles)
-      );
-
-      const batchResults = await Promise.all(batchPromises);
-      
-      // Flatten the array of arrays
-      const newImages = batchResults.flat();
-      
-      // Prepend new images to the list
-      setImages(prev => [...newImages, ...prev]);
-    } catch (err: any) {
-      setError(err.message || t('error_generic'));
-    } finally {
-      setIsGenerating(false);
-      setPendingQuantity(0);
-    }
-  };
-
-  const handleRepairTransparency = async (image: GeneratedImage) => {
-    setError(null);
-    setTransparencyRepairIds(prev => new Set(prev).add(image.id));
-
-    try {
-      const repairedDataUrl = await repairStickerTransparency(image.dataUrl, {
-        backgroundColor: image.backgroundColor,
-        hasStickerBorder: image.hasStickerBorder,
-      });
-
-      setImages(prev => prev.map(img =>
-        img.id === image.id
-          ? {
-              ...img,
-              dataUrl: repairedDataUrl,
-              backgroundRemoved: true,
-              backgroundColor: undefined,
-              createdAt: repairedDataUrl === image.dataUrl ? img.createdAt : Date.now(),
-            }
-          : img
-      ));
-    } catch (err: any) {
-      setError(`Transparency repair failed: ${err.message || 'Please try again.'}`);
-    } finally {
-      setTransparencyRepairIds(prev => {
-        const next = new Set(prev);
-        next.delete(image.id);
-        return next;
-      });
-    }
-  };
-
-  const buildCollectionItems = (
-    image: GeneratedImage,
-    result: SplitStickerCollectionResult,
-    method: 'auto' | 'manual',
-  ): GeneratedImage[] => {
-    const now = Date.now();
-
-    return result.pieces.map((piece, index) => ({
-      id: crypto.randomUUID(),
-      dataUrl: piece.dataUrl,
-      prompt: image.prompt,
-      createdAt: now + index,
-      styleName: image.styleName,
-      backgroundRemoved: true,
-      backgroundColor: undefined,
-      hasStickerBorder: image.hasStickerBorder,
-      hasText: image.hasText,
-      hasReferenceImage: image.hasReferenceImage,
-      isThreeViews: false,
-      isStickerCollection: false,
-      stickerCollectionCount: undefined,
-      sourceType: image.sourceType,
-      splitMethod: method,
-      splitIndex: index + 1,
-      splitSource: {
-        box: piece.box,
-        sourceWidth: piece.sourceWidth,
-        sourceHeight: piece.sourceHeight,
-      },
-    }));
-  };
-
-  const applyCollectionSplit = (
-    image: GeneratedImage,
-    result: SplitStickerCollectionResult,
-    method: 'auto' | 'manual',
-  ) => {
-    const collectionItems = buildCollectionItems(image, result, method);
-
-    setImages(prev => prev.map(img =>
-      img.id === image.id
-        ? {
-            ...img,
-            dataUrl: result.sourceDataUrl,
-            backgroundRemoved: true,
-            backgroundColor: undefined,
-            splitMethod: method,
-            collectionItems,
-          }
-        : img
-    ));
-  };
-
-  const handleSplitCollection = async (image: GeneratedImage) => {
-    setError(null);
-    setSplittingCollectionIds(prev => new Set(prev).add(image.id));
-
-    try {
-      const result = await splitStickerCollectionDetailed(image.dataUrl, {
-        backgroundColor: image.backgroundColor,
-        expectedCount: image.stickerCollectionCount || 6,
-        hasStickerBorder: image.hasStickerBorder,
-      });
-
-      if (result.pieces.length === 0) {
-        throw new Error('No separated stickers were detected.');
-      }
-
-      applyCollectionSplit(image, result, 'auto');
-      return true;
-    } catch (err: any) {
-      setError(`Sticker split failed: ${err.message || 'Please try again.'}`);
-      return false;
-    } finally {
-      setSplittingCollectionIds(prev => {
-        const next = new Set(prev);
-        next.delete(image.id);
-        return next;
-      });
-    }
-  };
-
-  const handleManualSplitCollection = async (image: GeneratedImage, rows: number, columns: number) => {
-    setError(null);
-    setSplittingCollectionIds(prev => new Set(prev).add(image.id));
-
-    try {
-      const result = await splitStickerCollectionByGridDetailed(image.dataUrl, {
-        backgroundColor: image.backgroundColor,
-        rows,
-        columns,
-        hasStickerBorder: image.hasStickerBorder,
-      });
-
-      if (result.pieces.length === 0) {
-        throw new Error('No stickers were detected in the selected grid.');
-      }
-
-      applyCollectionSplit(image, result, 'manual');
-    } catch (err: any) {
-      setError(`Manual split failed: ${err.message || 'Please try again.'}`);
-    } finally {
-      setSplittingCollectionIds(prev => {
-        const next = new Set(prev);
-        next.delete(image.id);
-        return next;
-      });
-    }
-  };
-
-  const handleCropCollectionItem = async (
-    collectionId: string,
-    itemId: string,
-    adjustments: CropAdjustments,
-  ) => {
-    const collection = images.find(image => image.id === collectionId);
-    const item = collection?.collectionItems?.find(splitItem => splitItem.id === itemId);
-
-    if (!collection || !item?.splitSource) {
-      setError('Could not find the original sticker collection for recropping.');
-      return;
-    }
-
-    setError(null);
-
-    try {
-      const recroppedDataUrl = await recropStickerFromSource(collection.dataUrl, item.splitSource.box, adjustments);
-
-      setImages(prev => prev.map(image =>
-        image.id === collectionId
-          ? {
-              ...image,
-              collectionItems: image.collectionItems?.map(splitItem =>
-                splitItem.id === itemId
-                  ? {
-                      ...splitItem,
-                      dataUrl: recroppedDataUrl,
-                      createdAt: Date.now(),
-                      splitSource: {
-                        ...splitItem.splitSource!,
-                        cropAdjustments: adjustments,
-                      },
-                    }
-                  : splitItem
-              ),
-            }
-          : image
-      ));
-    } catch (err: any) {
-      setError(`Recrop failed: ${err.message || 'Please try again.'}`);
-    }
-  };
-
-  const handleDeleteCollectionItem = (collectionId: string, itemId: string) => {
-    setImages(prev => prev.map(image =>
-      image.id === collectionId
-        ? {
-            ...image,
-            collectionItems: image.collectionItems?.filter(splitItem => splitItem.id !== itemId),
-          }
-        : image
-    ));
-  };
-
-  // Re-generate a specific image (Remix)
-  const handleRegenerate = async (image: GeneratedImage) => {
-      // Find the style object to get params, or just use defaults. 
-      // For simplicity in this app, we'll reconstruct a request based on the image's prompt.
-      // However, we need to know the Model, etc. 
-      // Since GeneratedImage doesn't store full config, we'll use sensible defaults + current image as reference.
-      
-      const allStyles = [...STICKER_STYLES, ...customStyles];
-      // Try to find the original style ID by name match, or default
-      const originalStyle = allStyles.find(s => s.name === image.styleName) || STICKER_STYLES[0];
-
-      setRegeneratingIds(prev => new Set(prev).add(image.id));
-      
-      try {
-          const request: StickerRequest = {
-              prompt: image.prompt,
-              styleId: originalStyle.id,
-              quantity: 1,
-              model: ModelType.NANO_BANANA_2, // Defaulting to Nano Banana 2 for quality/speed balance
-              aspectRatio: AspectRatio.SQUARE, // Defaulting
-              textConfig: { enabled: false, content: '', font: '', hasBorder: false }, // Reset text
-              backgroundConfig: { enabled: false, color: 'white' },
-              useThreeViews: Boolean(image.isThreeViews),
-              useStickerCollection: Boolean(image.isStickerCollection),
-              stickerCollectionCount: image.stickerCollectionCount || 6,
-              useStickerBorder: true,
-              useFacialFeatures: true,
-              referenceImage: image.dataUrl // KEY: Pass original image as reference
-          };
-
-          const newImages = await generateStickers(request, allStyles);
-          
-          if (newImages.length > 0) {
-              const newImage = newImages[0];
-              // Keep the original creation time or update it? "Replace" usually implies update content.
-              // Let's keep ID to maintain selection state if any, but update content.
-              // Actually, keeping ID might cache-bust issues, so let's swap object but use same ID if we want, or new ID.
-              // The requirement says "regenerated image can directly replace".
-              
-              setImages(prev => prev.map(img => 
-                  img.id === image.id ? { ...newImage, id: image.id, createdAt: Date.now() } : img
-              ));
-          }
-
-      } catch (err: any) {
-          setError(`Regeneration failed: ${err.message}`);
-      } finally {
-          setRegeneratingIds(prev => {
-              const next = new Set(prev);
-              next.delete(image.id);
-              return next;
-          });
-      }
-  };
-
-  // Handle uploading external images to gallery
-  const handleImageUpload = (dataUrl: string, prompt: string, styleName: string) => {
-      const newImage: GeneratedImage = {
-          id: crypto.randomUUID(),
-          dataUrl: dataUrl,
-          prompt: prompt,
-          createdAt: Date.now(),
-          styleName: styleName,
-          sourceType: 'uploaded'
-      };
-      setImages(prev => [newImage, ...prev]);
-  };
-
-  const closePreview = () => setPreviewImage(null);
-
-  // Function to delete an image
-  const handleDeleteImage = (id: string) => {
-    setImages(prev => prev.filter(img => img.id !== id));
-    if (previewImage?.id === id) {
-        closePreview();
-    }
-  };
-
-  const handleDeleteImages = (ids: string[]) => {
-    const idSet = new Set(ids);
-    setImages(prev => prev.filter(img => !idSet.has(img.id)));
-    if (previewImage && idSet.has(previewImage.id)) {
-      closePreview();
-    }
-  };
+  const runtime = useStickerCraftRuntime({ genericErrorText: t('error_generic'), persistence });
+  const {
+    images,
+    customStyles,
+    isGenerating,
+    regeneratingIds,
+    transparencyRepairIds,
+    splittingCollectionIds,
+    pendingQuantity,
+    previewImage,
+    error,
+    setPreviewImage,
+    closePreview,
+    handleAddCustomStyle,
+    handleRemoveCustomStyle,
+    handleGenerate,
+    handleRepairTransparency,
+    handleSplitCollection,
+    handleManualSplitCollection,
+    handleCropCollectionItem,
+    handleDeleteCollectionItem,
+    handleRegenerate,
+    handleImageUpload,
+    handleDeleteImage,
+    handleDeleteImages,
+  } = runtime;
 
   const assetCopy = language === 'zh'
     ? {
@@ -477,7 +111,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-stone-50 flex flex-col font-sans text-stone-900 overflow-hidden">
+    <div className={`${embedded ? 'h-full' : 'h-screen'} bg-stone-50 flex flex-col font-sans text-stone-900 overflow-hidden`}>
       <Header />
 
       {/* Main Layout: Flex-col-reverse for mobile (Controls bottom), Flex-row for desktop (Controls Left) */}
@@ -650,5 +284,7 @@ const App: React.FC = () => {
     </div>
   );
 };
+
+const App: React.FC = () => <StickerCraftWorkspace />;
 
 export default App;

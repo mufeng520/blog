@@ -1,0 +1,17 @@
+﻿---
+import OnePaperIsland from '../../../components/OnePaperIsland';
+import ToolAppLayout from '../../../layouts/ToolAppLayout.astro';
+import { onePaperFocusedShell } from '../../../lib/tool-shells';
+
+const shell = {
+  ...onePaperFocusedShell,
+  title: 'OnePaper Live Preview | 木风',
+  description: 'OnePaper 的 Sandpack 实时预览演示页面。',
+  toolName: 'OnePaper Live Preview',
+  lang: 'en',
+};
+---
+
+<ToolAppLayout {...shell}>
+  <OnePaperIsland view="live-preview" client:only="react" />
+</ToolAppLayout>

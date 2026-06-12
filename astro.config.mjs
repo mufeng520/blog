@@ -4,14 +4,12 @@ import { loadEnv } from 'vite';
 
 import react from '@astrojs/react';
 
-import vue from '@astrojs/vue';
-
 import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
   adapter: vercel(),
-  integrations: [react(), vue()],
+  integrations: [react()],
   vite: {
     plugins: [
       {
@@ -43,7 +41,6 @@ export default defineConfig({
         'idb',
         'html2canvas',
         'jszip',
-        'react-router-dom',
         'lucide-react',
         '@codesandbox/sandpack-react',
         '@codesandbox/sandpack-themes',
@@ -56,6 +53,6 @@ export default defineConfig({
     ssr: {
       noExternal: ['@google/genai', 'p-retry', 'retry'],
     },
-    cacheDir: 'D:/TEMP/mufeng-vite-cache',
+    cacheDir: '.astro/vite-deps',
   },
 });

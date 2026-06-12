@@ -909,7 +909,7 @@ const GeneratedGrid: React.FC<GeneratedGridProps> = ({
       </div>
 
       <div className={`
-        fixed bottom-6 left-1/2 md:left-[calc(50%-200px)] transform -translate-x-1/2 z-30
+        fixed bottom-6 left-1/2 md:left-[calc(50%+180px)] transform -translate-x-1/2 z-30
         transition-all duration-300 ease-in-out
         ${selectedIds.size > 0 ? 'translate-y-0 opacity-100' : 'translate-y-24 opacity-0 pointer-events-none'}
       `}>
