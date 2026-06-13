@@ -113,50 +113,19 @@ export const AnimationSequencePanel: React.FC<Props> = ({ config, onChange, lang
         confirmOnSelect
       />
 
-      <div className="grid grid-cols-3 gap-2">
-        <label className="space-y-1.5">
-          <span className="block text-xs font-bold text-stone-500 uppercase">
-            {isZh ? '帧数' : 'Frames'}
-          </span>
-          <input
-            type="number"
-            min={2}
-            max={16}
-            value={config.frameCount}
-            onChange={event => update({ frameCount: clampNumber(Number(event.target.value) || 2, 2, 16) })}
-            className={numberInputClass}
-          />
-        </label>
-
-        <label className="space-y-1.5">
-          <span className="block text-xs font-bold text-stone-500 uppercase">
-            {isZh ? '帧率' : 'FPS'}
-          </span>
-          <input
-            type="number"
-            min={6}
-            max={24}
-            value={config.fps}
-            onChange={event => update({ fps: clampNumber(Number(event.target.value) || 6, 6, 24) })}
-            className={numberInputClass}
-          />
-        </label>
-
-        <label className="space-y-1.5">
-          <span className="block text-xs font-bold text-stone-500 uppercase">
-            {isZh ? '秒数' : 'Seconds'}
-          </span>
-          <input
-            type="number"
-            min={1}
-            max={8}
-            step={0.5}
-            value={config.durationSeconds}
-            onChange={event => update({ durationSeconds: clampNumber(Number(event.target.value) || 1, 1, 8) })}
-            className={numberInputClass}
-          />
-        </label>
-      </div>
+      <label className="block space-y-1.5">
+        <span className="block text-xs font-bold uppercase text-stone-500">
+          {isZh ? '关键帧数' : 'Keyframes'}
+        </span>
+        <input
+          type="number"
+          min={4}
+          max={24}
+          value={config.frameCount}
+          onChange={event => update({ frameCount: clampNumber(Number(event.target.value) || 4, 4, 24) })}
+          className={numberInputClass}
+        />
+      </label>
     </div>
   );
 };

@@ -41,6 +41,9 @@ type SlicedAnimationFrames = {
     frames: GeneratedImage[];
     columns: number;
     rows: number;
+    detectedGrid: boolean;
+    xLines: number[];
+    yLines: number[];
 };
 
 type AnimationPreviewState = {
@@ -49,6 +52,41 @@ type AnimationPreviewState = {
     fps: number;
     columns: number;
     source: 'sliced' | 'batch';
+    groupLabel: string;
+};
+
+type FrameRect = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+};
+
+type AxisLineCluster = {
+    start: number;
+    end: number;
+    center: number;
+    score: number;
+};
+
+type FrameOffset = {
+    x: number;
+    y: number;
+};
+
+type SliceAdjustState = {
+    artboardId: string;
+    imageUrl: string;
+    width: number;
+    height: number;
+    frameCount: number;
+    grid: { cols: number; rows: number };
+    xLines: number[];
+    yLines: number[];
+    offsets: FrameOffset[];
+    fps: number;
+    selectedFrame: number;
+    selectedLine: { axis: 'x' | 'y'; index: number } | null;
     groupLabel: string;
 };
 
@@ -153,6 +191,406 @@ const inferFrameGrid = (imageWidth: number, imageHeight: number, frameCount: num
     return { cols: best.cols, rows: best.rows };
 };
 
+const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+
+const medianNumber = (values: number[], fallback: number) => {
+    const sorted = values.filter(Number.isFinite).sort((a, b) => a - b);
+    if (sorted.length === 0) return fallback;
+    const middle = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0 ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle];
+};
+
+const getLuminance = (r: number, g: number, b: number) => (0.2126 * r) + (0.7152 * g) + (0.0722 * b);
+
+const getDarkLineWeight = (data: Uint8ClampedArray, offset: number) => {
+    const alpha = data[offset + 3];
+    if (alpha < 60) return 0;
+
+    const r = data[offset];
+    const g = data[offset + 1];
+    const b = data[offset + 2];
+    const luminance = getLuminance(r, g, b);
+    const channelRange = Math.max(r, g, b) - Math.min(r, g, b);
+
+    if (luminance < 85) return 1;
+    if (luminance < 130 && channelRange < 48) return 0.65;
+    return 0;
+};
+
+const buildAxisDarkScores = (imageData: ImageData, axis: 'x' | 'y') => {
+    const { width, height, data } = imageData;
+    const length = axis === 'x' ? width : height;
+    const crossLength = axis === 'x' ? height : width;
+    const step = Math.max(1, Math.floor(crossLength / 900));
+    const scores = new Array<number>(length).fill(0);
+
+    for (let pos = 0; pos < length; pos++) {
+        let sum = 0;
+        let samples = 0;
+        for (let cross = 0; cross < crossLength; cross += step) {
+            const x = axis === 'x' ? pos : cross;
+            const y = axis === 'x' ? cross : pos;
+            const offset = ((y * width) + x) * 4;
+            sum += getDarkLineWeight(data, offset);
+            samples++;
+        }
+        scores[pos] = samples ? sum / samples : 0;
+    }
+
+    return scores;
+};
+
+const findLineClusters = (scores: number[], threshold: number): AxisLineCluster[] => {
+    const clusters: AxisLineCluster[] = [];
+    let start = -1;
+    let sum = 0;
+    let weighted = 0;
+    let peak = 0;
+
+    const pushCluster = (end: number) => {
+        if (start < 0) return;
+        const width = end - start + 1;
+        const score = sum / Math.max(1, width);
+        clusters.push({
+            start,
+            end,
+            center: sum > 0 ? weighted / sum : (start + end) / 2,
+            score: Math.max(score, peak),
+        });
+        start = -1;
+        sum = 0;
+        weighted = 0;
+        peak = 0;
+    };
+
+    scores.forEach((score, index) => {
+        if (score >= threshold) {
+            if (start < 0) start = index;
+            sum += score;
+            weighted += score * index;
+            peak = Math.max(peak, score);
+        } else {
+            pushCluster(index - 1);
+        }
+    });
+    pushCluster(scores.length - 1);
+
+    return clusters;
+};
+
+const chooseBestLineSet = (clusters: AxisLineCluster[], expectedCount: number, size: number) => {
+    if (expectedCount <= 1 || clusters.length < expectedCount) return null;
+
+    const maxClusterWidth = Math.max(10, size * 0.035);
+    const candidates = [...clusters]
+        .filter(cluster => (cluster.end - cluster.start + 1) <= maxClusterWidth || cluster.score > 0.7)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, Math.min(clusters.length, expectedCount + 10))
+        .sort((a, b) => a.center - b.center);
+
+    if (candidates.length < expectedCount) return null;
+
+    let best: { lines: number[]; score: number } | null = null;
+    const combo: AxisLineCluster[] = [];
+
+    const scoreCombo = (items: AxisLineCluster[]) => {
+        const centers = items.map(item => item.center);
+        const first = centers[0];
+        const last = centers[centers.length - 1];
+        const span = Math.max(1, last - first);
+        if (span < size * 0.55) return Number.POSITIVE_INFINITY;
+
+        const expectedStep = span / Math.max(1, expectedCount - 1);
+        const spacingErrors = centers.slice(1).map((center, index) => {
+            const prev = centers[index];
+            return Math.abs((center - prev) - expectedStep) / expectedStep;
+        });
+        const spacingPenalty = spacingErrors.reduce((sum, value) => sum + value, 0) / Math.max(1, spacingErrors.length);
+        const edgePenalty = (first / size) + ((size - last) / size);
+        const targetPenalty = centers.reduce((sum, center, index) => {
+            const target = first + (expectedStep * index);
+            return sum + Math.abs(center - target) / size;
+        }, 0) / centers.length;
+        const strengthReward = items.reduce((sum, item) => sum + item.score, 0) / items.length;
+
+        return (spacingPenalty * 2.4) + (edgePenalty * 1.4) + (targetPenalty * 3) - (strengthReward * 0.2);
+    };
+
+    const visit = (startIndex: number) => {
+        if (combo.length === expectedCount) {
+            const score = scoreCombo(combo);
+            if (!best || score < best.score) {
+                best = { lines: combo.map(item => item.center), score };
+            }
+            return;
+        }
+
+        const remainingNeeded = expectedCount - combo.length;
+        for (let index = startIndex; index <= candidates.length - remainingNeeded; index++) {
+            combo.push(candidates[index]);
+            visit(index + 1);
+            combo.pop();
+        }
+    };
+
+    visit(0);
+    return best?.lines.map(line => Math.round(line)).sort((a, b) => a - b) || null;
+};
+
+const detectAxisLines = (imageData: ImageData, axis: 'x' | 'y', expectedCount: number) => {
+    const size = axis === 'x' ? imageData.width : imageData.height;
+    const scores = buildAxisDarkScores(imageData, axis);
+    const maxScore = Math.max(...scores);
+    if (maxScore < 0.12) return null;
+
+    const mean = scores.reduce((sum, value) => sum + value, 0) / Math.max(1, scores.length);
+    const threshold = clamp(mean + ((maxScore - mean) * 0.58), 0.18, 0.64);
+    const clusters = findLineClusters(scores, threshold);
+
+    return chooseBestLineSet(clusters, expectedCount, size);
+};
+
+const buildFixedFrameRects = (width: number, height: number, grid: { cols: number; rows: number }, frameCount: number): FrameRect[] => {
+    const rects: FrameRect[] = [];
+    for (let index = 0; index < frameCount; index++) {
+        const col = index % grid.cols;
+        const row = Math.floor(index / grid.cols);
+        const sx = Math.round((col * width) / grid.cols);
+        const sy = Math.round((row * height) / grid.rows);
+        const ex = Math.round(((col + 1) * width) / grid.cols);
+        const ey = Math.round(((row + 1) * height) / grid.rows);
+        rects.push({ x: sx, y: sy, width: Math.max(1, ex - sx), height: Math.max(1, ey - sy) });
+    }
+    return rects;
+};
+
+const buildEvenLines = (size: number, divisions: number) => {
+    return Array.from({ length: divisions + 1 }, (_, index) => Math.round((index * size) / divisions));
+};
+
+const buildFrameRectsFromLines = (
+    xLines: number[],
+    yLines: number[],
+    frameCount: number,
+    imageWidth: number,
+    imageHeight: number
+): FrameRect[] => {
+    const cols = Math.max(1, xLines.length - 1);
+    const rects: FrameRect[] = [];
+
+    for (let index = 0; index < frameCount; index++) {
+        const col = index % cols;
+        const row = Math.floor(index / cols);
+        const left = clamp(xLines[col] ?? 0, 0, imageWidth - 1);
+        const top = clamp(yLines[row] ?? 0, 0, imageHeight - 1);
+        const right = clamp(xLines[col + 1] ?? imageWidth, left + 1, imageWidth);
+        const bottom = clamp(yLines[row + 1] ?? imageHeight, top + 1, imageHeight);
+        const borderInset = Math.max(2, Math.min(8, Math.round(Math.min(right - left, bottom - top) * 0.012)));
+
+        rects.push({
+            x: clamp(left + borderInset, 0, imageWidth - 1),
+            y: clamp(top + borderInset, 0, imageHeight - 1),
+            width: Math.max(1, clamp(right - left - (borderInset * 2), 1, imageWidth)),
+            height: Math.max(1, clamp(bottom - top - (borderInset * 2), 1, imageHeight)),
+        });
+    }
+
+    return rects;
+};
+
+const detectAnimationFrameRects = (
+    sourceImage: HTMLImageElement,
+    grid: { cols: number; rows: number },
+    frameCount: number
+) => {
+    const width = sourceImage.naturalWidth || sourceImage.width;
+    const height = sourceImage.naturalHeight || sourceImage.height;
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) {
+        const xLines = buildEvenLines(width, grid.cols);
+        const yLines = buildEvenLines(height, grid.rows);
+        return { rects: buildFixedFrameRects(width, height, grid, frameCount), xLines, yLines, detectedGrid: false };
+    }
+
+    ctx.drawImage(sourceImage, 0, 0);
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const xLines = detectAxisLines(imageData, 'x', grid.cols + 1);
+    const yLines = detectAxisLines(imageData, 'y', grid.rows + 1);
+
+    if (!xLines || !yLines) {
+        const fallbackXLines = buildEvenLines(width, grid.cols);
+        const fallbackYLines = buildEvenLines(height, grid.rows);
+        return { rects: buildFixedFrameRects(width, height, grid, frameCount), xLines: fallbackXLines, yLines: fallbackYLines, detectedGrid: false };
+    }
+
+    const rects = buildFrameRectsFromLines(xLines, yLines, frameCount, width, height);
+    return { rects, xLines, yLines, detectedGrid: true };
+};
+
+const sampleCanvasBackground = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    const samples = [
+        [2, 2],
+        [Math.max(0, width - 3), 2],
+        [2, Math.max(0, height - 3)],
+        [Math.max(0, width - 3), Math.max(0, height - 3)],
+        [Math.floor(width / 2), 2],
+        [Math.floor(width / 2), Math.max(0, height - 3)],
+    ];
+    const data = ctx.getImageData(0, 0, width, height).data;
+    const total = samples.reduce((acc, [x, y]) => {
+        const offset = ((clamp(y, 0, height - 1) * width) + clamp(x, 0, width - 1)) * 4;
+        return {
+            r: acc.r + data[offset],
+            g: acc.g + data[offset + 1],
+            b: acc.b + data[offset + 2],
+        };
+    }, { r: 0, g: 0, b: 0 });
+    const count = Math.max(1, samples.length);
+    return `rgb(${Math.round(total.r / count)}, ${Math.round(total.g / count)}, ${Math.round(total.b / count)})`;
+};
+
+const detectRegistrationAnchor = (canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+
+    const { width, height } = canvas;
+    const data = ctx.getImageData(0, 0, width, height).data;
+    const marginX = Math.max(2, Math.round(width * 0.035));
+    const marginY = Math.max(2, Math.round(height * 0.035));
+
+    const scan = (mode: 'dark' | 'nonBackground') => {
+        let minX = width;
+        let minY = height;
+        let maxX = 0;
+        let maxY = 0;
+        let count = 0;
+
+        for (let y = marginY; y < height - marginY; y++) {
+            for (let x = marginX; x < width - marginX; x++) {
+                if (x < width * 0.22 && y < height * 0.22) continue;
+                const offset = ((y * width) + x) * 4;
+                const alpha = data[offset + 3];
+                if (alpha < 70) continue;
+
+                const r = data[offset];
+                const g = data[offset + 1];
+                const b = data[offset + 2];
+                const luminance = getLuminance(r, g, b);
+                const channelRange = Math.max(r, g, b) - Math.min(r, g, b);
+                const isInk = mode === 'dark'
+                    ? luminance < 105
+                    : luminance < 232 || channelRange > 34;
+
+                if (!isInk) continue;
+
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x);
+                maxY = Math.max(maxY, y);
+                count++;
+            }
+        }
+
+        if (count < Math.max(24, width * height * 0.00045)) return null;
+        return { minX, minY, maxX, maxY, count };
+    };
+
+    const bounds = scan('dark') || scan('nonBackground');
+    if (!bounds) return null;
+
+    return {
+        centerX: (bounds.minX + bounds.maxX) / 2,
+        bottomY: bounds.maxY,
+    };
+};
+
+const getRegistrationStrength = (board: Artboard) => {
+    const motion = getAnimationConfig(board)?.motion;
+    if (motion === 'camera-move') return { x: 0, y: 0 };
+    if (motion === 'character-action') return { x: 0.35, y: 0.85 };
+    if (motion === 'transformation') return { x: 0.65, y: 0.65 };
+    if (motion === 'explainer-flow') return { x: 0.2, y: 0.45 };
+    return { x: 0.75, y: 0.85 };
+};
+
+const stabilizeFrameCanvases = (canvases: HTMLCanvasElement[], board: Artboard) => {
+    const anchors = canvases.map(detectRegistrationAnchor);
+    const validAnchors = anchors.filter((anchor): anchor is NonNullable<typeof anchor> => Boolean(anchor));
+    if (validAnchors.length < 2) return canvases;
+
+    const width = canvases[0]?.width || 1;
+    const height = canvases[0]?.height || 1;
+    const targetX = medianNumber(validAnchors.map(anchor => anchor.centerX), width / 2);
+    const targetBottom = medianNumber(validAnchors.map(anchor => anchor.bottomY), height * 0.86);
+    const strength = getRegistrationStrength(board);
+
+    return canvases.map((sourceCanvas, index) => {
+        const anchor = anchors[index];
+        if (!anchor || (strength.x === 0 && strength.y === 0)) return sourceCanvas;
+
+        const dx = Math.round(clamp((targetX - anchor.centerX) * strength.x, -width * 0.12, width * 0.12));
+        const dy = Math.round(clamp((targetBottom - anchor.bottomY) * strength.y, -height * 0.12, height * 0.12));
+        if (dx === 0 && dy === 0) return sourceCanvas;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return sourceCanvas;
+
+        const sourceCtx = sourceCanvas.getContext('2d');
+        ctx.fillStyle = sourceCtx ? sampleCanvasBackground(sourceCtx, width, height) : '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(sourceCanvas, dx, dy);
+        return canvas;
+    });
+};
+
+const applyFrameOffsets = (canvases: HTMLCanvasElement[], offsets: FrameOffset[] = []) => {
+    return canvases.map((sourceCanvas, index) => {
+        const offset = offsets[index];
+        if (!offset || (offset.x === 0 && offset.y === 0)) return sourceCanvas;
+
+        const canvas = document.createElement('canvas');
+        canvas.width = sourceCanvas.width;
+        canvas.height = sourceCanvas.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return sourceCanvas;
+
+        const sourceCtx = sourceCanvas.getContext('2d');
+        ctx.fillStyle = sourceCtx ? sampleCanvasBackground(sourceCtx, sourceCanvas.width, sourceCanvas.height) : '#ffffff';
+        ctx.fillRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+        ctx.drawImage(sourceCanvas, offset.x, offset.y);
+        return canvas;
+    });
+};
+
+const renderFrameCanvases = (
+    sourceImage: HTMLImageElement,
+    rects: FrameRect[],
+    board: Artboard,
+    offsets: FrameOffset[] = []
+) => {
+    const targetWidth = Math.max(1, Math.round(medianNumber(rects.map(rect => rect.width), rects[0]?.width || 1)));
+    const targetHeight = Math.max(1, Math.round(medianNumber(rects.map(rect => rect.height), rects[0]?.height || 1)));
+
+    const canvases = rects.map(rect => {
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas is not available');
+
+        ctx.drawImage(sourceImage, rect.x, rect.y, rect.width, rect.height, 0, 0, targetWidth, targetHeight);
+        return canvas;
+    });
+
+    return applyFrameOffsets(stabilizeFrameCanvases(canvases, board), offsets);
+};
+
 const loadImageElement = (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
         const img = new Image();
@@ -187,37 +625,25 @@ const sliceAnimationSheet = async (board: Artboard): Promise<SlicedAnimationFram
     const frameCount = getAnimationFrameCount(board);
     const fps = getAnimationFps(board);
     const grid = inferFrameGrid(sourceImage.naturalWidth || sourceImage.width, sourceImage.naturalHeight || sourceImage.height, frameCount);
-    const width = sourceImage.naturalWidth || sourceImage.width;
-    const height = sourceImage.naturalHeight || sourceImage.height;
+    const { rects, xLines, yLines, detectedGrid } = detectAnimationFrameRects(sourceImage, grid, frameCount);
+    const frameCanvases = renderFrameCanvases(sourceImage, rects, board);
+    const width = frameCanvases[0]?.width || Math.max(1, Math.round((sourceImage.naturalWidth || sourceImage.width) / grid.cols));
+    const height = frameCanvases[0]?.height || Math.max(1, Math.round((sourceImage.naturalHeight || sourceImage.height) / grid.rows));
     const batchId = createClientId(`frames-${board.image.id}`);
     const now = Date.now();
 
     const frames: GeneratedImage[] = [];
     for (let index = 0; index < frameCount; index++) {
-        const col = index % grid.cols;
-        const row = Math.floor(index / grid.cols);
-        const sx = Math.round((col * width) / grid.cols);
-        const sy = Math.round((row * height) / grid.rows);
-        const ex = Math.round(((col + 1) * width) / grid.cols);
-        const ey = Math.round(((row + 1) * height) / grid.rows);
-        const sw = Math.max(1, ex - sx);
-        const sh = Math.max(1, ey - sy);
-
-        const canvas = document.createElement('canvas');
-        canvas.width = sw;
-        canvas.height = sh;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) throw new Error('Canvas is not available');
-
-        ctx.drawImage(sourceImage, sx, sy, sw, sh, 0, 0, sw, sh);
+        const canvas = frameCanvases[index];
+        if (!canvas) continue;
         frames.push({
             id: createClientId(`${board.image.id}-frame-${index + 1}`),
             url: canvas.toDataURL('image/png'),
             prompt: `${board.image.prompt || board.label}\nFrame ${index + 1}/${frameCount}`,
             timestamp: now + index,
             details: {
-                ...getGeneratedImageDetails(board.image, `${sw}x${sh}`),
-                resolution: `${sw}x${sh}`,
+                ...getGeneratedImageDetails(board.image, `${width}x${height}`),
+                resolution: `${width}x${height}`,
                 batchId,
                 animationFrame: {
                     sourceImageId: board.image.id,
@@ -230,26 +656,67 @@ const sliceAnimationSheet = async (board: Artboard): Promise<SlicedAnimationFram
         });
     }
 
-    return { frames, columns: grid.cols, rows: grid.rows };
+    return { frames, columns: grid.cols, rows: grid.rows, xLines, yLines, detectedGrid };
 };
 
 const cloneFramesForCanvas = (frames: GeneratedImage[], fps: number) => {
     const batchId = createClientId('animation-preview');
     const now = Date.now();
 
-    return frames.map((frame, index) => ({
-        ...frame,
-        id: createClientId(`${frame.id}-copy-${index + 1}`),
+    return frames.map((frame, index) => {
+        const previousFrameMeta = frame.details?.animationFrame;
+        return {
+            ...frame,
+            id: createClientId(`${frame.id}-copy-${index + 1}`),
+            timestamp: now + index,
+            details: {
+                ...getGeneratedImageDetails(frame, frame.details?.resolution || '1000x1000'),
+                batchId,
+                animationFrame: {
+                    ...previousFrameMeta,
+                    sourceImageId: previousFrameMeta?.sourceImageId || frame.id,
+                    frameIndex: index,
+                    frameCount: frames.length,
+                    fps,
+                    sourceGrid: previousFrameMeta?.sourceGrid,
+                },
+            },
+        };
+    });
+};
+
+const updateLineAt = (lines: number[], index: number, value: number, max: number) => {
+    const next = [...lines];
+    const minValue = index === 0 ? 0 : next[index - 1] + 8;
+    const maxValue = index === next.length - 1 ? max : next[index + 1] - 8;
+    next[index] = Math.round(clamp(value, minValue, maxValue));
+    return next;
+};
+
+const buildFramesFromSliceAdjust = async (board: Artboard, state: SliceAdjustState): Promise<GeneratedImage[]> => {
+    const sourceImage = await loadImageElement(state.imageUrl);
+    const rects = buildFrameRectsFromLines(state.xLines, state.yLines, state.frameCount, state.width, state.height);
+    const frameCanvases = renderFrameCanvases(sourceImage, rects, board, state.offsets);
+    const width = frameCanvases[0]?.width || Math.max(1, Math.round(state.width / state.grid.cols));
+    const height = frameCanvases[0]?.height || Math.max(1, Math.round(state.height / state.grid.rows));
+    const batchId = createClientId(`frames-${board.image.id}`);
+    const now = Date.now();
+
+    return frameCanvases.map((canvas, index) => ({
+        id: createClientId(`${board.image.id}-frame-${index + 1}`),
+        url: canvas.toDataURL('image/png'),
+        prompt: `${board.image.prompt || board.label}\nFrame ${index + 1}/${state.frameCount}`,
         timestamp: now + index,
         details: {
-            ...getGeneratedImageDetails(frame, frame.details?.resolution || '1000x1000'),
+            ...getGeneratedImageDetails(board.image, `${width}x${height}`),
+            resolution: `${width}x${height}`,
             batchId,
             animationFrame: {
-                sourceImageId: frame.details?.animationFrame?.sourceImageId || frame.id,
+                sourceImageId: board.image.id,
                 frameIndex: index,
-                frameCount: frames.length,
-                fps,
-                sourceGrid: frame.details?.animationFrame?.sourceGrid,
+                frameCount: state.frameCount,
+                fps: state.fps,
+                sourceGrid: state.grid,
             },
         },
     }));
@@ -264,6 +731,7 @@ const CanvasBoard: React.FC<Props> = ({
     scale, setScale, position, setPosition
 }) => {
     const containerRef = useRef<HTMLDivElement>(null);
+    const sliceAdjustImageRef = useRef<HTMLDivElement>(null);
     const t = I18N[lang];
 
     const [historyModalOpen, setHistoryModalOpen] = useState<string | null>(null);
@@ -287,6 +755,7 @@ const CanvasBoard: React.FC<Props> = ({
     const [isAnimationPlaying, setIsAnimationPlaying] = useState(true);
     const [isSlicingAnimation, setIsSlicingAnimation] = useState(false);
     const [animationError, setAnimationError] = useState<string | null>(null);
+    const [sliceAdjust, setSliceAdjust] = useState<SliceAdjustState | null>(null);
     const [uiSplitArtboard, setUiSplitArtboard] = useState<Artboard | null>(null);
 
     const handleSaveLabel = () => {
@@ -575,6 +1044,132 @@ const CanvasBoard: React.FC<Props> = ({
             setAnimationError(lang === 'zh' ? '切图失败，请确认图片已加载完成' : 'Failed to slice frames. Make sure the image is loaded.');
         } finally {
             setIsSlicingAnimation(false);
+        }
+    };
+
+    const openSliceAdjust = async (artboardId: string) => {
+        const board = artboards.find(item => item.id === artboardId);
+        if (!board) return;
+
+        setContextMenu(null);
+        setAnimationPreview(null);
+        setAnimationError(null);
+        setIsSlicingAnimation(true);
+
+        try {
+            const sourceImage = await loadImageElement(board.image.url);
+            const width = sourceImage.naturalWidth || sourceImage.width;
+            const height = sourceImage.naturalHeight || sourceImage.height;
+            const frameCount = getAnimationFrameCount(board);
+            const grid = inferFrameGrid(width, height, frameCount);
+            const detected = detectAnimationFrameRects(sourceImage, grid, frameCount);
+
+            setSliceAdjust({
+                artboardId,
+                imageUrl: board.image.url,
+                width,
+                height,
+                frameCount,
+                grid,
+                xLines: detected.xLines,
+                yLines: detected.yLines,
+                offsets: Array.from({ length: frameCount }, () => ({ x: 0, y: 0 })),
+                fps: getAnimationFps(board),
+                selectedFrame: 0,
+                selectedLine: null,
+                groupLabel: `${board.label || 'Animation'} Frames`,
+            });
+        } catch (error) {
+            console.error(error);
+            setAnimationError(lang === 'zh' ? '无法打开切图校准，请确认图片已加载完成' : 'Failed to open slice adjustment. Make sure the image is loaded.');
+        } finally {
+            setIsSlicingAnimation(false);
+        }
+    };
+
+    const previewSliceAdjust = async () => {
+        if (!sliceAdjust) return;
+        const board = artboards.find(item => item.id === sliceAdjust.artboardId);
+        if (!board) return;
+
+        setIsSlicingAnimation(true);
+        try {
+            const frames = await buildFramesFromSliceAdjust(board, sliceAdjust);
+            setAnimationPreview({
+                artboardId: sliceAdjust.artboardId,
+                frames,
+                fps: sliceAdjust.fps,
+                columns: sliceAdjust.grid.cols,
+                source: 'sliced',
+                groupLabel: sliceAdjust.groupLabel,
+            });
+            setAnimationFrameIndex(0);
+            setIsAnimationPlaying(true);
+            setSliceAdjust(null);
+        } catch (error) {
+            console.error(error);
+            setAnimationError(lang === 'zh' ? '校准预览失败' : 'Failed to preview adjusted frames.');
+        } finally {
+            setIsSlicingAnimation(false);
+        }
+    };
+
+    const addAdjustedFramesToCanvas = async () => {
+        if (!sliceAdjust || !onAddImagesToCanvas) return;
+        const board = artboards.find(item => item.id === sliceAdjust.artboardId);
+        if (!board) return;
+
+        setIsSlicingAnimation(true);
+        try {
+            const frames = await buildFramesFromSliceAdjust(board, sliceAdjust);
+            const framesToAdd = cloneFramesForCanvas(frames, sliceAdjust.fps);
+            await onAddImagesToCanvas(
+                framesToAdd,
+                { x: board.x + board.width + 80, y: board.y },
+                { groupLabel: sliceAdjust.groupLabel, columns: sliceAdjust.grid.cols }
+            );
+            setSliceAdjust(null);
+        } catch (error) {
+            console.error(error);
+            setAnimationError(lang === 'zh' ? '添加校准帧失败' : 'Failed to add adjusted frames.');
+        } finally {
+            setIsSlicingAnimation(false);
+        }
+    };
+
+    const updateSliceAdjustOffset = (dx: number, dy: number) => {
+        setSliceAdjust(prev => {
+            if (!prev) return prev;
+            const offsets = [...prev.offsets];
+            const current = offsets[prev.selectedFrame] || { x: 0, y: 0 };
+            offsets[prev.selectedFrame] = {
+                x: clamp(current.x + dx, -80, 80),
+                y: clamp(current.y + dy, -80, 80),
+            };
+            return { ...prev, offsets };
+        });
+    };
+
+    const resetSliceAdjustOffset = () => {
+        setSliceAdjust(prev => {
+            if (!prev) return prev;
+            const offsets = [...prev.offsets];
+            offsets[prev.selectedFrame] = { x: 0, y: 0 };
+            return { ...prev, offsets };
+        });
+    };
+
+    const handleSliceAdjustPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
+        if (!sliceAdjust?.selectedLine || !sliceAdjustImageRef.current) return;
+        const rect = sliceAdjustImageRef.current.getBoundingClientRect();
+        const { axis, index } = sliceAdjust.selectedLine;
+
+        if (axis === 'x') {
+            const value = ((event.clientX - rect.left) / Math.max(1, rect.width)) * sliceAdjust.width;
+            setSliceAdjust(prev => prev ? { ...prev, xLines: updateLineAt(prev.xLines, index, value, prev.width) } : prev);
+        } else {
+            const value = ((event.clientY - rect.top) / Math.max(1, rect.height)) * sliceAdjust.height;
+            setSliceAdjust(prev => prev ? { ...prev, yLines: updateLineAt(prev.yLines, index, value, prev.height) } : prev);
         }
     };
 
@@ -873,6 +1468,16 @@ const CanvasBoard: React.FC<Props> = ({
                                         {lang === 'zh' ? '切图到画布' : 'Slice to Canvas'}
                                     </button>
                                 )}
+                                {shouldSlice && (
+                                    <button
+                                        className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2 disabled:opacity-50"
+                                        onClick={() => openSliceAdjust(contextMenu.artboardId)}
+                                        disabled={isSlicingAnimation}
+                                    >
+                                        <IconLoader name="scissors" size={14} />
+                                        {lang === 'zh' ? '校准切图' : 'Adjust Slicing'}
+                                    </button>
+                                )}
                                 <button
                                     className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2 disabled:opacity-50"
                                     onClick={() => openAnimationPreview(contextMenu.artboardId, shouldSlice)}
@@ -918,6 +1523,193 @@ const CanvasBoard: React.FC<Props> = ({
                     {animationError}
                 </div>
             )}
+            {sliceAdjust && (() => {
+                const selectedOffset = sliceAdjust.offsets[sliceAdjust.selectedFrame] || { x: 0, y: 0 };
+                const selectedCol = sliceAdjust.selectedFrame % sliceAdjust.grid.cols;
+                const selectedRow = Math.floor(sliceAdjust.selectedFrame / sliceAdjust.grid.cols);
+
+                return (
+                    <div
+                        className="fixed inset-0 z-[112] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
+                        onMouseDown={() => setSliceAdjust(null)}
+                    >
+                        <div
+                            className="bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 w-full max-w-6xl max-h-[92vh] flex flex-col overflow-hidden"
+                            onMouseDown={(event) => event.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between gap-3 p-3 sm:p-4 border-b border-stone-200 dark:border-stone-800">
+                                <div className="min-w-0">
+                                    <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                                        {lang === 'zh' ? '校准切图' : 'Adjust Slicing'}
+                                    </h3>
+                                    <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
+                                        {sliceAdjust.frameCount} {lang === 'zh' ? '关键帧' : 'keyframes'} · {sliceAdjust.grid.cols}x{sliceAdjust.grid.rows}
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setSliceAdjust(null)}
+                                    className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500"
+                                    title={lang === 'zh' ? '关闭' : 'Close'}
+                                >
+                                    <IconLoader name="x" size={18} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-3 sm:p-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-4">
+                                    <div className="rounded-lg bg-stone-950 p-3 overflow-hidden">
+                                        <div
+                                            ref={sliceAdjustImageRef}
+                                            className="relative mx-auto w-full max-h-[66vh] max-w-full select-none touch-none"
+                                            style={{ aspectRatio: `${sliceAdjust.width} / ${sliceAdjust.height}` }}
+                                            onPointerMove={handleSliceAdjustPointerMove}
+                                            onPointerUp={() => setSliceAdjust(prev => prev ? { ...prev, selectedLine: null } : prev)}
+                                            onPointerLeave={() => setSliceAdjust(prev => prev ? { ...prev, selectedLine: null } : prev)}
+                                        >
+                                            <img
+                                                src={sliceAdjust.imageUrl}
+                                                alt=""
+                                                className="absolute inset-0 h-full w-full object-contain"
+                                                draggable={false}
+                                            />
+
+                                            {Array.from({ length: sliceAdjust.frameCount }).map((_, index) => {
+                                                const col = index % sliceAdjust.grid.cols;
+                                                const row = Math.floor(index / sliceAdjust.grid.cols);
+                                                const left = (sliceAdjust.xLines[col] / sliceAdjust.width) * 100;
+                                                const top = (sliceAdjust.yLines[row] / sliceAdjust.height) * 100;
+                                                const cellWidth = ((sliceAdjust.xLines[col + 1] - sliceAdjust.xLines[col]) / sliceAdjust.width) * 100;
+                                                const cellHeight = ((sliceAdjust.yLines[row + 1] - sliceAdjust.yLines[row]) / sliceAdjust.height) * 100;
+                                                return (
+                                                    <button
+                                                        key={index}
+                                                        className={`absolute z-10 border-2 text-left transition-colors ${
+                                                            index === sliceAdjust.selectedFrame
+                                                                ? 'border-teal-400 bg-teal-400/15'
+                                                                : 'border-transparent hover:border-white/60'
+                                                        }`}
+                                                        style={{ left: `${left}%`, top: `${top}%`, width: `${cellWidth}%`, height: `${cellHeight}%` }}
+                                                        onClick={() => setSliceAdjust(prev => prev ? { ...prev, selectedFrame: index } : prev)}
+                                                        title={`${lang === 'zh' ? '帧' : 'Frame'} ${index + 1}`}
+                                                    >
+                                                        <span className="absolute left-1 top-1 rounded bg-black/70 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                                            {index + 1}
+                                                        </span>
+                                                    </button>
+                                                );
+                                            })}
+
+                                            {sliceAdjust.xLines.map((line, index) => (
+                                                <button
+                                                    key={`x-${index}`}
+                                                    className={`absolute top-0 z-30 h-full w-3 -translate-x-1/2 cursor-ew-resize ${
+                                                        sliceAdjust.selectedLine?.axis === 'x' && sliceAdjust.selectedLine.index === index
+                                                            ? 'bg-amber-300/70'
+                                                            : 'bg-sky-400/50 hover:bg-sky-300/70'
+                                                    }`}
+                                                    style={{ left: `${(line / sliceAdjust.width) * 100}%` }}
+                                                    onPointerDown={(event) => {
+                                                        event.preventDefault();
+                                                        event.currentTarget.setPointerCapture(event.pointerId);
+                                                        setSliceAdjust(prev => prev ? { ...prev, selectedLine: { axis: 'x', index } } : prev);
+                                                    }}
+                                                    title={lang === 'zh' ? '拖动竖向切线' : 'Drag vertical slice line'}
+                                                />
+                                            ))}
+
+                                            {sliceAdjust.yLines.map((line, index) => (
+                                                <button
+                                                    key={`y-${index}`}
+                                                    className={`absolute left-0 z-30 h-3 w-full -translate-y-1/2 cursor-ns-resize ${
+                                                        sliceAdjust.selectedLine?.axis === 'y' && sliceAdjust.selectedLine.index === index
+                                                            ? 'bg-amber-300/70'
+                                                            : 'bg-sky-400/50 hover:bg-sky-300/70'
+                                                    }`}
+                                                    style={{ top: `${(line / sliceAdjust.height) * 100}%` }}
+                                                    onPointerDown={(event) => {
+                                                        event.preventDefault();
+                                                        event.currentTarget.setPointerCapture(event.pointerId);
+                                                        setSliceAdjust(prev => prev ? { ...prev, selectedLine: { axis: 'y', index } } : prev);
+                                                    }}
+                                                    title={lang === 'zh' ? '拖动横向切线' : 'Drag horizontal slice line'}
+                                                />
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="rounded-lg border border-stone-200 dark:border-stone-800 p-3">
+                                            <div className="text-xs font-bold uppercase text-stone-500">
+                                                {lang === 'zh' ? '当前帧' : 'Selected Frame'}
+                                            </div>
+                                            <div className="mt-1 text-sm font-bold text-stone-900 dark:text-stone-100">
+                                                {sliceAdjust.selectedFrame + 1}/{sliceAdjust.frameCount}
+                                            </div>
+                                            <div className="mt-1 text-xs text-stone-500">
+                                                {lang === 'zh' ? '位置' : 'Cell'}: {selectedCol + 1}, {selectedRow + 1}
+                                            </div>
+                                            <div className="mt-1 text-xs text-stone-500">
+                                                Offset: {Math.round(selectedOffset.x)}, {Math.round(selectedOffset.y)}
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-lg border border-stone-200 dark:border-stone-800 p-3">
+                                            <div className="mb-2 text-xs font-bold uppercase text-stone-500">
+                                                {lang === 'zh' ? '注册点微调' : 'Registration Nudge'}
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                                <span />
+                                                <button className="h-9 rounded border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-sm" onClick={() => updateSliceAdjustOffset(0, -2)}>^</button>
+                                                <span />
+                                                <button className="h-9 rounded border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-sm" onClick={() => updateSliceAdjustOffset(-2, 0)}>&lt;</button>
+                                                <button className="h-9 rounded border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-xs" onClick={resetSliceAdjustOffset}>0</button>
+                                                <button className="h-9 rounded border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-sm" onClick={() => updateSliceAdjustOffset(2, 0)}>&gt;</button>
+                                                <span />
+                                                <button className="h-9 rounded border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-sm" onClick={() => updateSliceAdjustOffset(0, 2)}>v</button>
+                                                <span />
+                                            </div>
+                                        </div>
+
+                                        <label className="block">
+                                            <span className="mb-1 block text-xs font-bold uppercase text-stone-500">
+                                                {lang === 'zh' ? '预览 FPS' : 'Preview FPS'}
+                                            </span>
+                                            <input
+                                                type="range"
+                                                min={1}
+                                                max={24}
+                                                value={sliceAdjust.fps}
+                                                onChange={(event) => setSliceAdjust(prev => prev ? { ...prev, fps: Number(event.target.value) } : prev)}
+                                                className="w-full accent-teal-600"
+                                            />
+                                            <div className="mt-1 text-xs text-stone-500">{sliceAdjust.fps} FPS</div>
+                                        </label>
+
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <button
+                                                onClick={previewSliceAdjust}
+                                                disabled={isSlicingAnimation}
+                                                className="min-h-10 rounded-lg border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-sm font-bold text-stone-700 dark:text-stone-200 disabled:opacity-50"
+                                            >
+                                                {lang === 'zh' ? '预览动画' : 'Preview'}
+                                            </button>
+                                            {onAddImagesToCanvas && (
+                                                <button
+                                                    onClick={addAdjustedFramesToCanvas}
+                                                    disabled={isSlicingAnimation}
+                                                    className="min-h-10 rounded-lg bg-teal-600 hover:bg-teal-500 text-sm font-bold text-white disabled:opacity-50"
+                                                >
+                                                    {lang === 'zh' ? '添加到画布' : 'Add to Canvas'}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
             {animationPreview && (() => {
                 const currentFrame = animationPreview.frames[animationFrameIndex % animationPreview.frames.length];
 
@@ -999,13 +1791,24 @@ const CanvasBoard: React.FC<Props> = ({
                                         </label>
 
                                         {onAddImagesToCanvas && (
-                                            <button
-                                                onClick={addAnimationFramesToCanvas}
-                                                className="w-full min-h-10 rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:opacity-90 text-sm font-bold flex items-center justify-center gap-2"
-                                            >
-                                                <IconLoader name="plus" size={16} />
-                                                {lang === 'zh' ? '添加帧到画布' : 'Add Frames to Canvas'}
-                                            </button>
+                                            <div className="space-y-2">
+                                                {animationPreview.source === 'sliced' && (
+                                                    <button
+                                                        onClick={() => openSliceAdjust(animationPreview.artboardId)}
+                                                        className="w-full min-h-10 rounded-lg border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-sm font-bold text-stone-700 dark:text-stone-200 flex items-center justify-center gap-2"
+                                                    >
+                                                        <IconLoader name="scissors" size={16} />
+                                                        {lang === 'zh' ? '校准切图' : 'Adjust Slicing'}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    onClick={addAnimationFramesToCanvas}
+                                                    className="w-full min-h-10 rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:opacity-90 text-sm font-bold flex items-center justify-center gap-2"
+                                                >
+                                                    <IconLoader name="plus" size={16} />
+                                                    {lang === 'zh' ? '添加帧到画布' : 'Add Frames to Canvas'}
+                                                </button>
+                                            </div>
                                         )}
 
                                         <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-3 gap-2">

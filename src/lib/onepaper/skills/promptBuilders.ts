@@ -25,6 +25,60 @@ function getModifier(arr: { id: string; promptModifier?: string }[] | undefined,
   return findOption(arr, id)?.promptModifier ?? '';
 }
 
+const getAnimationAspectRatioValue = (aspect: string): number => {
+  const map: Record<string, number> = {
+    '1:1': 1,
+    '3:4': 3 / 4,
+    '4:3': 4 / 3,
+    '9:16': 9 / 16,
+    '16:9': 16 / 9,
+    '2:3': 2 / 3,
+    '3:2': 3 / 2,
+  };
+  return map[aspect] || 16 / 9;
+};
+
+const inferAnimationGrid = (frameCount: number, aspect: string) => {
+  const count = Math.max(1, Math.round(frameCount));
+  const sheetRatio = getAnimationAspectRatioValue(aspect);
+  let best = { cols: count, rows: 1, score: Number.POSITIVE_INFINITY };
+
+  for (let rows = 1; rows <= count; rows++) {
+    for (let cols = 1; cols <= count; cols++) {
+      const cells = cols * rows;
+      if (cells < count) continue;
+
+      const emptyPenalty = (cells - count) * 0.85;
+      const ratioPenalty = Math.abs((cols / rows) - sheetRatio) * 2;
+      const shapePenalty = Math.abs(cols - rows) * 0.04;
+      const score = emptyPenalty + ratioPenalty + shapePenalty;
+
+      if (score < best.score) {
+        best = { cols, rows, score };
+      }
+    }
+  }
+
+  return { cols: best.cols, rows: best.rows };
+};
+
+const buildAnimationKeyframeContract = (config: AnimationSequenceConfig) => {
+  const frameCount = Math.max(1, config.frameCount);
+  const loopRule = config.motion === 'subtle-loop'
+    ? '- Loop closure: frame 1 and the final frame must be visually compatible so playback can return to frame 1 without a jump.'
+    : '- Action closure: the last frame is the target state; do not force it to loop unless the action naturally loops.';
+
+  return `
+KEYFRAME PROGRESSION CONTRACT:
+- The sheet contains ${frameCount} keyframes that complete one full motion cycle or one complete action pass.
+- Each neighboring frame should advance the pose by one clear, readable step.
+${loopRule}
+- Use a locked camera, fixed scale, fixed horizon/ground line, and a stable registration anchor across every cell.
+- Keep subject proportions, colors, line weight, lighting direction, and background anchors identical.
+- Avoid sudden teleporting, pose skips, cropped limbs, changing character design, or inconsistent object size.
+`.trim();
+};
+
 // ============================================================
 // 1. Cover Image Prompt Builder
 // ============================================================
@@ -394,6 +448,8 @@ export function buildAnimationSequencePrompt(
   const motionMod = getModifier(constants.motions, config.motion);
   const framingMod = getModifier(constants.framings, config.framing);
   const continuityMod = getModifier(constants.continuity, config.continuity);
+  const grid = inferAnimationGrid(config.frameCount, config.aspect);
+  const keyframeContract = buildAnimationKeyframeContract(config);
   const frameLabel = frameIndex === undefined
     ? `STORYBOARD SHEET (${config.frameCount} keyframes in one image)`
     : `KEYFRAME ${frameIndex + 1} OF ${config.frameCount}`;
@@ -404,7 +460,6 @@ Create an animation sequence image.
 
 OUTPUT MODE: ${frameLabel}
 ASPECT RATIO: ${config.aspect}
-TARGET TIMING: ${config.durationSeconds}s at ${config.fps} fps
 KEYFRAME COUNT: ${config.frameCount}
 
 VISUAL STYLE: ${config.style}
@@ -420,24 +475,30 @@ CONTINUITY MODE: ${config.continuity}
 ${continuityMod}
 
 ANIMATION DISCIPLINE:
-- Treat every generated image as a frame from the same animated shot or storyboard.
+- Treat every generated image as a frame from the same animated shot, not a loose storyboard.
 - Preserve stable character identity, costume, object geometry, palette, lighting direction, and background anchors.
 - Show readable motion progression with clear silhouettes.
 - Avoid random redesigns, abrupt scene changes, inconsistent face details, or unrelated props.
 - If text appears, keep it minimal and consistent across frames.
 
+${keyframeContract}
+
 ${frameIndex === undefined ? `
 STORYBOARD SHEET REQUIREMENTS:
-- Compose ${config.frameCount} clearly separated keyframes in one image.
-- Number each frame from 1 to ${config.frameCount}.
-- Show the start pose, motion progression, and final pose.
-- Include small motion arrows or timing marks only when they improve clarity.
+- Compose exactly ${config.frameCount} frames in a ${grid.cols} columns x ${grid.rows} rows sprite sheet.
+- Every cell must have the same width and height, separated by straight full-length 1-2px grid lines.
+- Fill cells left-to-right, top-to-bottom; leave any unused cells blank if the grid has extra capacity.
+- Do not draw frame numbers, titles, labels, captions, watermarks, timeline text, or corner badges inside the cells.
+- Do not draw arrows unless the motion type explicitly needs diagram annotations; for character/action loops, show the motion through poses only.
+- Keep the subject aligned to the same baseline and center registration guide in every cell so the sheet can be cut into animation frames.
+- Each cell should be a clean standalone frame after cropping away the grid lines.
 ` : `
 FRAME-SPECIFIC REQUIREMENTS:
 - This is frame ${frameIndex + 1} of ${config.frameCount}; do not create a collage.
 - Generate only this single frame as a full-quality standalone image.
 - Position this frame within the overall motion arc at ${(frameIndex / Math.max(config.frameCount - 1, 1)).toFixed(2)} progress.
 ${refImage ? '- Use the previous frame reference to preserve exact visual continuity while advancing the motion.' : '- Establish the first frame clearly so later frames can inherit its design.'}
+- Keep the same camera, baseline, scale, crop, and subject registration used by the whole sequence.
 `}
 
 CONTENT / ACTION TO ANIMATE:
