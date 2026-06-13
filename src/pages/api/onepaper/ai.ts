@@ -153,7 +153,25 @@ const processImageInput = async (input: string | undefined | null) => {
 
 const readErrorText = async (res: Response) => {
   const text = await res.text().catch(() => '');
-  return text || res.statusText || 'Request failed';
+  const cleaned = text
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || res.statusText || 'Request failed';
+};
+
+const looksOpenAICompatible = (api: APIConfig): boolean => {
+  const apiKey = api.apiKey.trim();
+  const baseUrl = api.baseUrl.trim().toLowerCase();
+  const model = `${api.textModel || ''} ${api.imageModel || ''}`.toLowerCase();
+
+  return (
+    api.provider === 'openai' ||
+    apiKey.startsWith('sk-') ||
+    model.includes('gpt-') ||
+    model.includes('dall-e') ||
+    baseUrl.includes('/v1/')
+  );
 };
 
 const aspectToSize = (aspect?: string): string => {
@@ -295,19 +313,20 @@ const callGeminiImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Promis
 };
 
 const callOpenAIImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Promise<string> => {
+  const body: Record<string, unknown> = {
+    model: api.imageModel || 'gpt-image-2',
+    prompt: opts.prompt,
+    size: aspectToSize(opts.aspectRatio),
+    n: 1,
+  };
+
   const res = await fetchExternal(getOpenAIEndpoint(api.baseUrl, 'image'), {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${api.apiKey}`,
     },
-    body: JSON.stringify({
-      model: api.imageModel || 'gpt-image-2',
-      prompt: opts.prompt,
-      size: aspectToSize(opts.aspectRatio),
-      quality: 'standard',
-      n: 1,
-    }),
+    body: JSON.stringify(body),
   });
 
   if (!res.ok) {
@@ -387,26 +406,46 @@ const getModelsEndpoint = (baseUrl: string, provider: APIConfig['provider']): st
   return assertExternalHttpsUrl(url.toString());
 };
 
-const listModels = async (api: APIConfig): Promise<string[]> => {
-  const endpoint = getModelsEndpoint(api.baseUrl, api.provider);
-
-  if (api.provider === 'gemini') {
-    const url = new URL(endpoint);
-    url.searchParams.set('key', api.apiKey);
-    const res = await fetchExternal(url.toString());
-    if (!res.ok) throw new Error(`Models error ${res.status}: ${await readErrorText(res)}`);
-    const data = await res.json();
-    return (data.models || [])
-      .map((m: any) => m.name?.replace(/^models\//, '') || m.name)
-      .filter(Boolean);
-  }
-
+const listOpenAIModels = async (api: APIConfig): Promise<string[]> => {
+  const endpoint = getModelsEndpoint(api.baseUrl, 'openai');
   const res = await fetchExternal(endpoint, {
     headers: { Authorization: `Bearer ${api.apiKey}` },
   });
   if (!res.ok) throw new Error(`Models error ${res.status}: ${await readErrorText(res)}`);
   const data = await res.json();
   return (data.data || []).map((m: any) => m.id).filter(Boolean);
+};
+
+const listGeminiModels = async (api: APIConfig): Promise<string[]> => {
+  const endpoint = getModelsEndpoint(api.baseUrl, 'gemini');
+  const url = new URL(endpoint);
+  url.searchParams.set('key', api.apiKey);
+  const res = await fetchExternal(url.toString());
+  if (!res.ok) throw new Error(`Models error ${res.status}: ${await readErrorText(res)}`);
+  const data = await res.json();
+  return (data.models || [])
+    .map((m: any) => m.name?.replace(/^models\//, '') || m.name)
+    .filter(Boolean);
+};
+
+const listModels = async (api: APIConfig): Promise<string[]> => {
+  const useOpenAICompat = looksOpenAICompatible(api);
+
+  try {
+    return useOpenAICompat ? await listOpenAIModels(api) : await listGeminiModels(api);
+  } catch (primaryError) {
+    if (!useOpenAICompat) {
+      try {
+        return await listOpenAIModels(api);
+      } catch {
+        // Surface the primary Gemini-style failure below.
+      }
+    }
+
+    throw new Error(
+      `${getErrorMessage(primaryError)}. If this gateway does not expose a models endpoint, type the model name manually.`
+    );
+  }
 };
 
 export const POST: APIRoute = async ({ request }) => {
@@ -421,11 +460,19 @@ export const POST: APIRoute = async ({ request }) => {
 
     switch (operation) {
       case 'gemini-text':
-        return json({ text: await callGeminiTextAPI(api, body.opts as TextAPIOptions) });
+        return json({
+          text: looksOpenAICompatible(api)
+            ? await callOpenAITextAPI(api, body.opts as TextAPIOptions)
+            : await callGeminiTextAPI(api, body.opts as TextAPIOptions),
+        });
       case 'openai-text':
         return json({ text: await callOpenAITextAPI(api, body.opts as TextAPIOptions) });
       case 'gemini-image':
-        return json({ image: await callGeminiImageAPI(api, body.opts as ImageAPIOptions) });
+        return json({
+          image: looksOpenAICompatible(api)
+            ? await callOpenAIImageAPI(api, body.opts as ImageAPIOptions)
+            : await callGeminiImageAPI(api, body.opts as ImageAPIOptions),
+        });
       case 'openai-image': {
         try {
           return json({ image: await callOpenAIImageAPI(api, body.opts as ImageAPIOptions) });

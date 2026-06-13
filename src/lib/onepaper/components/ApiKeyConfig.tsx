@@ -234,14 +234,16 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedId(id);
     e.dataTransfer.effectAllowed = 'move';
-    const el = e.currentTarget as HTMLElement;
+    const el = (e.currentTarget as HTMLElement).closest('[data-api-card]') as HTMLElement | null;
+    if (!el) return;
     el.style.opacity = '0.5';
   };
 
   const handleDragEnd = (e: React.DragEvent) => {
     setDraggedId(null);
     setDragOverId(null);
-    (e.currentTarget as HTMLElement).style.opacity = '1';
+    const el = (e.currentTarget as HTMLElement).closest('[data-api-card]') as HTMLElement | null;
+    if (el) el.style.opacity = '1';
   };
 
   const handleDragOver = (e: React.DragEvent, id: string) => {
@@ -319,7 +321,7 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
     } catch (e: any) {
       const msg = e.message || (isZh ? '获取模型列表失败' : 'Failed to fetch models');
       setFetchErrors(prev => ({ ...prev, [api.id]: msg }));
-      // Do NOT write signature on failure, so next change will retry
+      fetchedSignaturesRef.current[api.id] = signature;
     } finally {
       setFetchingModelsId(null);
     }
@@ -370,17 +372,22 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
     return (
       <div
         key={api.id}
-        draggable
-        onDragStart={(e) => handleDragStart(e, api.id)}
-        onDragEnd={handleDragEnd}
+        data-api-card
         onDragOver={(e) => handleDragOver(e, api.id)}
         onDrop={() => handleDrop(type, api.id)}
         className={`border rounded-xl transition-all ${isDragOver ? 'border-teal-400 dark:border-teal-500 ring-2 ring-teal-200 dark:ring-teal-900/40' : 'border-stone-200 dark:border-stone-700'} bg-stone-50 dark:bg-stone-800/50`}
       >
         {/* Card Header */}
-        <div className="flex items-center gap-2 px-3 py-2 cursor-grab active:cursor-grabbing">
+        <div className="flex items-center gap-2 px-3 py-2">
           {/* Drag Handle */}
-          <div className="text-stone-400 dark:text-stone-500 shrink-0">
+          <div
+            draggable
+            onDragStart={(e) => handleDragStart(e, api.id)}
+            onDragEnd={handleDragEnd}
+            className="text-stone-400 dark:text-stone-500 shrink-0 cursor-grab active:cursor-grabbing select-none"
+            title={isZh ? '拖拽排序' : 'Drag to reorder'}
+            aria-label={isZh ? '拖拽排序' : 'Drag to reorder'}
+          >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="9" cy="6" r="1.5" />
               <circle cx="9" cy="12" r="1.5" />
@@ -457,7 +464,7 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
         {!isCollapsed && (
           <div className="px-3 pb-3 space-y-2">
             <div className="h-px bg-stone-200 dark:bg-stone-700" />
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <label className={labelCls}>Provider</label>
                 <select
@@ -500,7 +507,7 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
                   {isZh ? '启用' : 'Enabled'}
                 </label>
               </div>
-              <div className="col-span-2">
+              <div className="sm:col-span-2">
                 <label className={labelCls}>Base URL</label>
                 <input
                   type="text"
@@ -515,7 +522,7 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
                   className={inputCls}
                 />
               </div>
-              <div className="col-span-2">
+              <div className="sm:col-span-2">
                 <label className={labelCls}>API Key</label>
                 <div className="relative">
                   <input
@@ -545,7 +552,7 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
                 </div>
               </div>
               {type === 'text' ? (
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <div className="flex items-center justify-between">
                     <label className={labelCls}>{isZh ? '文本模型' : 'Text Model'}</label>
                     <div className="flex items-center gap-1.5">
@@ -595,7 +602,7 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
                   </select>
                 </div>
               ) : (
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <div className="flex items-center justify-between">
                     <label className={labelCls}>{isZh ? '图片模型' : 'Image Model'}</label>
                     <div className="flex items-center gap-1.5">
@@ -653,38 +660,38 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
   };
 
   return (
-    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-white dark:bg-stone-800 rounded-2xl border border-stone-200 dark:border-stone-700 w-[80%] shadow-2xl flex flex-col h-[90vh] max-h-[90vh]" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
+      <div className="bg-white dark:bg-stone-800 rounded-2xl border border-stone-200 dark:border-stone-700 w-[calc(100vw-1rem)] sm:w-[92vw] lg:w-[80%] shadow-2xl flex flex-col h-[92dvh] max-h-[92dvh] sm:h-[90vh] sm:max-h-[90vh]" onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 dark:border-stone-700 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center text-white text-sm">
+        <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 border-b border-stone-200 dark:border-stone-700 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center text-white text-sm shrink-0">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                 <line x1="6" y1="12" x2="18" y2="12"/>
               </svg>
             </div>
-            <div>
+            <div className="min-w-0">
               <h2 className="text-stone-900 dark:text-white font-bold text-sm">{isZh ? 'API 设置' : 'API Settings'}</h2>
-              <p className="text-stone-500 text-xs">{isZh ? '配置文本思考和图片生成 API，支持多源 fallback' : 'Configure text & image APIs with fallback'}</p>
+              <p className="text-stone-500 text-xs truncate">{isZh ? '配置文本思考和图片生成 API，支持多源 fallback' : 'Configure text & image APIs with fallback'}</p>
             </div>
           </div>
           {onClose && (
-            <button onClick={onClose} className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors p-1">
+            <button onClick={onClose} className="text-stone-400 dark:text-stone-500 hover:text-stone-600 dark:hover:text-stone-300 transition-colors p-1 shrink-0">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
             </button>
           )}
         </div>
 
         {/* Body */}
-        <div className="flex-1 min-h-0 overflow-hidden px-6 py-5">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-0">
+        <div className="flex-1 min-h-0 overflow-y-auto lg:overflow-hidden px-4 py-4 sm:px-6 sm:py-5 custom-scrollbar">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6 lg:h-full lg:min-h-0">
             {/* Left: API Config */}
-            <div className="lg:col-span-2 flex flex-col h-full min-h-0">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 flex-1 min-h-0">
+            <div className="lg:col-span-2 flex flex-col lg:h-full lg:min-h-0">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 lg:gap-6 flex-1 lg:min-h-0">
                 {/* Text APIs */}
-                <div className="flex flex-col min-h-0">
+                <div className="flex flex-col min-h-0 md:min-h-[18rem] lg:min-h-0">
                   <div className="flex items-center justify-between shrink-0 mb-3">
                     <h3 className="text-sm font-bold text-stone-700 dark:text-stone-200">{isZh ? '文本思考 API' : 'Text Thinking APIs'}</h3>
                     <button
@@ -694,7 +701,7 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
                       + {isZh ? '添加' : 'Add'}
                     </button>
                   </div>
-                  <div className="space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="space-y-3 lg:overflow-y-auto lg:pr-1 custom-scrollbar">
                     {textAPIs.map((api, i) => renderAPICard(api, 'text', i))}
                   </div>
                   {textAPIs.length === 0 && (
@@ -710,7 +717,7 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
                 </div>
 
                 {/* Image APIs */}
-                <div className="flex flex-col min-h-0">
+                <div className="flex flex-col min-h-0 md:min-h-[18rem] lg:min-h-0">
                   <div className="flex items-center justify-between shrink-0 mb-3">
                     <h3 className="text-sm font-bold text-stone-700 dark:text-stone-200">{isZh ? '图片生成 API' : 'Image Generation APIs'}</h3>
                     <button
@@ -720,7 +727,7 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
                       + {isZh ? '添加' : 'Add'}
                     </button>
                   </div>
-                  <div className="space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+                  <div className="space-y-3 lg:overflow-y-auto lg:pr-1 custom-scrollbar">
                     {imageAPIs.map((api, i) => renderAPICard(api, 'image', i))}
                   </div>
                   {imageAPIs.length === 0 && (
@@ -738,8 +745,8 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
             </div>
 
             {/* Right: Official API guide + fallback proxies */}
-            <div className="lg:col-span-1 flex flex-col h-full min-h-0 overflow-hidden">
-              <div className="flex-1 min-h-0 overflow-y-auto pr-1 pb-3 custom-scrollbar space-y-4">
+            <div className="lg:col-span-1 flex flex-col lg:h-full lg:min-h-0 lg:overflow-hidden">
+              <div className="flex-1 min-h-0 lg:overflow-y-auto lg:pr-1 pb-3 custom-scrollbar space-y-4">
                 <div>
                   <h3 className="text-sm font-bold text-stone-700 dark:text-stone-200 mb-2">
                     {isZh ? '推荐官方方式' : 'Official API First'}
@@ -865,14 +872,14 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-stone-200 dark:border-stone-700 flex items-center justify-between shrink-0">
-          <p className="text-stone-400 dark:text-stone-500 text-[10px]">
+        <div className="px-4 py-3 sm:px-6 sm:py-4 border-t border-stone-200 dark:border-stone-700 flex items-center justify-between gap-3 shrink-0">
+          <p className="text-stone-400 dark:text-stone-500 text-[10px] leading-relaxed">
             {isZh ? 'API Key 仅保存在浏览器本地' : 'API Keys are stored locally in your browser only'}
           </p>
           <div className="flex gap-2">
             <button
               onClick={handleSaveAll}
-              className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium rounded-lg transition-colors"
+              className="px-5 py-2 bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium rounded-lg transition-colors shrink-0"
             >
               {isZh ? '保存' : 'Save'}
             </button>
