@@ -4,7 +4,20 @@ import IconLoader, { type IconName } from '../IconLoader';
 
 type UISplitImplementation = 'code' | 'texture' | 'hybrid';
 
-type UISplitAssetKind = 'visual-texture' | 'product-media' | 'decorative-background' | 'reference-crop';
+type UISplitAssetKind = 'html-slice' | 'visual-texture' | 'product-media' | 'decorative-background' | 'reference-crop';
+
+type UISplitElementKind =
+  | 'logo'
+  | 'nav-item'
+  | 'button'
+  | 'carousel'
+  | 'image'
+  | 'tag'
+  | 'input'
+  | 'card'
+  | 'icon'
+  | 'text'
+  | 'panel';
 
 type UISplitBounds = {
   x: number;
@@ -32,6 +45,9 @@ type UISplitRegion = UISplitBounds & {
 type UISplitAsset = {
   id: string;
   regionId: string;
+  elementId: string;
+  elementKind: UISplitElementKind;
+  htmlTag: 'img';
   key: string;
   name: string;
   nameZh: string;
@@ -40,6 +56,18 @@ type UISplitAsset = {
   bounds: UISplitBounds;
   reason: string;
   usage: string;
+};
+
+type UISplitElement = UISplitBounds & {
+  id: string;
+  regionId: string;
+  kind: UISplitElementKind;
+  name: string;
+  nameZh: string;
+  description: string;
+  htmlTag: 'img';
+  assetKey: string;
+  assetFilename: string;
 };
 
 type UISplitExtractedAsset = UISplitAsset & {
@@ -56,12 +84,13 @@ type UISplitSpec = {
   resolution: string;
   layoutType: string;
   regions: UISplitRegion[];
+  elements: UISplitElement[];
   assets: UISplitAsset[];
   implementationNotes: string[];
   tokens: DesignTokens;
 };
 
-type UISplitTab = 'map' | 'assets' | 'json' | 'code';
+type UISplitTab = 'map' | 'assets' | 'html' | 'json' | 'code';
 
 type Props = {
   artboard: Artboard;
@@ -110,11 +139,18 @@ const implementationLabels: Record<UISplitImplementation, { en: string; zh: stri
   },
 };
 
-const assetKindLabels: Record<UISplitAssetKind, { en: string; zh: string }> = {
-  'visual-texture': { en: 'Visual texture', zh: '视觉贴图' },
-  'product-media': { en: 'Product media', zh: '产品/媒体图' },
-  'decorative-background': { en: 'Decorative background', zh: '装饰背景' },
-  'reference-crop': { en: 'Reference crop', zh: '参考切片' },
+const elementKindLabels: Record<UISplitElementKind, { en: string; zh: string; className: string }> = {
+  logo: { en: 'Logo', zh: 'Logo', className: 'border-fuchsia-400/90 bg-fuchsia-500/15 hover:bg-fuchsia-500/25' },
+  'nav-item': { en: 'Nav', zh: '导航项', className: 'border-cyan-400/90 bg-cyan-500/15 hover:bg-cyan-500/25' },
+  button: { en: 'Button', zh: '按钮', className: 'border-emerald-400/90 bg-emerald-500/15 hover:bg-emerald-500/25' },
+  carousel: { en: 'Carousel', zh: '轮播图', className: 'border-amber-400/90 bg-amber-500/15 hover:bg-amber-500/25' },
+  image: { en: 'Image', zh: '图片', className: 'border-orange-400/90 bg-orange-500/15 hover:bg-orange-500/25' },
+  tag: { en: 'Tag', zh: '标签', className: 'border-pink-400/90 bg-pink-500/15 hover:bg-pink-500/25' },
+  input: { en: 'Input', zh: '输入框', className: 'border-blue-400/90 bg-blue-500/15 hover:bg-blue-500/25' },
+  card: { en: 'Card', zh: '卡片', className: 'border-violet-400/90 bg-violet-500/15 hover:bg-violet-500/25' },
+  icon: { en: 'Icon', zh: '图标', className: 'border-lime-400/90 bg-lime-500/15 hover:bg-lime-500/25' },
+  text: { en: 'Text', zh: '文字块', className: 'border-slate-400/90 bg-slate-500/15 hover:bg-slate-500/25' },
+  panel: { en: 'Panel', zh: '面板', className: 'border-indigo-400/90 bg-indigo-500/15 hover:bg-indigo-500/25' },
 };
 
 const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
@@ -297,32 +333,157 @@ const classifyRegion = (
 const buildRegions = (layoutType: string, prompt: string): UISplitRegion[] => {
   return buildBaseRegions(layoutType).map(item => {
     const classification = classifyRegion(item, layoutType, prompt);
-    const assetKey = classification.implementation === 'code' ? undefined : toAssetKey(item.id);
-    const assetFilename = assetKey ? `assets/ui-split/${safeFilename(item.id)}.png` : undefined;
 
     return {
       ...item,
       ...classification,
-      ...(assetKey ? { assetKey, assetFilename } : {}),
+      assetKind: classification.assetKind || 'html-slice',
     };
   });
 };
 
-const buildAssets = (regions: UISplitRegion[]): UISplitAsset[] => {
-  return regions
-    .filter(item => item.implementation !== 'code' && item.assetKey && item.assetFilename && item.assetKind)
-    .map(item => ({
+const elementFromRegion = (
+  regionItem: UISplitRegion,
+  index: number,
+  kind: UISplitElementKind,
+  name: string,
+  nameZh: string,
+  description: string,
+  relativeBounds: UISplitBounds
+): UISplitElement => {
+  const id = `${regionItem.id}-${kind}-${index + 1}`;
+  const bounds = {
+    x: clamp(regionItem.x + (relativeBounds.x / 100) * regionItem.w, 0, 100),
+    y: clamp(regionItem.y + (relativeBounds.y / 100) * regionItem.h, 0, 100),
+    w: clamp((relativeBounds.w / 100) * regionItem.w, 1, 100),
+    h: clamp((relativeBounds.h / 100) * regionItem.h, 1, 100),
+  };
+
+  return {
+    id,
+    regionId: regionItem.id,
+    kind,
+    name,
+    nameZh,
+    description,
+    htmlTag: 'img',
+    assetKey: toAssetKey(id),
+    assetFilename: `assets/ui-split/${safeFilename(id)}.png`,
+    ...bounds,
+  };
+};
+
+const buildElementsForRegion = (regionItem: UISplitRegion): UISplitElement[] => {
+  const id = regionItem.id;
+  const elementDefs: { kind: UISplitElementKind; name: string; nameZh: string; description: string; bounds: UISplitBounds }[] = [];
+  const add = (
+    kind: UISplitElementKind,
+    name: string,
+    nameZh: string,
+    description: string,
+    bounds: UISplitBounds
+  ) => elementDefs.push({ kind, name, nameZh, description, bounds });
+
+  if (/header|topbar|status-header|commerce-header/i.test(id)) {
+    add('logo', 'Logo Mark', 'Logo 标识', 'Brand or product logo slice.', { x: 3, y: 18, w: 14, h: 44 });
+    add('nav-item', 'Primary Nav', '主导航项', 'Navigation item cluster slice.', { x: 20, y: 24, w: 34, h: 36 });
+    add('button', 'Header Action', '顶部按钮', 'Primary header action button slice.', { x: 82, y: 18, w: 14, h: 44 });
+  } else if (/sidebar|settings-nav|thread-list/i.test(id)) {
+    add('logo', 'Sidebar Logo', '侧栏 Logo', 'Sidebar brand mark slice.', { x: 12, y: 4, w: 48, h: 8 });
+    add('nav-item', 'Navigation Item 1', '导航项 1', 'First navigation row slice.', { x: 10, y: 16, w: 76, h: 8 });
+    add('nav-item', 'Navigation Item 2', '导航项 2', 'Second navigation row slice.', { x: 10, y: 28, w: 76, h: 8 });
+    add('nav-item', 'Navigation Item 3', '导航项 3', 'Third navigation row slice.', { x: 10, y: 40, w: 76, h: 8 });
+    add('button', 'Sidebar CTA', '侧栏按钮', 'Sidebar call-to-action slice.', { x: 10, y: 86, w: 76, h: 8 });
+  } else if (/hero|brand-panel/i.test(id)) {
+    add('tag', 'Hero Tag', '首屏标签', 'Small eyebrow or tag slice.', { x: 8, y: 14, w: 22, h: 8 });
+    add('text', 'Hero Headline', '首屏标题', 'Main headline text block slice.', { x: 8, y: 26, w: 38, h: 18 });
+    add('text', 'Hero Copy', '首屏说明', 'Supporting copy slice.', { x: 8, y: 49, w: 34, h: 12 });
+    add('button', 'Primary CTA', '主按钮', 'Primary call-to-action button slice.', { x: 8, y: 68, w: 18, h: 10 });
+    add(/product/i.test(id) ? 'image' : 'carousel', /product/i.test(id) ? 'Product Image' : 'Hero Carousel', /product/i.test(id) ? '产品图' : '轮播图', 'Large hero visual slice.', { x: 52, y: 8, w: 40, h: 78 });
+  } else if (/auth-card|settings-form/i.test(id)) {
+    add('text', 'Form Title', '表单标题', 'Form title slice.', { x: 8, y: 7, w: 58, h: 10 });
+    add('input', 'Input Field 1', '输入框 1', 'First input field slice.', { x: 8, y: 24, w: 84, h: 12 });
+    add('input', 'Input Field 2', '输入框 2', 'Second input field slice.', { x: 8, y: 40, w: 84, h: 12 });
+    add('button', 'Submit Button', '提交按钮', 'Submit button slice.', { x: 8, y: 60, w: 84, h: 12 });
+    add('text', 'Helper Text', '辅助文字', 'Secondary helper text slice.', { x: 18, y: 78, w: 64, h: 8 });
+  } else if (/secondary-actions/i.test(id)) {
+    add('button', 'Social Button 1', '社交按钮 1', 'Social login button slice.', { x: 8, y: 18, w: 40, h: 42 });
+    add('button', 'Social Button 2', '社交按钮 2', 'Social login button slice.', { x: 52, y: 18, w: 40, h: 42 });
+    add('text', 'Legal Links', '协议链接', 'Legal or helper links slice.', { x: 12, y: 72, w: 76, h: 16 });
+  } else if (/metrics|summary-card/i.test(id)) {
+    add('card', 'Metric Card 1', '指标卡片 1', 'Metric or summary card slice.', { x: 0, y: 0, w: 30, h: 88 });
+    add('card', 'Metric Card 2', '指标卡片 2', 'Metric or summary card slice.', { x: 35, y: 0, w: 30, h: 88 });
+    add('card', 'Metric Card 3', '指标卡片 3', 'Metric or summary card slice.', { x: 70, y: 0, w: 30, h: 88 });
+  } else if (/catalog-grid|content-grid|content-list/i.test(id)) {
+    add('card', 'Card 1', '卡片 1', 'Content or product card slice.', { x: 0, y: 0, w: 30, h: 42 });
+    add('card', 'Card 2', '卡片 2', 'Content or product card slice.', { x: 35, y: 0, w: 30, h: 42 });
+    add('card', 'Card 3', '卡片 3', 'Content or product card slice.', { x: 70, y: 0, w: 30, h: 42 });
+    add('card', 'Card 4', '卡片 4', 'Content or product card slice.', { x: 0, y: 50, w: 30, h: 42 });
+    add('card', 'Card 5', '卡片 5', 'Content or product card slice.', { x: 35, y: 50, w: 30, h: 42 });
+    add('card', 'Card 6', '卡片 6', 'Content or product card slice.', { x: 70, y: 50, w: 30, h: 42 });
+  } else if (/chart|panel|filters-cart|help-panel|secondary-band/i.test(id)) {
+    add('tag', 'Panel Tag', '面板标签', 'Panel label or chip slice.', { x: 6, y: 6, w: 28, h: 10 });
+    add('panel', 'Main Panel Body', '面板主体', 'Main panel content slice.', { x: 4, y: 18, w: 92, h: 68 });
+    add('button', 'Panel Action', '面板按钮', 'Panel action button slice.', { x: 64, y: 88, w: 28, h: 8 });
+  } else if (/table/i.test(id)) {
+    add('tag', 'Table Header', '表头', 'Table header slice.', { x: 2, y: 4, w: 96, h: 18 });
+    add('card', 'Table Row 1', '表格行 1', 'First table row slice.', { x: 2, y: 28, w: 96, h: 16 });
+    add('card', 'Table Row 2', '表格行 2', 'Second table row slice.', { x: 2, y: 48, w: 96, h: 16 });
+    add('card', 'Table Row 3', '表格行 3', 'Third table row slice.', { x: 2, y: 68, w: 96, h: 16 });
+  } else if (/messages/i.test(id)) {
+    add('card', 'Message Bubble 1', '消息气泡 1', 'Message bubble slice.', { x: 6, y: 8, w: 58, h: 12 });
+    add('card', 'Message Bubble 2', '消息气泡 2', 'Message bubble slice.', { x: 36, y: 28, w: 58, h: 12 });
+    add('card', 'Message Bubble 3', '消息气泡 3', 'Message bubble slice.', { x: 6, y: 48, w: 58, h: 12 });
+  } else if (/composer/i.test(id)) {
+    add('input', 'Message Input', '消息输入框', 'Message input slice.', { x: 4, y: 18, w: 76, h: 58 });
+    add('button', 'Send Button', '发送按钮', 'Send button slice.', { x: 84, y: 18, w: 12, h: 58 });
+  } else if (/bottom-nav/i.test(id)) {
+    add('nav-item', 'Bottom Nav 1', '底部导航 1', 'Bottom navigation item slice.', { x: 4, y: 12, w: 20, h: 72 });
+    add('nav-item', 'Bottom Nav 2', '底部导航 2', 'Bottom navigation item slice.', { x: 28, y: 12, w: 20, h: 72 });
+    add('nav-item', 'Bottom Nav 3', '底部导航 3', 'Bottom navigation item slice.', { x: 52, y: 12, w: 20, h: 72 });
+    add('nav-item', 'Bottom Nav 4', '底部导航 4', 'Bottom navigation item slice.', { x: 76, y: 12, w: 20, h: 72 });
+  } else if (/footer/i.test(id)) {
+    add('logo', 'Footer Logo', '页脚 Logo', 'Footer logo slice.', { x: 2, y: 12, w: 16, h: 56 });
+    add('nav-item', 'Footer Links', '页脚链接', 'Footer links slice.', { x: 24, y: 12, w: 44, h: 56 });
+    add('icon', 'Social Icons', '社交图标', 'Social icon group slice.', { x: 76, y: 12, w: 18, h: 56 });
+  } else {
+    add('panel', `${regionItem.name} Panel`, `${regionItem.nameZh}面板`, 'Fallback panel slice for this UI region.', { x: 4, y: 6, w: 92, h: 84 });
+  }
+
+  return elementDefs.map((item, index) => (
+    elementFromRegion(regionItem, index, item.kind, item.name, item.nameZh, item.description, item.bounds)
+  ));
+};
+
+const buildElements = (regions: UISplitRegion[]): UISplitElement[] => {
+  return regions.flatMap(buildElementsForRegion);
+};
+
+const buildAssets = (regions: UISplitRegion[], elements: UISplitElement[]): UISplitAsset[] => {
+  const regionById = new Map(regions.map(item => [item.id, item]));
+  return elements.map(item => {
+    const regionItem = regionById.get(item.regionId);
+    const visualKind: UISplitAssetKind =
+      item.kind === 'carousel' || item.kind === 'image'
+        ? (regionItem?.assetKind || 'visual-texture')
+        : 'html-slice';
+
+    return {
       id: `asset-${item.id}`,
-      regionId: item.id,
-      key: item.assetKey || toAssetKey(item.id),
-      name: `${item.name} Texture`,
-      nameZh: `${item.nameZh}贴图`,
-      filename: item.assetFilename || `assets/ui-split/${safeFilename(item.id)}.png`,
-      kind: item.assetKind || 'reference-crop',
+      regionId: item.regionId,
+      elementId: item.id,
+      elementKind: item.kind,
+      htmlTag: 'img',
+      key: item.assetKey,
+      name: `${item.name} Slice`,
+      nameZh: `${item.nameZh}切片`,
+      filename: item.assetFilename,
+      kind: visualKind,
       bounds: { x: item.x, y: item.y, w: item.w, h: item.h },
-      reason: item.implementationReason,
-      usage: `Use as ${item.component} visual asset; keep text, controls, state, and interaction in code.`,
-    }));
+      reason: item.description,
+      usage: `Place as an <img> for ${item.kind} (${item.name}) at x ${item.x.toFixed(2)}%, y ${item.y.toFixed(2)}%, width ${item.w.toFixed(2)}%, height ${item.h.toFixed(2)}%.`,
+    };
+  });
 };
 
 const buildSpec = (artboard: Artboard): UISplitSpec => {
@@ -334,6 +495,7 @@ const buildSpec = (artboard: Artboard): UISplitSpec => {
   const layoutType = detectLayoutType(prompt, width, height);
   const tokens = details?.tokens || fallbackTokens;
   const regions = buildRegions(layoutType, prompt);
+  const elements = buildElements(regions);
 
   return {
     title: artboard.label || details?.originalDescription || 'UI Screen',
@@ -341,13 +503,14 @@ const buildSpec = (artboard: Artboard): UISplitSpec => {
     resolution: `${width}x${height}`,
     layoutType,
     regions,
-    assets: buildAssets(regions),
+    elements,
+    assets: buildAssets(regions, elements),
     tokens,
     implementationNotes: [
-      'Treat code regions as editable React components with real state, props, validation, and responsive layout.',
-      'Treat texture regions as generated visual assets; keep them isolated behind img/background-image references.',
-      'For hybrid regions, rebuild text, buttons, and layout in code, then layer the exported texture only for the complex visual part.',
-      'After the first scaffold runs, replace absolute percentages with production grid/flex rules while preserving the same component boundaries.',
+      'Every detected region is exported as a PNG image slice so it can be placed directly in plain HTML.',
+      'Use index.html when you need exact generated pixels: it reconstructs the screen with absolutely positioned <img> elements.',
+      'The implementation type still tells you which slices can later be replaced by real code components.',
+      'For production, keep decorative or complex regions as images and progressively replace simple controls, lists, and text blocks with HTML/CSS.',
     ],
   };
 };
@@ -444,6 +607,75 @@ const buildReactCode = (spec: UISplitSpec) => {
   return [imports, assets, regionTypes, components, screen].join('\n\n');
 };
 
+const parseSpecResolution = (spec: UISplitSpec) => {
+  const [rawWidth, rawHeight] = spec.resolution.split('x').map(Number);
+  return {
+    width: rawWidth || 1000,
+    height: rawHeight || 1000,
+  };
+};
+
+const escapeHtml = (value: string) => {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+};
+
+const buildHtmlCode = (spec: UISplitSpec) => {
+  const { width, height } = parseSpecResolution(spec);
+  const title = escapeHtml(spec.title);
+  const imageElements = spec.assets.map((asset, index) => {
+    const elementInfo = spec.elements.find(elementItem => elementItem.id === asset.elementId);
+    const regionInfo = spec.regions.find(regionItem => regionItem.id === asset.regionId);
+    const alt = escapeHtml(elementInfo?.name || asset.name);
+    const component = escapeHtml(regionInfo?.component || asset.key);
+    const elementKind = escapeHtml(asset.elementKind);
+    const implementation = escapeHtml(regionInfo?.implementation || 'image');
+
+    return [
+      `    <img`,
+      `      class="ui-slice ui-${safeFilename(asset.elementKind)} ui-slice-${safeFilename(asset.elementId)}"`,
+      `      src="./${asset.filename}"`,
+      `      alt="${alt}"`,
+      `      data-element="${escapeHtml(asset.elementId)}"`,
+      `      data-kind="${elementKind}"`,
+      `      data-region="${escapeHtml(asset.regionId)}"`,
+      `      data-component="${component}"`,
+      `      data-implementation="${implementation}"`,
+      `      style="left:${asset.bounds.x}%; top:${asset.bounds.y}%; width:${asset.bounds.w}%; height:${asset.bounds.h}%; z-index:${index + 1};"`,
+      `    />`,
+    ].join('\n');
+  }).join('\n');
+
+  return [
+    '<!doctype html>',
+    '<html lang="zh-CN">',
+    '<head>',
+    '  <meta charset="utf-8" />',
+    '  <meta name="viewport" content="width=device-width, initial-scale=1" />',
+    `  <title>${title}</title>`,
+    '  <style>',
+    '    * { box-sizing: border-box; }',
+    '    html, body { margin: 0; min-height: 100%; }',
+    `    body { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #111827; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }`,
+    `    .ui-screen { position: relative; width: min(calc(100vw - 48px), ${width}px); max-width: ${width}px; aspect-ratio: ${width} / ${height}; overflow: hidden; background: ${spec.tokens.backgroundColor}; box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28); }`,
+    '    .ui-slice { position: absolute; display: block; max-width: none; object-fit: fill; user-select: none; }',
+    '    .ui-button, .ui-nav-item, .ui-tag, .ui-input { cursor: pointer; }',
+    '    @media (max-width: 640px) { body { padding: 0; background: transparent; } .ui-screen { width: 100vw; box-shadow: none; } }',
+    '  </style>',
+    '</head>',
+    '<body>',
+    `  <main class="ui-screen" aria-label="${title}" data-resolution="${width}x${height}" data-layout="${escapeHtml(spec.layoutType)}">`,
+    imageElements,
+    '  </main>',
+    '</body>',
+    '</html>',
+  ].join('\n');
+};
+
 const buildMarkdown = (spec: UISplitSpec) => {
   return [
     `# ${spec.title}`,
@@ -463,13 +695,16 @@ const buildMarkdown = (spec: UISplitSpec) => {
       `- Props: ${item.props.join(', ') || 'none'}`,
       `- Strategy: ${item.cssStrategy}`,
       `- Reason: ${item.implementationReason}`,
-      item.assetFilename ? `- Texture: ${item.assetFilename}` : '',
     ].filter(Boolean).join('\n')),
     '',
-    '## Texture Assets',
-    ...(spec.assets.length > 0
-      ? spec.assets.map(asset => `- ${asset.filename}: ${asset.usage}`)
-      : ['- None. This screen can be rebuilt with code-only regions.']),
+    '## HTML Image Elements',
+    ...(spec.elements.length > 0
+      ? spec.elements.map(item => {
+        const asset = spec.assets.find(assetItem => assetItem.elementId === item.id);
+        const regionItem = spec.regions.find(region => region.id === item.regionId);
+        return `- ${item.kind} / ${item.name}: ${asset?.filename || item.assetFilename} (${regionItem?.component || item.regionId})`;
+      })
+      : ['- None. No UI elements were detected.']),
     '',
     '## Implementation Notes',
     ...spec.implementationNotes.map(note => `- ${note}`),
@@ -560,23 +795,27 @@ const getJsonSpec = (spec: UISplitSpec, extractedAssets: UISplitExtractedAsset[]
 export default function UISplitModal({ artboard, lang, onClose }: Props) {
   const spec = useMemo(() => buildSpec(artboard), [artboard]);
   const [activeTab, setActiveTab] = useState<UISplitTab>('map');
-  const [selectedId, setSelectedId] = useState(spec.regions[0]?.id || '');
+  const [selectedId, setSelectedId] = useState(spec.elements[0]?.id || '');
   const [copied, setCopied] = useState<string | null>(null);
   const [extractedAssets, setExtractedAssets] = useState<UISplitExtractedAsset[]>([]);
   const [isPackaging, setIsPackaging] = useState(false);
   const isZh = lang === 'zh';
   const code = useMemo(() => buildReactCode(spec), [spec]);
+  const html = useMemo(() => buildHtmlCode(spec), [spec]);
   const markdown = useMemo(() => buildMarkdown(spec), [spec]);
   const json = useMemo(() => getJsonSpec(spec, extractedAssets), [spec, extractedAssets]);
-  const selectedRegion = spec.regions.find(item => item.id === selectedId) || spec.regions[0];
-  const selectedAsset = selectedRegion
-    ? extractedAssets.find(asset => asset.regionId === selectedRegion.id)
+  const selectedElement = spec.elements.find(item => item.id === selectedId) || spec.elements[0];
+  const selectedRegion = selectedElement
+    ? spec.regions.find(item => item.id === selectedElement.regionId)
+    : undefined;
+  const selectedAsset = selectedElement
+    ? extractedAssets.find(asset => asset.elementId === selectedElement.id)
     : undefined;
   const readyAssets = extractedAssets.filter(asset => asset.status === 'ready' && asset.dataUrl);
 
   useEffect(() => {
-    if (!spec.regions.some(item => item.id === selectedId)) {
-      setSelectedId(spec.regions[0]?.id || '');
+    if (!spec.elements.some(item => item.id === selectedId)) {
+      setSelectedId(spec.elements[0]?.id || '');
     }
   }, [selectedId, spec]);
 
@@ -629,7 +868,7 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
 
   const handleDownloadAsset = useCallback(async (asset: UISplitExtractedAsset) => {
     if (!asset.dataUrl) {
-      setCopied(isZh ? '贴图尚未生成' : 'Asset is not ready');
+      setCopied(isZh ? '图片切片尚未生成' : 'Image slice is not ready');
       window.setTimeout(() => setCopied(null), 1600);
       return;
     }
@@ -640,7 +879,7 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
 
   const handleCopyAsset = useCallback(async (asset: UISplitExtractedAsset) => {
     if (!asset.dataUrl) {
-      setCopied(isZh ? '贴图尚未生成' : 'Asset is not ready');
+      setCopied(isZh ? '图片切片尚未生成' : 'Image slice is not ready');
       window.setTimeout(() => setCopied(null), 1600);
       return;
     }
@@ -655,9 +894,9 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
       await navigator.clipboard.write([
         new ClipboardItemCtor({ [blob.type || 'image/png']: blob }),
       ]);
-      setCopied(isZh ? '已复制贴图' : 'Copied asset');
+      setCopied(isZh ? '已复制图片切片' : 'Copied image slice');
     } catch {
-      setCopied(isZh ? '复制贴图失败' : 'Asset copy failed');
+      setCopied(isZh ? '复制图片切片失败' : 'Image slice copy failed');
     }
 
     window.setTimeout(() => setCopied(null), 1600);
@@ -670,6 +909,7 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
       const zip = new JSZip();
 
       zip.file('SplitUIScreen.tsx', code);
+      zip.file('index.html', html);
       zip.file('ui-split-spec.json', json);
       zip.file('ui-split-brief.md', markdown);
 
@@ -688,11 +928,12 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
       setIsPackaging(false);
       window.setTimeout(() => setCopied(null), 1600);
     }
-  }, [code, isZh, json, markdown, readyAssets]);
+  }, [code, html, isZh, json, markdown, readyAssets]);
 
   const tabs: { id: UISplitTab; label: string; icon: IconName }[] = [
-    { id: 'map', label: isZh ? '区域图' : 'Region Map', icon: 'layout' },
-    { id: 'assets', label: isZh ? '贴图资产' : 'Assets', icon: 'image' },
+    { id: 'map', label: isZh ? '元素图' : 'Element Map', icon: 'layout' },
+    { id: 'assets', label: isZh ? '图片切片' : 'Image Slices', icon: 'image' },
+    { id: 'html', label: 'HTML', icon: 'code' },
     { id: 'json', label: 'JSON', icon: 'code' },
     { id: 'code', label: isZh ? '代码骨架' : 'Code Scaffold', icon: 'code' },
   ];
@@ -777,8 +1018,8 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
                   style={{ aspectRatio: `${artboard.width} / ${artboard.height}`, maxHeight: '68vh' }}
                 >
                   <img src={artboard.image.url} alt="" className="h-full w-full object-contain" draggable={false} />
-                  {spec.regions.map((item, index) => {
-                    const label = implementationLabels[item.implementation];
+                  {spec.elements.map((item, index) => {
+                    const label = elementKindLabels[item.kind];
 
                     return (
                       <button
@@ -786,13 +1027,7 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
                         type="button"
                         onClick={() => setSelectedId(item.id)}
                         className={`absolute border-2 text-left transition-colors ${
-                          selectedId === item.id
-                            ? 'border-teal-400 bg-teal-500/20'
-                            : item.implementation === 'code'
-                              ? 'border-emerald-400/80 bg-emerald-500/10 hover:bg-emerald-500/20'
-                              : item.implementation === 'texture'
-                                ? 'border-amber-400/80 bg-amber-500/10 hover:bg-amber-500/20'
-                                : 'border-sky-400/80 bg-sky-500/10 hover:bg-sky-500/20'
+                          selectedId === item.id ? 'border-teal-300 bg-teal-500/25' : label.className
                         }`}
                         style={{
                           left: `${clamp(item.x, 0, 100)}%`,
@@ -814,30 +1049,42 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
               </div>
 
               <div className="space-y-3">
-                {selectedRegion && (
+                {selectedElement && (
                   <div className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h4 className="text-sm font-bold text-stone-900 dark:text-stone-100">
-                          {isZh ? selectedRegion.nameZh : selectedRegion.name}
+                          {isZh ? selectedElement.nameZh : selectedElement.name}
                         </h4>
-                        <p className="mt-1 text-xs font-mono text-teal-700 dark:text-teal-300">{selectedRegion.component}</p>
+                        <p className="mt-1 text-xs font-mono text-teal-700 dark:text-teal-300">
+                          {selectedRegion?.component || selectedElement.regionId}
+                        </p>
                       </div>
-                      <span className={`rounded border px-2 py-1 text-[10px] font-bold ${implementationLabels[selectedRegion.implementation].className}`}>
-                        {isZh ? implementationLabels[selectedRegion.implementation].zh : implementationLabels[selectedRegion.implementation].en}
+                      <span className={`rounded border px-2 py-1 text-[10px] font-bold ${elementKindLabels[selectedElement.kind].className}`}>
+                        {isZh ? elementKindLabels[selectedElement.kind].zh : elementKindLabels[selectedElement.kind].en}
                       </span>
                     </div>
                     <p className="mt-3 text-xs leading-relaxed text-stone-600 dark:text-stone-300">
-                      {selectedRegion.implementationReason}
+                      {selectedElement.description}
                     </p>
-                    <div className="mt-3 rounded-lg bg-stone-50 dark:bg-stone-900 p-3 text-xs text-stone-600 dark:text-stone-300">
-                      {selectedRegion.cssStrategy}
-                    </div>
+                    {selectedRegion && (
+                      <div className="mt-3 rounded-lg bg-stone-50 dark:bg-stone-900 p-3 text-xs text-stone-600 dark:text-stone-300">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-stone-500 dark:text-stone-400">
+                            {isZh ? '父区域实现建议' : 'Parent region implementation'}
+                          </span>
+                          <span className={`rounded border px-1.5 py-0.5 text-[10px] ${implementationLabels[selectedRegion.implementation].className}`}>
+                            {isZh ? implementationLabels[selectedRegion.implementation].zh : implementationLabels[selectedRegion.implementation].en}
+                          </span>
+                        </div>
+                        <div className="mt-1">{selectedRegion.cssStrategy}</div>
+                      </div>
+                    )}
                     {selectedAsset && (
                       <div className="mt-3 rounded-lg border border-stone-200 dark:border-stone-800 overflow-hidden">
                         <div className="flex items-center justify-between gap-2 px-3 py-2 bg-stone-50 dark:bg-stone-900">
                           <span className="text-[10px] font-bold uppercase text-stone-500">
-                            {isZh ? '贴图预览' : 'Asset Preview'}
+                            {isZh ? '切片预览' : 'Image Slice Preview'}
                           </span>
                           <span className="text-[10px] text-stone-500">
                             {selectedAsset.status === 'ready'
@@ -852,7 +1099,7 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
                           {selectedAsset.status === 'pending' && (
                             <div className="flex items-center gap-2 text-xs text-stone-500">
                               <IconLoader name="loader" size={14} className="animate-spin" />
-                              {isZh ? '正在裁剪贴图' : 'Extracting asset'}
+                              {isZh ? '正在裁剪图片切片' : 'Extracting image slice'}
                             </div>
                           )}
                           {selectedAsset.status === 'error' && (
@@ -868,28 +1115,33 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
 
                 <div className="rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-4">
                   <h4 className="text-xs font-bold uppercase text-stone-500 dark:text-stone-400">
-                    {isZh ? '组件树' : 'Component Tree'}
+                    {isZh ? '元素切片' : 'Image Elements'}
                   </h4>
                   <div className="mt-3 space-y-2">
-                    {spec.regions.map((item, index) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setSelectedId(item.id)}
-                        className={`w-full text-left rounded-lg border px-3 py-2 transition-colors ${
-                          selectedId === item.id
-                            ? 'border-teal-300 bg-teal-50 dark:border-teal-900 dark:bg-teal-950/30'
-                            : 'border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800'
-                        }`}
-                      >
-                        <span className="text-[10px] text-stone-400">{String(index + 1).padStart(2, '0')}</span>
-                        <span className="ml-2 text-xs font-bold text-stone-800 dark:text-stone-100">{item.component}</span>
-                        <span className="ml-2 text-[10px] text-stone-500">{isZh ? item.nameZh : item.name}</span>
-                        <span className={`float-right rounded border px-1.5 py-0.5 text-[10px] ${implementationLabels[item.implementation].className}`}>
-                          {isZh ? implementationLabels[item.implementation].zh : implementationLabels[item.implementation].en}
-                        </span>
-                      </button>
-                    ))}
+                    {spec.elements.map((item, index) => {
+                      const regionItem = spec.regions.find(region => region.id === item.regionId);
+                      const label = elementKindLabels[item.kind];
+
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => setSelectedId(item.id)}
+                          className={`w-full text-left rounded-lg border px-3 py-2 transition-colors ${
+                            selectedId === item.id
+                              ? 'border-teal-300 bg-teal-50 dark:border-teal-900 dark:bg-teal-950/30'
+                              : 'border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800'
+                          }`}
+                        >
+                          <span className="text-[10px] text-stone-400">{String(index + 1).padStart(2, '0')}</span>
+                          <span className="ml-2 text-xs font-bold text-stone-800 dark:text-stone-100">{isZh ? item.nameZh : item.name}</span>
+                          <span className="ml-2 text-[10px] text-stone-500">{regionItem?.component || item.regionId}</span>
+                          <span className={`float-right rounded border px-1.5 py-0.5 text-[10px] ${label.className}`}>
+                            {isZh ? label.zh : label.en}
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -900,7 +1152,7 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {extractedAssets.length === 0 && (
                 <div className="col-span-full rounded-lg border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-950 p-6 text-sm text-stone-500">
-                  {isZh ? '当前拆分结果不需要贴图资产，所有区域都可以用代码实现。' : 'This split does not need texture assets; every region can be implemented in code.'}
+                  {isZh ? '当前没有可导出的图片切片。' : 'No image slices are available for export.'}
                 </div>
               )}
               {extractedAssets.map(asset => (
@@ -908,7 +1160,7 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
                   <button
                     type="button"
                     onClick={() => {
-                      setSelectedId(asset.regionId);
+                      setSelectedId(asset.elementId);
                       setActiveTab('map');
                     }}
                     className="w-full text-left px-3 py-2 border-b border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-900"
@@ -917,8 +1169,8 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
                       <span className="text-xs font-bold text-stone-900 dark:text-stone-100">
                         {isZh ? asset.nameZh : asset.name}
                       </span>
-                      <span className="rounded bg-stone-100 dark:bg-stone-800 px-2 py-1 text-[10px] text-stone-500">
-                        {isZh ? assetKindLabels[asset.kind].zh : assetKindLabels[asset.kind].en}
+                      <span className={`rounded border px-2 py-1 text-[10px] ${elementKindLabels[asset.elementKind].className}`}>
+                        {isZh ? elementKindLabels[asset.elementKind].zh : elementKindLabels[asset.elementKind].en}
                       </span>
                     </div>
                     <p className="mt-1 truncate text-[10px] font-mono text-teal-700 dark:text-teal-300">{asset.filename}</p>
@@ -963,6 +1215,35 @@ export default function UISplitModal({ artboard, lang, onClose }: Props) {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {activeTab === 'html' && (
+            <div className="space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCopy(isZh ? '已复制 HTML' : 'Copied HTML', html)}
+                  className="min-h-9 px-3 rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-xs font-bold flex items-center gap-2"
+                >
+                  <IconLoader name="copy" size={14} />
+                  {isZh ? '复制 HTML' : 'Copy HTML'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => downloadText('index.html', html, 'text/html;charset=utf-8')}
+                  className="min-h-9 px-3 rounded-lg border border-stone-200 dark:border-stone-700 text-xs text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800 flex items-center gap-2"
+                >
+                  <IconLoader name="download" size={14} />
+                  index.html
+                </button>
+                <span className="flex min-h-9 items-center rounded-lg bg-stone-100 px-3 text-xs text-stone-500 dark:bg-stone-800 dark:text-stone-300">
+                  {isZh ? '配合 assets/ui-split/*.png 使用' : 'Use with assets/ui-split/*.png'}
+                </span>
+              </div>
+              <pre className="max-h-[66vh] overflow-auto custom-scrollbar rounded-lg bg-stone-950 p-4 text-xs leading-relaxed text-stone-100">
+                {html}
+              </pre>
             </div>
           )}
 

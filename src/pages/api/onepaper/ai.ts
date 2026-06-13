@@ -35,12 +35,19 @@ interface ImageAPIOptions {
 
 const clientCache = new Map<string, GoogleGenAI>();
 
+const routeHeaders = {
+  'Cache-Control': 'no-store',
+  'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  Allow: 'GET, HEAD, POST, OPTIONS',
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'no-store',
+      ...routeHeaders,
     },
   });
 
@@ -564,6 +571,25 @@ const listModels = async (api: APIConfig): Promise<string[]> => {
     );
   }
 };
+
+export const GET: APIRoute = () =>
+  json({
+    ok: true,
+    route: '/api/onepaper/ai',
+    methods: ['POST'],
+  });
+
+export const HEAD: APIRoute = () =>
+  new Response(null, {
+    status: 204,
+    headers: routeHeaders,
+  });
+
+export const OPTIONS: APIRoute = () =>
+  new Response(null, {
+    status: 204,
+    headers: routeHeaders,
+  });
 
 export const POST: APIRoute = async ({ request }) => {
   try {

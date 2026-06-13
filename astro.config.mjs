@@ -8,7 +8,10 @@ import vercel from '@astrojs/vercel';
 
 // https://astro.build/config
 export default defineConfig({
-  adapter: vercel(),
+  output: 'server',
+  adapter: vercel({
+    maxDuration: 60,
+  }),
   integrations: [react()],
   vite: {
     plugins: [

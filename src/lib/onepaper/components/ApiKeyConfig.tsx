@@ -3,6 +3,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getAPISettings, saveAPISettings,
 } from '../services/apiKeyStore';
+import {
+  AI_PROXY_ENDPOINT,
+  getAIProxyNetworkErrorMessage,
+  getAIProxyStatusErrorMessage,
+  readAIProxyJson,
+} from '../services/aiProxyClient';
 import type { APIConfig, AIProvider } from '../types';
 import recommendedProxies from '../data/recommended-proxies.json';
 
@@ -294,20 +300,27 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
     setFetchErrors(prev => { const n = { ...prev }; delete n[api.id]; return n; });
 
     try {
-      const res = await fetch('/api/onepaper/ai', {
+      const res = await fetch(AI_PROXY_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ operation: 'models', api }),
       });
-      const data = await res.json().catch(() => null);
+      const { data, text } = await readAIProxyJson<{ models: string[] }>(res);
       if (!res.ok || data?.error) {
-        throw new Error(data?.error || `HTTP ${res.status}`);
+        throw new Error(data?.error || getAIProxyStatusErrorMessage(res.status, text));
       }
       const models = Array.isArray(data?.models) ? data.models : [];
 
       setFetchedModels(prev => ({ ...prev, [api.id]: models }));
       fetchedSignaturesRef.current[api.id] = signature;
     } catch (e: any) {
+      if (e instanceof TypeError) {
+        const msg = getAIProxyNetworkErrorMessage(e);
+        setFetchErrors(prev => ({ ...prev, [api.id]: msg }));
+        fetchedSignaturesRef.current[api.id] = signature;
+        return;
+      }
+
       const msg = e.message || (isZh ? '获取模型列表失败' : 'Failed to fetch models');
       setFetchErrors(prev => ({ ...prev, [api.id]: msg }));
       fetchedSignaturesRef.current[api.id] = signature;

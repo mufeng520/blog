@@ -16,8 +16,8 @@ const BASE_ROLES: RoleDef[] = [
     description: 'UI mockups & wireframes', description_zh: 'UI 原型与线框图'
   },
   {
-    id: 'media', label: 'Social', label_zh: '社交平台',
-    description: 'Posters & banners', description_zh: '海报与 Banner'
+    id: 'media', label: 'Graphic Design', label_zh: '平面设计',
+    description: 'Posters, banners & graphics', description_zh: '海报、Banner 与图形设计'
   },
   // {
   //   id: 'game', label: 'Game', label_zh: '游戏制作者',
