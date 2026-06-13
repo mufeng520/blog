@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getAPISettings, saveAPISettings,
-  TEXT_MODEL_PRESETS, IMAGE_MODEL_PRESETS,
 } from '../services/apiKeyStore';
 import type { APIConfig, AIProvider } from '../types';
 import recommendedProxies from '../data/recommended-proxies.json';
@@ -91,16 +90,6 @@ const defaultAPIConfig = (provider: AIProvider = 'gemini'): APIConfig => ({
   imageModel: provider === 'gemini' ? 'nado-banana-2' : 'gpt-image-2',
   enabled: true,
 });
-
-// Pinned models that should appear at the top of the dropdown
-const PINNED_TEXT_MODELS = [
-  'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3-flash-preview', 'gemini-3-pro-preview',
-  'gpt-4o', 'gpt-4o-mini', 'claude-3-5-sonnet', 'nado-banana-2',
-];
-const PINNED_IMAGE_MODELS = [
-  'gemini-2.5-flash-image', 'gemini-3-pro-image-preview',
-  'gpt-image-2', 'dall-e-3', 'nado-banana-2',
-];
 
 export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Props) {
   const isZh = lang === 'zh';
@@ -340,22 +329,8 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
     });
   }, [textAPIs, imageAPIs, fetchModelsForApi]);
 
-  const getModelOptions = (api: APIConfig, type: 'text' | 'image'): string[] => {
-    const presets = type === 'text' ? TEXT_MODEL_PRESETS : IMAGE_MODEL_PRESETS;
-    const fetched = fetchedModels[api.id] || [];
-    const pinned = type === 'text' ? PINNED_TEXT_MODELS : PINNED_IMAGE_MODELS;
-
-    // Combine presets + fetched, deduplicate
-    const all = Array.from(new Set([...presets, ...fetched]));
-
-    // Sort: pinned first, then others alphabetically
-    return all.sort((a, b) => {
-      const aPinned = pinned.includes(a);
-      const bPinned = pinned.includes(b);
-      if (aPinned && !bPinned) return -1;
-      if (!aPinned && bPinned) return 1;
-      return a.localeCompare(b);
-    });
+  const getModelOptions = (api: APIConfig): string[] => {
+    return Array.from(new Set(fetchedModels[api.id] || [])).sort((a, b) => a.localeCompare(b));
   };
 
   const inputCls = 'w-full px-2.5 py-1.5 bg-white dark:bg-stone-900 border border-stone-300 dark:border-stone-600 rounded-lg text-stone-900 dark:text-white text-xs placeholder-stone-400 dark:placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent';
@@ -594,9 +569,9 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
                     className={selectCls}
                   >
                     <option value="">{isZh ? '选择模型...' : 'Select model...'}</option>
-                    {getModelOptions(api, 'text').map(m => (
+                    {getModelOptions(api).map(m => (
                       <option key={m} value={m}>
-                        {m} {PINNED_TEXT_MODELS.includes(m) ? (isZh ? '★' : '★') : ''}
+                        {m}
                       </option>
                     ))}
                   </select>
@@ -644,9 +619,9 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
                     className={selectCls}
                   >
                     <option value="">{isZh ? '选择模型...' : 'Select model...'}</option>
-                    {getModelOptions(api, 'image').map(m => (
+                    {getModelOptions(api).map(m => (
                       <option key={m} value={m}>
-                        {m} {PINNED_IMAGE_MODELS.includes(m) ? (isZh ? '★' : '★') : ''}
+                        {m}
                       </option>
                     ))}
                   </select>

@@ -4,6 +4,7 @@ import { I18N } from '../constants';
 import DesignSpecRenderer from './DesignSpecRenderer';
 import IconLoader from './IconLoader';
 import DevRequestMonitor from './DevRequestMonitor';
+import UISplitModal from './modals/UISplitModal';
 
 interface Props {
     artboards: Artboard[];
@@ -13,6 +14,11 @@ interface Props {
     onMoveArtboard: (id: string, x: number, y: number) => void;
     onDeleteArtboard: (id: string) => void;
     onUploadImage: (file: File, x: number, y: number) => void;
+    onAddImagesToCanvas?: (
+        images: GeneratedImage[],
+        origin: { x: number; y: number },
+        options?: { groupLabel?: string; columns?: number }
+    ) => Promise<void> | void;
     onAutoArrange: () => void;
     onRegenerateArtboard: (id: string) => void;
     onUpdateArtboard?: (id: string, updates: Partial<Artboard>) => void;
@@ -31,9 +37,227 @@ interface Props {
 
 const SNAP_THRESHOLD = 2;
 
+type SlicedAnimationFrames = {
+    frames: GeneratedImage[];
+    columns: number;
+    rows: number;
+};
+
+type AnimationPreviewState = {
+    artboardId: string;
+    frames: GeneratedImage[];
+    fps: number;
+    columns: number;
+    source: 'sliced' | 'batch';
+    groupLabel: string;
+};
+
+const createClientId = (prefix: string) => {
+    if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+        return `${prefix}-${crypto.randomUUID()}`;
+    }
+    return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
+const getAnimationConfig = (board?: Artboard) => {
+    return board?.image.details?.skillConfig?.animationSequence;
+};
+
+const isAnimationArtboard = (board?: Artboard) => {
+    const details = board?.image.details;
+    return Boolean(
+        details?.skillType === 'animation-sequence' ||
+        details?.activeRole === 'animation-sequence' ||
+        details?.animationFrame
+    );
+};
+
+const getAnimationFrameCount = (board: Artboard) => {
+    return Math.max(1, getAnimationConfig(board)?.frameCount || board.image.details?.animationFrame?.frameCount || 4);
+};
+
+const getAnimationFps = (board: Artboard) => {
+    return Math.max(1, getAnimationConfig(board)?.fps || board.image.details?.animationFrame?.fps || 12);
+};
+
+const getAnimationFrameOrder = (board: Artboard) => {
+    const metaIndex = board.image.details?.animationFrame?.frameIndex;
+    if (typeof metaIndex === 'number') return metaIndex;
+
+    const text = [
+        board.label,
+        board.id,
+        board.image.prompt,
+        board.image.details?.fullPrompt,
+    ].filter(Boolean).join(' ');
+    const match = text.match(/(?:keyframe|frame)\s*#?\s*(\d+)/i);
+    return match ? Number(match[1]) - 1 : Number.MAX_SAFE_INTEGER;
+};
+
+const getAnimationBatchBoards = (boards: Artboard[], board: Artboard) => {
+    const batchId = board.image.details?.batchId;
+    if (!batchId) return [];
+
+    return boards
+        .filter(item => item.image.details?.batchId === batchId && isAnimationArtboard(item))
+        .sort((a, b) => {
+            const orderDelta = getAnimationFrameOrder(a) - getAnimationFrameOrder(b);
+            if (orderDelta !== 0) return orderDelta;
+            return a.image.timestamp - b.image.timestamp;
+        });
+};
+
+const isStoryboardSheet = (board: Artboard, boards: Artboard[]) => {
+    if (!isAnimationArtboard(board) || board.image.details?.animationFrame) return false;
+
+    const promptText = `${board.image.prompt || ''}\n${board.image.details?.fullPrompt || ''}`;
+    if (/KEYFRAME\s+\d+\s+OF/i.test(promptText)) return false;
+    if (/STORYBOARD SHEET/i.test(promptText)) return true;
+
+    return getAnimationBatchBoards(boards, board).length <= 1 && getAnimationFrameCount(board) > 1;
+};
+
+const canPreviewAnimation = (board: Artboard, boards: Artboard[]) => {
+    return isStoryboardSheet(board, boards) || getAnimationBatchBoards(boards, board).length > 1;
+};
+
+const isUIDesignArtboard = (board?: Artboard) => {
+    if (!board) return false;
+    const details = board.image.details;
+    if (details?.skillType || details?.animationFrame) return false;
+    return !details?.activeRole || details.activeRole === 'designer';
+};
+
+const inferFrameGrid = (imageWidth: number, imageHeight: number, frameCount: number) => {
+    const sheetRatio = imageWidth / Math.max(1, imageHeight);
+    let best = { cols: frameCount, rows: 1, score: Number.POSITIVE_INFINITY };
+
+    for (let rows = 1; rows <= frameCount; rows++) {
+        for (let cols = 1; cols <= frameCount; cols++) {
+            const cells = cols * rows;
+            if (cells < frameCount) continue;
+
+            const emptyCells = cells - frameCount;
+            const gridRatio = cols / rows;
+            const ratioPenalty = Math.abs(gridRatio - sheetRatio) * 2;
+            const emptyPenalty = emptyCells * 0.7;
+            const shapePenalty = Math.abs(cols - rows) * 0.04;
+            const score = ratioPenalty + emptyPenalty + shapePenalty;
+
+            if (score < best.score) {
+                best = { cols, rows, score };
+            }
+        }
+    }
+
+    return { cols: best.cols, rows: best.rows };
+};
+
+const loadImageElement = (src: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = src;
+    });
+};
+
+const getGeneratedImageDetails = (
+    image: GeneratedImage,
+    resolution: string,
+    fallbackStyle = 'Animation'
+): NonNullable<GeneratedImage['details']> => ({
+    platform: image.details?.platform || 'custom',
+    resolution,
+    style: image.details?.style || fallbackStyle,
+    tokens: image.details?.tokens || {
+        primaryColor: '#14b8a6',
+        backgroundColor: '#ffffff',
+        accentColor: '#06b6d4',
+        decorativeColor: '#f59e0b',
+        borderRadius: 'medium',
+        spacing: 'comfortable',
+    },
+    fullPrompt: image.details?.fullPrompt || image.prompt || '',
+    ...(image.details || {}),
+});
+
+const sliceAnimationSheet = async (board: Artboard): Promise<SlicedAnimationFrames> => {
+    const sourceImage = await loadImageElement(board.image.url);
+    const frameCount = getAnimationFrameCount(board);
+    const fps = getAnimationFps(board);
+    const grid = inferFrameGrid(sourceImage.naturalWidth || sourceImage.width, sourceImage.naturalHeight || sourceImage.height, frameCount);
+    const width = sourceImage.naturalWidth || sourceImage.width;
+    const height = sourceImage.naturalHeight || sourceImage.height;
+    const batchId = createClientId(`frames-${board.image.id}`);
+    const now = Date.now();
+
+    const frames: GeneratedImage[] = [];
+    for (let index = 0; index < frameCount; index++) {
+        const col = index % grid.cols;
+        const row = Math.floor(index / grid.cols);
+        const sx = Math.round((col * width) / grid.cols);
+        const sy = Math.round((row * height) / grid.rows);
+        const ex = Math.round(((col + 1) * width) / grid.cols);
+        const ey = Math.round(((row + 1) * height) / grid.rows);
+        const sw = Math.max(1, ex - sx);
+        const sh = Math.max(1, ey - sy);
+
+        const canvas = document.createElement('canvas');
+        canvas.width = sw;
+        canvas.height = sh;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) throw new Error('Canvas is not available');
+
+        ctx.drawImage(sourceImage, sx, sy, sw, sh, 0, 0, sw, sh);
+        frames.push({
+            id: createClientId(`${board.image.id}-frame-${index + 1}`),
+            url: canvas.toDataURL('image/png'),
+            prompt: `${board.image.prompt || board.label}\nFrame ${index + 1}/${frameCount}`,
+            timestamp: now + index,
+            details: {
+                ...getGeneratedImageDetails(board.image, `${sw}x${sh}`),
+                resolution: `${sw}x${sh}`,
+                batchId,
+                animationFrame: {
+                    sourceImageId: board.image.id,
+                    frameIndex: index,
+                    frameCount,
+                    fps,
+                    sourceGrid: { cols: grid.cols, rows: grid.rows },
+                },
+            },
+        });
+    }
+
+    return { frames, columns: grid.cols, rows: grid.rows };
+};
+
+const cloneFramesForCanvas = (frames: GeneratedImage[], fps: number) => {
+    const batchId = createClientId('animation-preview');
+    const now = Date.now();
+
+    return frames.map((frame, index) => ({
+        ...frame,
+        id: createClientId(`${frame.id}-copy-${index + 1}`),
+        timestamp: now + index,
+        details: {
+            ...getGeneratedImageDetails(frame, frame.details?.resolution || '1000x1000'),
+            batchId,
+            animationFrame: {
+                sourceImageId: frame.details?.animationFrame?.sourceImageId || frame.id,
+                frameIndex: index,
+                frameCount: frames.length,
+                fps,
+                sourceGrid: frame.details?.animationFrame?.sourceGrid,
+            },
+        },
+    }));
+};
+
 const CanvasBoard: React.FC<Props> = ({
     artboards, groups, onSelectArtboard, onInspectArtboard,
-    onMoveArtboard, onDeleteArtboard, onUploadImage,
+    onMoveArtboard, onDeleteArtboard, onUploadImage, onAddImagesToCanvas,
     onAutoArrange, onRegenerateArtboard, onUpdateArtboard,
     lang, regeneratingId, onRequestConfirm, onDeleteHistoryItem, onCopyImage,
     devMode,
@@ -58,6 +282,12 @@ const CanvasBoard: React.FC<Props> = ({
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number, artboardId: string } | null>(null);
 
     const [editingLabel, setEditingLabel] = useState<{ id: string, text: string } | null>(null);
+    const [animationPreview, setAnimationPreview] = useState<AnimationPreviewState | null>(null);
+    const [animationFrameIndex, setAnimationFrameIndex] = useState(0);
+    const [isAnimationPlaying, setIsAnimationPlaying] = useState(true);
+    const [isSlicingAnimation, setIsSlicingAnimation] = useState(false);
+    const [animationError, setAnimationError] = useState<string | null>(null);
+    const [uiSplitArtboard, setUiSplitArtboard] = useState<Artboard | null>(null);
 
     const handleSaveLabel = () => {
         if (editingLabel && onUpdateArtboard) {
@@ -259,6 +489,106 @@ const CanvasBoard: React.FC<Props> = ({
     const handleContextMenu = (e: React.MouseEvent, artboardId: string) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, artboardId }); };
     const handleRegenerateClick = () => { if (contextMenu) { onRegenerateArtboard(contextMenu.artboardId); setContextMenu(null); } };
 
+    const openAnimationPreview = async (artboardId: string, preferSlicing = false) => {
+        const board = artboards.find(item => item.id === artboardId);
+        if (!board) return;
+
+        setContextMenu(null);
+        setAnimationError(null);
+        setIsSlicingAnimation(true);
+
+        try {
+            const shouldSlice = preferSlicing || isStoryboardSheet(board, artboards);
+            if (shouldSlice) {
+                const sliced = await sliceAnimationSheet(board);
+                setAnimationPreview({
+                    artboardId,
+                    frames: sliced.frames,
+                    fps: getAnimationFps(board),
+                    columns: sliced.columns,
+                    source: 'sliced',
+                    groupLabel: `${board.label || 'Animation'} Frames`,
+                });
+            } else {
+                const batchBoards = getAnimationBatchBoards(artboards, board);
+                const frames = (batchBoards.length > 1 ? batchBoards : [board]).map(item => item.image);
+                setAnimationPreview({
+                    artboardId,
+                    frames,
+                    fps: getAnimationFps(board),
+                    columns: Math.max(1, Math.ceil(Math.sqrt(frames.length))),
+                    source: 'batch',
+                    groupLabel: board.groupId || board.label || 'Animation',
+                });
+            }
+
+            setAnimationFrameIndex(0);
+            setIsAnimationPlaying(true);
+        } catch (error) {
+            console.error(error);
+            setAnimationError(lang === 'zh' ? '切图失败，请确认图片已加载完成' : 'Failed to slice frames. Make sure the image is loaded.');
+        } finally {
+            setIsSlicingAnimation(false);
+        }
+    };
+
+    const addAnimationFramesToCanvas = async () => {
+        if (!animationPreview || !onAddImagesToCanvas) return;
+
+        const sourceBoard = artboards.find(item => item.id === animationPreview.artboardId);
+        const origin = sourceBoard
+            ? { x: sourceBoard.x + sourceBoard.width + 80, y: sourceBoard.y }
+            : toWorld(window.innerWidth / 2, window.innerHeight / 2);
+        const framesToAdd = cloneFramesForCanvas(animationPreview.frames, animationPreview.fps);
+
+        await onAddImagesToCanvas(framesToAdd, origin, {
+            groupLabel: animationPreview.groupLabel,
+            columns: animationPreview.columns,
+        });
+        setAnimationPreview(null);
+    };
+
+    const sliceAnimationFramesToCanvas = async (artboardId: string) => {
+        if (!onAddImagesToCanvas) return;
+
+        const board = artboards.find(item => item.id === artboardId);
+        if (!board) return;
+
+        setContextMenu(null);
+        setAnimationError(null);
+        setIsSlicingAnimation(true);
+
+        try {
+            const sliced = await sliceAnimationSheet(board);
+            const framesToAdd = cloneFramesForCanvas(sliced.frames, getAnimationFps(board));
+
+            await onAddImagesToCanvas(
+                framesToAdd,
+                { x: board.x + board.width + 80, y: board.y },
+                {
+                    groupLabel: `${board.label || 'Animation'} Frames`,
+                    columns: sliced.columns,
+                }
+            );
+        } catch (error) {
+            console.error(error);
+            setAnimationError(lang === 'zh' ? '切图失败，请确认图片已加载完成' : 'Failed to slice frames. Make sure the image is loaded.');
+        } finally {
+            setIsSlicingAnimation(false);
+        }
+    };
+
+    useEffect(() => {
+        if (!animationPreview || !isAnimationPlaying || animationPreview.frames.length <= 1) return;
+
+        const delay = Math.max(40, 1000 / Math.max(1, animationPreview.fps));
+        const timer = window.setInterval(() => {
+            setAnimationFrameIndex(index => (index + 1) % animationPreview.frames.length);
+        }, delay);
+
+        return () => window.clearInterval(timer);
+    }, [animationPreview, isAnimationPlaying]);
+
     const handleDoubleClick = (e: React.MouseEvent, artboardId: string) => {
         e.stopPropagation();
         const board = artboards.find(b => b.id === artboardId);
@@ -407,6 +737,16 @@ const CanvasBoard: React.FC<Props> = ({
                                             </button>
                                         )}
 
+                                        {isUIDesignArtboard(board) && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setUiSplitArtboard(board); }}
+                                                className="p-1 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-500 hover:text-indigo-500 transition-colors"
+                                                title={lang === 'zh' ? '拆分 UI' : 'Split UI'}
+                                            >
+                                                <IconLoader name="code" size={14} />
+                                            </button>
+                                        )}
+
                                         {/* History Modal Toggle */}
                                         {board.history && board.history.length > 0 && (
                                             <button
@@ -510,7 +850,200 @@ const CanvasBoard: React.FC<Props> = ({
                 <button onClick={resetView} className="shrink-0 min-h-10 text-xs px-3 py-2 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-600 dark:text-stone-300">{t.resetView}</button>
             </div>
 
-            {contextMenu && (<div className="fixed bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded shadow-xl py-1 z-[100] w-48" style={{ left: contextMenu.x, top: contextMenu.y }}><button className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2" onClick={handleRegenerateClick}><IconLoader name="refresh" size={14} /> {lang === 'zh' ? '重新生成' : 'Regenerate'}</button><button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2" onClick={() => { onDeleteArtboard(contextMenu.artboardId); setContextMenu(null); }}><IconLoader name="trash" size={14} /> {lang === 'zh' ? '从画布移除' : 'Remove from Canvas'}</button></div>)}
+            {contextMenu && (() => {
+                const board = artboards.find(item => item.id === contextMenu.artboardId);
+                const showAnimationActions = Boolean(board && canPreviewAnimation(board, artboards));
+                const shouldSlice = Boolean(board && isStoryboardSheet(board, artboards));
+                const showUISplitAction = Boolean(board && isUIDesignArtboard(board));
+
+                return (
+                    <div
+                        className="fixed bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded shadow-xl py-1 z-[100] w-56"
+                        style={{ left: contextMenu.x, top: contextMenu.y }}
+                    >
+                        {showAnimationActions && (
+                            <>
+                                {shouldSlice && onAddImagesToCanvas && (
+                                    <button
+                                        className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2 disabled:opacity-50"
+                                        onClick={() => sliceAnimationFramesToCanvas(contextMenu.artboardId)}
+                                        disabled={isSlicingAnimation}
+                                    >
+                                        <IconLoader name="scissors" size={14} />
+                                        {lang === 'zh' ? '切图到画布' : 'Slice to Canvas'}
+                                    </button>
+                                )}
+                                <button
+                                    className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2 disabled:opacity-50"
+                                    onClick={() => openAnimationPreview(contextMenu.artboardId, shouldSlice)}
+                                    disabled={isSlicingAnimation}
+                                >
+                                    <IconLoader name="play" size={14} />
+                                    {lang === 'zh' ? '预览动画' : 'Preview Animation'}
+                                </button>
+                                <div className="my-1 h-px bg-stone-100 dark:bg-stone-700" />
+                            </>
+                        )}
+                        {showUISplitAction && board && (
+                            <>
+                                <button
+                                    className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2"
+                                    onClick={() => { setUiSplitArtboard(board); setContextMenu(null); }}
+                                >
+                                    <IconLoader name="code" size={14} />
+                                    {lang === 'zh' ? '拆分 UI' : 'Split UI'}
+                                </button>
+                                <div className="my-1 h-px bg-stone-100 dark:bg-stone-700" />
+                            </>
+                        )}
+                        <button
+                            className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2"
+                            onClick={handleRegenerateClick}
+                        >
+                            <IconLoader name="refresh" size={14} />
+                            {lang === 'zh' ? '重新生成' : 'Regenerate'}
+                        </button>
+                        <button
+                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2"
+                            onClick={() => { onDeleteArtboard(contextMenu.artboardId); setContextMenu(null); }}
+                        >
+                            <IconLoader name="trash" size={14} />
+                            {lang === 'zh' ? '从画布移除' : 'Remove from Canvas'}
+                        </button>
+                    </div>
+                );
+            })()}
+            {animationError && (
+                <div className="fixed top-4 left-1/2 z-[120] -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-xl">
+                    {animationError}
+                </div>
+            )}
+            {animationPreview && (() => {
+                const currentFrame = animationPreview.frames[animationFrameIndex % animationPreview.frames.length];
+
+                return (
+                    <div
+                        className="fixed inset-0 z-[110] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6"
+                        onMouseDown={() => setAnimationPreview(null)}
+                    >
+                        <div
+                            className="bg-white dark:bg-stone-900 rounded-xl shadow-2xl border border-stone-200 dark:border-stone-700 w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden"
+                            onMouseDown={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between gap-3 p-3 sm:p-4 border-b border-stone-200 dark:border-stone-800">
+                                <div className="min-w-0">
+                                    <h3 className="text-sm font-bold text-stone-900 dark:text-stone-100">
+                                        {lang === 'zh' ? '动画预览' : 'Animation Preview'}
+                                    </h3>
+                                    <p className="text-xs text-stone-500 dark:text-stone-400 truncate">
+                                        {animationPreview.frames.length} {lang === 'zh' ? '帧' : 'frames'} · {animationPreview.fps} FPS
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setAnimationPreview(null)}
+                                    className="p-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500"
+                                    title={lang === 'zh' ? '关闭' : 'Close'}
+                                >
+                                    <IconLoader name="x" size={18} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar p-3 sm:p-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_260px] gap-4">
+                                    <div className="min-h-[280px] sm:min-h-[420px] rounded-lg bg-stone-950 flex items-center justify-center overflow-hidden">
+                                        <img
+                                            src={currentFrame.url}
+                                            alt="Animation frame preview"
+                                            className="max-w-full max-h-[62vh] object-contain"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={() => setIsAnimationPlaying(value => !value)}
+                                                className="h-10 w-10 rounded-lg bg-teal-600 hover:bg-teal-500 text-white flex items-center justify-center"
+                                                title={isAnimationPlaying ? (lang === 'zh' ? '暂停' : 'Pause') : (lang === 'zh' ? '播放' : 'Play')}
+                                            >
+                                                <IconLoader name={isAnimationPlaying ? 'pause' : 'play'} size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setAnimationFrameIndex(index => Math.max(0, index - 1))}
+                                                className="h-10 w-10 rounded-lg border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 flex items-center justify-center"
+                                                title={lang === 'zh' ? '上一帧' : 'Previous frame'}
+                                            >
+                                                <IconLoader name="chevron-left" size={16} />
+                                            </button>
+                                            <button
+                                                onClick={() => setAnimationFrameIndex(index => (index + 1) % animationPreview.frames.length)}
+                                                className="h-10 w-10 rounded-lg border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-600 dark:text-stone-300 flex items-center justify-center"
+                                                title={lang === 'zh' ? '下一帧' : 'Next frame'}
+                                            >
+                                                <IconLoader name="chevron-right" size={16} />
+                                            </button>
+                                            <span className="text-xs font-mono text-stone-500">
+                                                {animationFrameIndex + 1}/{animationPreview.frames.length}
+                                            </span>
+                                        </div>
+
+                                        <label className="block">
+                                            <span className="mb-1 block text-xs font-bold uppercase text-stone-500">FPS</span>
+                                            <input
+                                                type="range"
+                                                min={1}
+                                                max={24}
+                                                value={animationPreview.fps}
+                                                onChange={(event) => setAnimationPreview(prev => prev ? { ...prev, fps: Number(event.target.value) } : prev)}
+                                                className="w-full accent-teal-600"
+                                            />
+                                        </label>
+
+                                        {onAddImagesToCanvas && (
+                                            <button
+                                                onClick={addAnimationFramesToCanvas}
+                                                className="w-full min-h-10 rounded-lg bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 hover:opacity-90 text-sm font-bold flex items-center justify-center gap-2"
+                                            >
+                                                <IconLoader name="plus" size={16} />
+                                                {lang === 'zh' ? '添加帧到画布' : 'Add Frames to Canvas'}
+                                            </button>
+                                        )}
+
+                                        <div className="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-3 gap-2">
+                                            {animationPreview.frames.map((frame, index) => (
+                                                <button
+                                                    key={frame.id}
+                                                    onClick={() => {
+                                                        setAnimationFrameIndex(index);
+                                                        setIsAnimationPlaying(false);
+                                                    }}
+                                                    className={`relative aspect-square overflow-hidden rounded border-2 bg-stone-100 dark:bg-stone-800 ${
+                                                        index === animationFrameIndex
+                                                            ? 'border-teal-500'
+                                                            : 'border-transparent hover:border-stone-300 dark:hover:border-stone-600'
+                                                    }`}
+                                                    title={`${lang === 'zh' ? '帧' : 'Frame'} ${index + 1}`}
+                                                >
+                                                    <img src={frame.url} alt="" className="h-full w-full object-cover" />
+                                                    <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                                                        {index + 1}
+                                                    </span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
+            {uiSplitArtboard && (
+                <UISplitModal
+                    artboard={uiSplitArtboard}
+                    lang={lang}
+                    onClose={() => setUiSplitArtboard(null)}
+                />
+            )}
             {artboards.length === 0 && (<div className="absolute inset-0 flex items-center justify-center pointer-events-none"><div className="text-center text-stone-400 dark:text-stone-600"><div className="mb-4 flex justify-center"><IconLoader name="palette" size={64} /></div><h2 className="text-xl font-bold mb-2">{t.ready}</h2><p>{t.readyDesc}</p></div></div>)}
 
             {/* History Modal Overlay */}

@@ -160,6 +160,77 @@ export const useCanvasState = (
         }
     };
 
+    const handleAddGeneratedImagesToCanvas = async (
+        images: GeneratedImage[],
+        origin: { x: number; y: number },
+        options?: { groupLabel?: string; columns?: number }
+    ) => {
+        if (images.length === 0) return;
+
+        const dimsList = await Promise.all(images.map(img => getImageDimensions(img.url)));
+        await Promise.all(images.map(img => handleSaveToHistory(img)));
+
+        const gap = 32;
+        const columns = Math.max(1, options?.columns || Math.ceil(Math.sqrt(images.length)));
+        const rowHeights: number[] = [];
+        const colWidths: number[] = Array(columns).fill(0);
+
+        dimsList.forEach((dims, index) => {
+            const col = index % columns;
+            const row = Math.floor(index / columns);
+            colWidths[col] = Math.max(colWidths[col], dims.width);
+            rowHeights[row] = Math.max(rowHeights[row] || 0, dims.height);
+        });
+
+        const colXs = colWidths.reduce<number[]>((acc, width, index) => {
+            acc[index] = index === 0 ? origin.x : acc[index - 1] + colWidths[index - 1] + gap;
+            return acc;
+        }, []);
+        const rowYs = rowHeights.reduce<number[]>((acc, height, index) => {
+            acc[index] = index === 0 ? origin.y : acc[index - 1] + rowHeights[index - 1] + gap;
+            return acc;
+        }, []);
+
+        const groupId = `frames-${Date.now()}`;
+        const totalWidth = colWidths.reduce((sum, width) => sum + width, 0) + gap * Math.max(0, colWidths.length - 1);
+        const totalHeight = rowHeights.reduce((sum, height) => sum + height, 0) + gap * Math.max(0, rowHeights.length - 1);
+
+        setArtboardGroups(prev => [...prev, {
+            id: groupId,
+            label: options?.groupLabel || (lang === 'zh' ? '切分帧' : 'Extracted Frames'),
+            x: origin.x,
+            y: origin.y,
+            width: totalWidth,
+            height: totalHeight,
+        }]);
+
+        setArtboards(prev => [
+            ...prev,
+            ...images.map((img, index) => {
+                const dims = dimsList[index];
+                const col = index % columns;
+                const row = Math.floor(index / columns);
+                return {
+                    id: img.id,
+                    x: colXs[col],
+                    y: rowYs[row],
+                    width: dims.width,
+                    height: dims.height,
+                    image: img,
+                    history: [img],
+                    label: `${options?.groupLabel || 'Frame'} ${index + 1}`,
+                    groupId,
+                    isNew: true,
+                } as Artboard;
+            })
+        ]);
+
+        addNotification(
+            lang === 'zh' ? `已添加 ${images.length} 帧到画布` : `Added ${images.length} frames to canvas`,
+            'success'
+        );
+    };
+
     const handleAutoArrange = () => {
         const gap = 100;
         const startX = 50;
@@ -260,7 +331,7 @@ export const useCanvasState = (
         setScale, setPosition,
 
         // Actions
-        handleSaveToHistory, handleDeleteHistory, handleClearHistory, handleDeleteHistoryItem, updateLayoutImage, handleCanvasDrop, handleAutoArrange,
+        handleSaveToHistory, handleDeleteHistory, handleClearHistory, handleDeleteHistoryItem, updateLayoutImage, handleCanvasDrop, handleAutoArrange, handleAddGeneratedImagesToCanvas,
         // Utils
         fileToBase64, getImageDimensions
     };

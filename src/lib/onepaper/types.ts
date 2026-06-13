@@ -348,6 +348,13 @@ export interface GeneratedImage {
       label: string;
       url: string; // Base64
     }[];
+    animationFrame?: {
+      sourceImageId: string;
+      frameIndex: number;
+      frameCount: number;
+      fps?: number;
+      sourceGrid?: { cols: number; rows: number };
+    };
   };
 }
 

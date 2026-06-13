@@ -63,6 +63,7 @@ export default function EditorWorkspaceLayout({
             onMoveArtboard={(id, x, y) => actions.setArtboards(prev => prev.map(ab => (ab.id === id ? { ...ab, x, y } : ab)))}
             onDeleteArtboard={(id) => actions.setArtboards(prev => prev.filter(ab => ab.id !== id))}
             onUploadImage={(file, x, y) => actions.handleCanvasDrop(file, x, y)}
+            onAddImagesToCanvas={actions.handleAddGeneratedImagesToCanvas}
             onAutoArrange={actions.handleAutoArrange}
             onRegenerateArtboard={(id) => actions.handleOpenRegen(id)}
             onUpdateArtboard={(id, updates) => actions.setArtboards(prev => prev.map(ab => (ab.id === id ? { ...ab, ...updates } : ab)))}
