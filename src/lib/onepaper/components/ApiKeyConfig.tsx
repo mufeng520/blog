@@ -102,19 +102,6 @@ const PINNED_IMAGE_MODELS = [
   'gpt-image-2', 'dall-e-3', 'nado-banana-2',
 ];
 
-const getModelsEndpoint = (baseUrl: string, provider: AIProvider): string => {
-  const url = baseUrl.trim();
-  if (provider === 'gemini') {
-    const root = url || 'https://generativelanguage.googleapis.com';
-    return `${root.replace(/\/$/, '')}/v1beta/models?key=`;
-  }
-  // OpenAI-compatible: strip known path suffixes, append /models
-  let cleaned = url;
-  if (cleaned.endsWith('/chat/completions')) cleaned = cleaned.slice(0, -'/chat/completions'.length);
-  else if (cleaned.endsWith('/images/generations')) cleaned = cleaned.slice(0, -'/images/generations'.length);
-  return `${cleaned.replace(/\/$/, '')}/models`;
-};
-
 export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Props) {
   const isZh = lang === 'zh';
   const [textAPIs, setTextAPIs] = useState<APIConfig[]>([]);
@@ -316,30 +303,16 @@ export default function ApiKeyConfig({ onConfigured, onClose, lang = 'zh' }: Pro
     setFetchErrors(prev => { const n = { ...prev }; delete n[api.id]; return n; });
 
     try {
-      const endpoint = getModelsEndpoint(api.baseUrl, api.provider);
-      let models: string[] = [];
-
-      if (api.provider === 'gemini') {
-        const res = await fetch(`${endpoint}${api.apiKey}`);
-        if (!res.ok) {
-          const errText = await res.text().catch(() => '');
-          throw new Error(`HTTP ${res.status}${errText ? `: ${errText}` : ''}`);
-        }
-        const data = await res.json();
-        models = (data.models || [])
-          .map((m: any) => m.name?.replace(/^models\//, '') || m.name)
-          .filter(Boolean);
-      } else {
-        const res = await fetch(endpoint, {
-          headers: { 'Authorization': `Bearer ${api.apiKey}` },
-        });
-        if (!res.ok) {
-          const errText = await res.text().catch(() => '');
-          throw new Error(`HTTP ${res.status}${errText ? `: ${errText}` : ''}`);
-        }
-        const data = await res.json();
-        models = (data.data || []).map((m: any) => m.id).filter(Boolean);
+      const res = await fetch('/api/onepaper/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ operation: 'models', api }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        throw new Error(data?.error || `HTTP ${res.status}`);
       }
+      const models = Array.isArray(data?.models) ? data.models : [];
 
       setFetchedModels(prev => ({ ...prev, [api.id]: models }));
       fetchedSignaturesRef.current[api.id] = signature;
