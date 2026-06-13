@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react';
-import type { Project, SavedProject, LangType, Artboard } from '../types';
+import type { Project, SavedProject, LangType, Artboard, ArtboardGroup } from '../types';
 import { getProjects, createProject, getProjectById, saveProject, deleteProject } from '../services/idbProjectService';
 
 // Helper to hydrate artboards will be needed here or passed in. 
@@ -32,10 +32,57 @@ const hydrateArtboardsFromProject = (project: any): Artboard[] => {
     return hydrated;
 };
 
+const sanitizeProjectGroups = (groups: any[] | undefined, artboards: Artboard[]): ArtboardGroup[] => {
+    if (!groups || groups.length === 0) return [];
+
+    const activeGroupIds = new Set(artboards.map(board => board.groupId).filter(Boolean));
+    return groups
+        .filter(group => group?.id && activeGroupIds.has(group.id))
+        .map(group => ({
+            id: String(group.id),
+            label: group.label || 'Group',
+            x: Number.isFinite(group.x) ? group.x : 0,
+            y: Number.isFinite(group.y) ? group.y : 0,
+            width: Number.isFinite(group.width) ? group.width : 0,
+            height: Number.isFinite(group.height) ? group.height : 0,
+        }));
+};
+
+const inferGroupsFromArtboards = (artboards: Artboard[]): ArtboardGroup[] => {
+    const grouped = artboards.reduce<Record<string, Artboard[]>>((acc, board) => {
+        if (!board.groupId) return acc;
+        if (!acc[board.groupId]) acc[board.groupId] = [];
+        acc[board.groupId].push(board);
+        return acc;
+    }, {});
+
+    return Object.entries(grouped).map(([groupId, boards]) => {
+        const minX = Math.min(...boards.map(board => board.x));
+        const minY = Math.min(...boards.map(board => board.y));
+        const maxX = Math.max(...boards.map(board => board.x + board.width));
+        const maxY = Math.max(...boards.map(board => board.y + board.height));
+        const firstLabel = boards[0]?.label || 'Group';
+        return {
+            id: groupId,
+            label: firstLabel.includes(' ') ? firstLabel.split(' ')[0] : firstLabel,
+            x: minX,
+            y: minY,
+            width: maxX - minX,
+            height: maxY - minY,
+        };
+    });
+};
+
+const hydrateGroupsFromProject = (project: any, artboards: Artboard[]): ArtboardGroup[] => {
+    const savedGroups = sanitizeProjectGroups(project?.config?.canvasGroups, artboards);
+    return savedGroups.length > 0 ? savedGroups : inferGroupsFromArtboards(artboards);
+};
+
 export const useProjectState = (
     lang: LangType,
     addNotification: (msg: string, type?: 'success' | 'error') => void,
     setArtboards: (val: Artboard[] | ((prev: Artboard[]) => Artboard[])) => void,
+    setArtboardGroups: (val: ArtboardGroup[] | ((prev: ArtboardGroup[]) => ArtboardGroup[])) => void,
     initialProjectId?: string,
     onProjectLoaded?: (project: Project) => void
 ) => {
@@ -90,6 +137,7 @@ export const useProjectState = (
             // Restore Artboards
             const hydrated = hydrateArtboardsFromProject(project);
             setArtboards(hydrated);
+            setArtboardGroups(hydrateGroupsFromProject(project, hydrated));
 
             // Update projects list with loaded details
             setProjects(prev => {
@@ -114,7 +162,7 @@ export const useProjectState = (
         }
     };
 
-    const handleSaveProject = async (name: string, description: string, configState: any, artboards: Artboard[], thumbnailUrl?: string) => {
+    const handleSaveProject = async (name: string, description: string, configState: any, artboards: Artboard[], artboardGroups: ArtboardGroup[] = [], thumbnailUrl?: string) => {
         try {
             const newProject = await createProject({
                 name,
@@ -122,7 +170,7 @@ export const useProjectState = (
             });
 
             const savedProject = await saveProject(newProject.id, {
-                config: configState,
+                config: { ...configState, canvasGroups: artboardGroups },
                 artboards,
                 thumbnailUrl: thumbnailUrl || undefined
             });
@@ -133,6 +181,7 @@ export const useProjectState = (
             if (savedProject.artboards) {
                 const hydrated = hydrateArtboardsFromProject(savedProject);
                 setArtboards(hydrated);
+                setArtboardGroups(hydrateGroupsFromProject(savedProject, hydrated));
             }
 
             addNotification(lang === 'zh' ? '项目已创建' : 'Project Created', 'success');
@@ -149,6 +198,7 @@ export const useProjectState = (
             setProjects(prev => [newProject, ...prev]);
             setCurrentProjectId(newProject.id);
             setArtboards([]);
+            setArtboardGroups([]);
             addNotification(lang === 'zh' ? '空白项目已创建' : 'Blank project created', 'success');
         } catch (e: any) {
             console.error("Create Blank Project Failed", e);
@@ -156,12 +206,12 @@ export const useProjectState = (
         }
     };
 
-    const handleUpdateProjectContent = async (id: string, configState: any, artboards: Artboard[], thumbnail?: string, skipStateUpdate: boolean = false) => {
+    const handleUpdateProjectContent = async (id: string, configState: any, artboards: Artboard[], artboardGroups: ArtboardGroup[] = [], thumbnail?: string, skipStateUpdate: boolean = false) => {
         if (!id) return;
         try {
             setIsSaving(true); // Always show loading, even for auto-save
             const updatedProject = await saveProject(id, {
-                config: configState,
+                config: { ...configState, canvasGroups: artboardGroups },
                 artboards: artboards,
                 thumbnailUrl: thumbnail
             });
@@ -169,6 +219,7 @@ export const useProjectState = (
             if (!skipStateUpdate && updatedProject.artboards) {
                 const hydrated = hydrateArtboardsFromProject(updatedProject);
                 setArtboards(hydrated);
+                setArtboardGroups(hydrateGroupsFromProject(updatedProject, hydrated));
             }
 
             if (!skipStateUpdate) {
@@ -201,6 +252,7 @@ export const useProjectState = (
             if (currentProjectId === projectId) {
                 setCurrentProjectId(null);
                 setArtboards([]);
+                setArtboardGroups([]);
             }
             addNotification(lang === 'zh' ? '项目已删除' : 'Project Deleted', 'success');
         } catch (e) {

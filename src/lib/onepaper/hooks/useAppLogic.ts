@@ -24,7 +24,7 @@ export const useAppLogic = (initialProjectId?: string) => {
     const { restoreProjectConfig } = useProjectConfigRestore(config);
 
     // 4. Project State
-    const project = useProjectState(ui.lang, ui.addNotification, canvas.setArtboards, initialProjectId, restoreProjectConfig);
+    const project = useProjectState(ui.lang, ui.addNotification, canvas.setArtboards, canvas.setArtboardGroups, initialProjectId, restoreProjectConfig);
 
     // 5. Generation Logic (Aggregates everything)
     const gen = useGenerationLogic(ui.lang, config, canvas);
@@ -65,6 +65,7 @@ export const useAppLogic = (initialProjectId?: string) => {
         currentProjectId: project.currentProjectId,
         isLoadingProject: project.isLoadingProject,
         artboards: canvas.artboards,
+        artboardGroups: canvas.artboardGroups,
         config: currentConfigObject,
         onSave: project.handleUpdateProjectContent,
     });
@@ -94,6 +95,7 @@ export const useAppLogic = (initialProjectId?: string) => {
                 config.description,
                 currentConfigObject,
                 canvas.artboards,
+                canvas.artboardGroups,
                 thumbnail
             ),
             handleCreateBlankProject: () => project.handleCreateBlankProject(),
@@ -104,6 +106,7 @@ export const useAppLogic = (initialProjectId?: string) => {
                     ...(configOverride || {})
                 },
                 canvas.artboards,
+                canvas.artboardGroups,
                 thumbnail,
                 false // Explicit Manual Save -> Updates State & Notifies
             ),

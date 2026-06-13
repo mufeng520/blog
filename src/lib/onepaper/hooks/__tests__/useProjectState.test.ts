@@ -9,6 +9,7 @@ vi.mock('../../services/idbProjectService');
 describe('useProjectState', () => {
     const mockAddNotification = vi.fn();
     const mockSetArtboards = vi.fn();
+    const mockSetArtboardGroups = vi.fn();
     const lang = 'zh';
 
     beforeEach(() => {
@@ -20,7 +21,7 @@ describe('useProjectState', () => {
         const mockProjects = [{ id: 'p1', name: 'Test P1' }];
         (projectService.getProjects as any).mockResolvedValue(mockProjects);
 
-        const { result } = renderHook(() => useProjectState(lang, mockAddNotification, mockSetArtboards));
+        const { result } = renderHook(() => useProjectState(lang, mockAddNotification, mockSetArtboards, mockSetArtboardGroups));
 
         await waitFor(() => {
             expect(result.current.projects).toHaveLength(1);
@@ -35,10 +36,10 @@ describe('useProjectState', () => {
         (projectService.createProject as any).mockResolvedValue(mockNewProject);
         (projectService.saveProject as any).mockResolvedValue(mockSavedProject);
 
-        const { result } = renderHook(() => useProjectState(lang, mockAddNotification, mockSetArtboards));
+        const { result } = renderHook(() => useProjectState(lang, mockAddNotification, mockSetArtboards, mockSetArtboardGroups));
 
         await act(async () => {
-            await result.current.handleSaveProject('New Project', 'Desc', {}, []);
+            await result.current.handleSaveProject('New Project', 'Desc', {}, [], []);
         });
 
         expect(projectService.createProject).toHaveBeenCalledWith({ name: 'New Project', description: 'Desc' });
@@ -48,7 +49,7 @@ describe('useProjectState', () => {
     });
 
     it('should delete a project', async () => {
-        const { result } = renderHook(() => useProjectState(lang, mockAddNotification, mockSetArtboards));
+        const { result } = renderHook(() => useProjectState(lang, mockAddNotification, mockSetArtboards, mockSetArtboardGroups));
 
         // Setup initial state manually or via mock return (but state is internal)
         // We can verify the service call

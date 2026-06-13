@@ -14,6 +14,7 @@ interface Props {
     onMoveArtboard: (id: string, x: number, y: number) => void;
     onMoveGroup?: (id: string, dx: number, dy: number) => void;
     onDeleteArtboard: (id: string) => void;
+    onDeleteGroup?: (id: string) => void;
     onUploadImage: (file: File, x: number, y: number) => void;
     onAddImagesToCanvas?: (
         images: GeneratedImage[],
@@ -70,10 +71,28 @@ type AxisLineCluster = {
     score: number;
 };
 
+type AxisBorderPair = {
+    start: number;
+    end: number;
+    score: number;
+};
+
 type FrameOffset = {
     x: number;
     y: number;
 };
+
+type SelectionMarquee = {
+    startX: number;
+    startY: number;
+    currentX: number;
+    currentY: number;
+    additive: boolean;
+};
+
+type CanvasContextMenu =
+    | { x: number; y: number; type: 'artboard'; artboardId: string }
+    | { x: number; y: number; type: 'group'; groupId: string };
 
 type SliceAdjustState = {
     artboardId: string;
@@ -84,7 +103,9 @@ type SliceAdjustState = {
     grid: { cols: number; rows: number };
     xLines: number[];
     yLines: number[];
+    rects?: FrameRect[];
     offsets: FrameOffset[];
+    autoStabilize?: boolean;
     fps: number;
     selectedFrame: number;
     selectedLine: { axis: 'x' | 'y'; index: number } | null;
@@ -218,7 +239,33 @@ const getDarkLineWeight = (data: Uint8ClampedArray, offset: number) => {
     return 0;
 };
 
-const buildAxisDarkScores = (imageData: ImageData, axis: 'x' | 'y') => {
+const getGuideLineWeight = (data: Uint8ClampedArray, offset: number) => {
+    const alpha = data[offset + 3];
+    if (alpha < 60) return 0;
+
+    const r = data[offset];
+    const g = data[offset + 1];
+    const b = data[offset + 2];
+    const luminance = getLuminance(r, g, b);
+    const channelRange = Math.max(r, g, b) - Math.min(r, g, b);
+
+    if (luminance < 85) return 1;
+    if (luminance < 145 && channelRange < 56) return 0.72;
+
+    const saturatedGuide = channelRange > 58 && luminance > 60 && luminance < 238;
+    if (saturatedGuide) {
+        const cyanGuide = g > r + 22 && b > r + 18;
+        const warmGuide = r > b + 22 && g > b + 10;
+        const pinkGuide = r > g + 20 && b > g + 12;
+        if (cyanGuide || warmGuide || pinkGuide) {
+            return clamp(0.5 + ((channelRange - 58) / 130), 0.5, 0.92);
+        }
+    }
+
+    return 0;
+};
+
+const buildAxisGuideScores = (imageData: ImageData, axis: 'x' | 'y') => {
     const { width, height, data } = imageData;
     const length = axis === 'x' ? width : height;
     const crossLength = axis === 'x' ? height : width;
@@ -232,7 +279,7 @@ const buildAxisDarkScores = (imageData: ImageData, axis: 'x' | 'y') => {
             const x = axis === 'x' ? pos : cross;
             const y = axis === 'x' ? cross : pos;
             const offset = ((y * width) + x) * 4;
-            sum += getDarkLineWeight(data, offset);
+            sum += getGuideLineWeight(data, offset);
             samples++;
         }
         scores[pos] = samples ? sum / samples : 0;
@@ -277,6 +324,16 @@ const findLineClusters = (scores: number[], threshold: number): AxisLineCluster[
     pushCluster(scores.length - 1);
 
     return clusters;
+};
+
+const getAxisGuideClusters = (imageData: ImageData, axis: 'x' | 'y') => {
+    const scores = buildAxisGuideScores(imageData, axis);
+    const maxScore = Math.max(...scores);
+    if (maxScore < 0.1) return null;
+
+    const mean = scores.reduce((sum, value) => sum + value, 0) / Math.max(1, scores.length);
+    const threshold = clamp(mean + ((maxScore - mean) * 0.52), 0.14, 0.62);
+    return findLineClusters(scores, threshold);
 };
 
 const chooseBestLineSet = (clusters: AxisLineCluster[], expectedCount: number, size: number) => {
@@ -340,15 +397,94 @@ const chooseBestLineSet = (clusters: AxisLineCluster[], expectedCount: number, s
 
 const detectAxisLines = (imageData: ImageData, axis: 'x' | 'y', expectedCount: number) => {
     const size = axis === 'x' ? imageData.width : imageData.height;
-    const scores = buildAxisDarkScores(imageData, axis);
-    const maxScore = Math.max(...scores);
-    if (maxScore < 0.12) return null;
-
-    const mean = scores.reduce((sum, value) => sum + value, 0) / Math.max(1, scores.length);
-    const threshold = clamp(mean + ((maxScore - mean) * 0.58), 0.18, 0.64);
-    const clusters = findLineClusters(scores, threshold);
+    const clusters = getAxisGuideClusters(imageData, axis);
+    if (!clusters) return null;
 
     return chooseBestLineSet(clusters, expectedCount, size);
+};
+
+const chooseBestBorderPairs = (clusters: AxisLineCluster[], divisions: number, size: number) => {
+    if (divisions <= 0 || clusters.length < divisions + 1) return null;
+
+    const nominalStep = size / Math.max(1, divisions);
+    const maxClusterWidth = Math.max(10, size * 0.04);
+    const candidates = [...clusters]
+        .filter(cluster => (cluster.end - cluster.start + 1) <= maxClusterWidth || cluster.score > 0.45)
+        .sort((a, b) => a.center - b.center);
+
+    const pairCandidates: Array<AxisBorderPair & { leftIndex: number; rightIndex: number; center: number; width: number }> = [];
+    for (let index = 0; index < candidates.length - 1; index++) {
+        const left = candidates[index];
+        const right = candidates[index + 1];
+        const width = right.center - left.center;
+        if (width < nominalStep * 0.42 || width > nominalStep * 1.18) continue;
+
+        pairCandidates.push({
+            leftIndex: index,
+            rightIndex: index + 1,
+            start: Math.round(left.center),
+            end: Math.round(right.center),
+            center: (left.center + right.center) / 2,
+            width,
+            score: (left.score + right.score) / 2,
+        });
+    }
+
+    if (pairCandidates.length < divisions) return null;
+
+    let best: { pairs: AxisBorderPair[]; score: number } | null = null;
+    const combo: typeof pairCandidates = [];
+
+    const scoreCombo = (items: typeof pairCandidates) => {
+        const span = items[items.length - 1].end - items[0].start;
+        if (span < size * 0.5) return Number.POSITIVE_INFINITY;
+
+        const widths = items.map(item => item.width);
+        const medianWidth = medianNumber(widths, nominalStep);
+        const widthPenalty = widths.reduce((sum, width) => sum + Math.abs(width - medianWidth) / Math.max(1, medianWidth), 0) / widths.length;
+        const centers = items.map(item => item.center);
+        const steps = centers.slice(1).map((center, index) => center - centers[index]);
+        const medianStep = medianNumber(steps, nominalStep);
+        const spacingPenalty = steps.length
+            ? steps.reduce((sum, step) => sum + Math.abs(step - medianStep) / Math.max(1, medianStep), 0) / steps.length
+            : 0;
+        const edgePenalty = (items[0].start / size) + ((size - items[items.length - 1].end) / size);
+        const strengthReward = items.reduce((sum, item) => sum + item.score, 0) / items.length;
+
+        return (widthPenalty * 2.2) + (spacingPenalty * 2.8) + (edgePenalty * 0.35) - (strengthReward * 0.45);
+    };
+
+    const visit = (startIndex: number) => {
+        if (combo.length === divisions) {
+            const score = scoreCombo(combo);
+            if (!best || score < best.score) {
+                best = { pairs: combo.map(({ start, end, score }) => ({ start, end, score })), score };
+            }
+            return;
+        }
+
+        const remainingNeeded = divisions - combo.length;
+        for (let index = startIndex; index <= pairCandidates.length - remainingNeeded; index++) {
+            const pair = pairCandidates[index];
+            const previous = combo[combo.length - 1];
+            if (previous && pair.leftIndex < previous.rightIndex) continue;
+
+            combo.push(pair);
+            visit(index + 1);
+            combo.pop();
+        }
+    };
+
+    visit(0);
+    return best?.pairs || null;
+};
+
+const detectAxisBorderPairs = (imageData: ImageData, axis: 'x' | 'y', divisions: number) => {
+    const clusters = getAxisGuideClusters(imageData, axis);
+    if (!clusters) return null;
+
+    const size = axis === 'x' ? imageData.width : imageData.height;
+    return chooseBestBorderPairs(clusters, divisions, size);
 };
 
 const buildFixedFrameRects = (width: number, height: number, grid: { cols: number; rows: number }, frameCount: number): FrameRect[] => {
@@ -399,6 +535,48 @@ const buildFrameRectsFromLines = (
     return rects;
 };
 
+const buildLinesFromBorderPairs = (pairs: AxisBorderPair[], size: number) => {
+    if (pairs.length === 0) return [0, size];
+    return [
+        ...pairs.map(pair => clamp(pair.start, 0, size)),
+        clamp(pairs[pairs.length - 1].end, 0, size),
+    ].map(value => Math.round(value));
+};
+
+const buildFrameRectsFromBorderPairs = (
+    xPairs: AxisBorderPair[],
+    yPairs: AxisBorderPair[],
+    frameCount: number,
+    imageWidth: number,
+    imageHeight: number
+): FrameRect[] => {
+    const cols = Math.max(1, xPairs.length);
+    const rects: FrameRect[] = [];
+
+    for (let index = 0; index < frameCount; index++) {
+        const col = index % cols;
+        const row = Math.floor(index / cols);
+        const xPair = xPairs[col];
+        const yPair = yPairs[row];
+        if (!xPair || !yPair) continue;
+
+        const left = clamp(xPair.start, 0, imageWidth - 1);
+        const top = clamp(yPair.start, 0, imageHeight - 1);
+        const right = clamp(xPair.end, left + 1, imageWidth);
+        const bottom = clamp(yPair.end, top + 1, imageHeight);
+        const borderInset = Math.max(4, Math.min(14, Math.round(Math.min(right - left, bottom - top) * 0.025)));
+
+        rects.push({
+            x: clamp(left + borderInset, 0, imageWidth - 1),
+            y: clamp(top + borderInset, 0, imageHeight - 1),
+            width: Math.max(1, clamp(right - left - (borderInset * 2), 1, imageWidth)),
+            height: Math.max(1, clamp(bottom - top - (borderInset * 2), 1, imageHeight)),
+        });
+    }
+
+    return rects;
+};
+
 const detectAnimationFrameRects = (
     sourceImage: HTMLImageElement,
     grid: { cols: number; rows: number },
@@ -418,6 +596,21 @@ const detectAnimationFrameRects = (
 
     ctx.drawImage(sourceImage, 0, 0);
     const imageData = ctx.getImageData(0, 0, width, height);
+    const xPairs = detectAxisBorderPairs(imageData, 'x', grid.cols);
+    const yPairs = detectAxisBorderPairs(imageData, 'y', grid.rows);
+
+    if (xPairs && yPairs) {
+        const rects = buildFrameRectsFromBorderPairs(xPairs, yPairs, frameCount, width, height);
+        if (rects.length >= frameCount) {
+            return {
+                rects,
+                xLines: buildLinesFromBorderPairs(xPairs, width),
+                yLines: buildLinesFromBorderPairs(yPairs, height),
+                detectedGrid: true,
+            };
+        }
+    }
+
     const xLines = detectAxisLines(imageData, 'x', grid.cols + 1);
     const yLines = detectAxisLines(imageData, 'y', grid.rows + 1);
 
@@ -511,10 +704,102 @@ const detectRegistrationAnchor = (canvas: HTMLCanvasElement) => {
 const getRegistrationStrength = (board: Artboard) => {
     const motion = getAnimationConfig(board)?.motion;
     if (motion === 'camera-move') return { x: 0, y: 0 };
-    if (motion === 'character-action') return { x: 0.35, y: 0.85 };
+    if (motion === 'character-action') return { x: 0.35, y: 0 };
     if (motion === 'transformation') return { x: 0.65, y: 0.65 };
     if (motion === 'explainer-flow') return { x: 0.2, y: 0.45 };
     return { x: 0.75, y: 0.85 };
+};
+
+const detectGroundPlaneAnchor = (canvas: HTMLCanvasElement) => {
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+
+    const { width, height } = canvas;
+    if (width < 16 || height < 16) return null;
+
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const { data } = imageData;
+    const xStart = Math.max(1, Math.round(width * 0.06));
+    const xEnd = Math.min(width - 2, Math.round(width * 0.94));
+    const yStart = Math.max(1, Math.round(height * 0.58));
+    const yEnd = Math.min(height - 2, Math.round(height * 0.92));
+    const stepX = Math.max(1, Math.floor(width / 700));
+    const neighborGap = Math.max(3, Math.round(height * 0.018));
+    const binCount = 12;
+
+    let best: { y: number; score: number; runRatio: number; coverage: number } | null = null;
+
+    for (let y = yStart; y <= yEnd; y++) {
+        let total = 0;
+        let samples = 0;
+        let run = 0;
+        let maxRun = 0;
+        let leftHits = 0;
+        let leftSamples = 0;
+        let rightHits = 0;
+        let rightSamples = 0;
+        const bins = new Array<boolean>(binCount).fill(false);
+
+        for (let x = xStart; x <= xEnd; x += stepX) {
+            const offset = ((y * width) + x) * 4;
+            const alpha = data[offset + 3];
+            if (alpha < 60) {
+                run = 0;
+                continue;
+            }
+
+            const r = data[offset];
+            const g = data[offset + 1];
+            const b = data[offset + 2];
+            const lum = getLuminance(r, g, b);
+            const upY = clamp(y - neighborGap, 0, height - 1);
+            const downY = clamp(y + neighborGap, 0, height - 1);
+            const upOffset = ((upY * width) + x) * 4;
+            const downOffset = ((downY * width) + x) * 4;
+            const upLum = getLuminance(data[upOffset], data[upOffset + 1], data[upOffset + 2]);
+            const downLum = getLuminance(data[downOffset], data[downOffset + 1], data[downOffset + 2]);
+            const surroundingLum = (upLum + downLum) / 2;
+            const localContrast = Math.max(0, surroundingLum - lum);
+            const channelRange = Math.max(r, g, b) - Math.min(r, g, b);
+            const warmLineHint = r > b + 8 && g > b + 4 && channelRange > 12 && lum < 246 ? 0.13 : 0;
+            const verticalEdgeHint = Math.max(0, Math.min(Math.abs(upLum - lum), Math.abs(downLum - lum)) / 80) * 0.18;
+            const weight = Math.min(1, (localContrast / 30) + warmLineHint + verticalEdgeHint);
+
+            total += weight;
+            samples++;
+
+            if (x <= width * 0.34) leftSamples++;
+            if (x >= width * 0.66) rightSamples++;
+
+            if (weight > 0.17) {
+                run++;
+                maxRun = Math.max(maxRun, run);
+                const bin = clamp(Math.floor(((x - xStart) / Math.max(1, xEnd - xStart)) * binCount), 0, binCount - 1);
+                bins[bin] = true;
+                if (x <= width * 0.34) leftHits++;
+                if (x >= width * 0.66) rightHits++;
+            } else {
+                run = 0;
+            }
+        }
+
+        if (samples === 0) continue;
+        const average = total / samples;
+        const runRatio = maxRun / samples;
+        const coverage = bins.filter(Boolean).length / binCount;
+        const leftRatio = leftSamples ? leftHits / leftSamples : 0;
+        const rightRatio = rightSamples ? rightHits / rightSamples : 0;
+        const sideSupport = (leftRatio > 0.05 ? 0.12 : 0) + (rightRatio > 0.05 ? 0.12 : 0);
+        const lowerHalfPreference = 1 - Math.abs((y / height) - 0.8) * 0.42;
+        const score = ((average * 0.32) + (runRatio * 0.28) + (coverage * 0.4) + sideSupport) * lowerHalfPreference;
+
+        if ((coverage > 0.36 || runRatio > 0.2) && (leftRatio > 0.025 || rightRatio > 0.025) && score > (best?.score || 0)) {
+            best = { y, score, runRatio, coverage };
+        }
+    }
+
+    if (!best || best.score < 0.18) return null;
+    return best.y;
 };
 
 const drawTranslatedCanvasWithBleed = (
@@ -616,34 +901,42 @@ const cleanFrameCanvasEdges = (sourceCanvas: HTMLCanvasElement) => {
     return canvas;
 };
 
-const stabilizeFrameCanvases = (canvases: HTMLCanvasElement[], board: Artboard) => {
+const getFrameRegistrationOffsets = (canvases: HTMLCanvasElement[], board: Artboard): FrameOffset[] | null => {
     const anchors = canvases.map(detectRegistrationAnchor);
     const validAnchors = anchors.filter((anchor): anchor is NonNullable<typeof anchor> => Boolean(anchor));
-    if (validAnchors.length < 2) return canvases;
+    const groundAnchors = canvases.map(detectGroundPlaneAnchor);
+    const validGroundAnchors = groundAnchors.filter((anchor): anchor is number => typeof anchor === 'number' && Number.isFinite(anchor));
+    if (validAnchors.length < 2 && validGroundAnchors.length < 2) return null;
 
     const width = canvases[0]?.width || 1;
     const height = canvases[0]?.height || 1;
     const targetX = medianNumber(validAnchors.map(anchor => anchor.centerX), width / 2);
     const targetBottom = medianNumber(validAnchors.map(anchor => anchor.bottomY), height * 0.86);
+    const targetGround = medianNumber(validGroundAnchors, height * 0.84);
     const strength = getRegistrationStrength(board);
 
-    return canvases.map((sourceCanvas, index) => {
+    return canvases.map((_, index) => {
         const anchor = anchors[index];
-        if (!anchor || (strength.x === 0 && strength.y === 0)) return sourceCanvas;
+        const groundAnchor = groundAnchors[index];
+        if (!anchor && typeof groundAnchor !== 'number') return { x: 0, y: 0 };
 
-        const dx = Math.round(clamp((targetX - anchor.centerX) * strength.x, -width * 0.12, width * 0.12));
-        const dy = Math.round(clamp((targetBottom - anchor.bottomY) * strength.y, -height * 0.12, height * 0.12));
-        if (dx === 0 && dy === 0) return sourceCanvas;
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return sourceCanvas;
-
-        drawTranslatedCanvasWithBleed(ctx, sourceCanvas, dx, dy);
-        return canvas;
+        const dx = anchor
+            ? Math.round(clamp((targetX - anchor.centerX) * strength.x, -width * 0.12, width * 0.12))
+            : 0;
+        const dy = typeof groundAnchor === 'number' && validGroundAnchors.length >= 2
+            ? Math.round(clamp(targetGround - groundAnchor, -height * 0.08, height * 0.08))
+            : anchor
+                ? Math.round(clamp((targetBottom - anchor.bottomY) * strength.y, -height * 0.12, height * 0.12))
+                : 0;
+        return { x: dx, y: dy };
     });
+};
+
+const stabilizeFrameCanvases = (canvases: HTMLCanvasElement[], board: Artboard) => {
+    const offsets = getFrameRegistrationOffsets(canvases, board);
+    if (!offsets) return canvases;
+
+    return applyFrameOffsets(canvases, offsets);
 };
 
 const applyFrameOffsets = (canvases: HTMLCanvasElement[], offsets: FrameOffset[] = []) => {
@@ -666,7 +959,8 @@ const renderFrameCanvases = (
     sourceImage: HTMLImageElement,
     rects: FrameRect[],
     board: Artboard,
-    offsets: FrameOffset[] = []
+    offsets: FrameOffset[] = [],
+    autoStabilize = true
 ) => {
     const targetWidth = Math.max(1, Math.round(medianNumber(rects.map(rect => rect.width), rects[0]?.width || 1)));
     const targetHeight = Math.max(1, Math.round(medianNumber(rects.map(rect => rect.height), rects[0]?.height || 1)));
@@ -682,7 +976,8 @@ const renderFrameCanvases = (
         return canvas;
     });
 
-    return applyFrameOffsets(stabilizeFrameCanvases(canvases, board), offsets).map(cleanFrameCanvasEdges);
+    const stabilizedCanvases = autoStabilize ? stabilizeFrameCanvases(canvases, board) : canvases;
+    return applyFrameOffsets(stabilizedCanvases, offsets).map(cleanFrameCanvasEdges);
 };
 
 const loadImageElement = (src: string): Promise<HTMLImageElement> => {
@@ -812,8 +1107,10 @@ const updateLineAt = (lines: number[], index: number, value: number, max: number
 
 const buildFramesFromSliceAdjust = async (board: Artboard, state: SliceAdjustState): Promise<GeneratedImage[]> => {
     const sourceImage = await loadImageElement(state.imageUrl);
-    const rects = buildFrameRectsFromLines(state.xLines, state.yLines, state.frameCount, state.width, state.height);
-    const frameCanvases = renderFrameCanvases(sourceImage, rects, board, state.offsets);
+    const rects = state.rects && state.rects.length >= state.frameCount
+        ? state.rects
+        : buildFrameRectsFromLines(state.xLines, state.yLines, state.frameCount, state.width, state.height);
+    const frameCanvases = renderFrameCanvases(sourceImage, rects, board, state.offsets, Boolean(state.autoStabilize));
     const width = frameCanvases[0]?.width || Math.max(1, Math.round(state.width / state.grid.cols));
     const height = frameCanvases[0]?.height || Math.max(1, Math.round(state.height / state.grid.rows));
     const batchId = createClientId(`frames-${board.image.id}`);
@@ -839,9 +1136,15 @@ const buildFramesFromSliceAdjust = async (board: Artboard, state: SliceAdjustSta
     }));
 };
 
+const getSliceAdjustRects = (state: SliceAdjustState) => (
+    state.rects && state.rects.length >= state.frameCount
+        ? state.rects
+        : buildFrameRectsFromLines(state.xLines, state.yLines, state.frameCount, state.width, state.height)
+);
+
 const CanvasBoard: React.FC<Props> = ({
     artboards, groups, onSelectArtboard, onInspectArtboard,
-    onMoveArtboard, onMoveGroup, onDeleteArtboard, onUploadImage, onAddImagesToCanvas,
+    onMoveArtboard, onMoveGroup, onDeleteArtboard, onDeleteGroup, onUploadImage, onAddImagesToCanvas,
     onAutoArrange, onRegenerateArtboard, onUpdateArtboard,
     lang, regeneratingId, onRequestConfirm, onDeleteHistoryItem, onCopyImage,
     devMode,
@@ -858,7 +1161,13 @@ const CanvasBoard: React.FC<Props> = ({
     const [movingArtboard, setMovingArtboard] = useState<string | null>(null);
     const [movingGroup, setMovingGroup] = useState<string | null>(null);
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
+    const [selectedArtboardIds, setSelectedArtboardIds] = useState<string[]>([]);
+    const [selectionMarquee, setSelectionMarqueeState] = useState<SelectionMarquee | null>(null);
     const lastMousePos = useRef({ x: 0, y: 0 });
+    const dragStartPos = useRef({ x: 0, y: 0 });
+    const isArtboardDragActiveRef = useRef(false);
+    const movingArtboardIdsRef = useRef<string[]>([]);
+    const selectionMarqueeRef = useRef<SelectionMarquee | null>(null);
     const [isDragOver, setIsDragOver] = useState(false);
     const transformLayerRef = useRef<HTMLDivElement>(null);
     const dotGridRef = useRef<HTMLDivElement>(null);
@@ -866,7 +1175,7 @@ const CanvasBoard: React.FC<Props> = ({
     const isPanningRef = useRef(false);
     const syncTimeoutRef = useRef<ReturnType<typeof setTimeout>>(0 as any);
     const [guides, setGuides] = useState<{ type: 'v' | 'h'; pos: number }[]>([]);
-    const [contextMenu, setContextMenu] = useState<{ x: number, y: number, artboardId: string } | null>(null);
+    const [contextMenu, setContextMenu] = useState<CanvasContextMenu | null>(null);
 
     const [editingLabel, setEditingLabel] = useState<{ id: string, text: string } | null>(null);
     const [animationPreview, setAnimationPreview] = useState<AnimationPreviewState | null>(null);
@@ -882,6 +1191,15 @@ const CanvasBoard: React.FC<Props> = ({
     useEffect(() => () => {
         if (clipboardMessageTimeoutRef.current) clearTimeout(clipboardMessageTimeoutRef.current);
     }, []);
+
+    const setSelectionMarquee = useCallback((value: SelectionMarquee | null) => {
+        selectionMarqueeRef.current = value;
+        setSelectionMarqueeState(value);
+    }, []);
+
+    useEffect(() => {
+        setSelectedArtboardIds(prev => prev.filter(id => artboards.some(board => board.id === id)));
+    }, [artboards]);
 
     const showClipboardMessage = useCallback((message: string) => {
         setClipboardMessage(message);
@@ -1000,14 +1318,105 @@ const CanvasBoard: React.FC<Props> = ({
         return { x: (screenX - rect.left - position.x) / scale, y: (screenY - rect.top - position.y) / scale };
     };
 
+    const toWorldFromRefs = (screenX: number, screenY: number) => {
+        if (!containerRef.current) return { x: 0, y: 0 };
+        const rect = containerRef.current.getBoundingClientRect();
+        const currentScale = scaleRef.current || 1;
+        const currentPos = posRef.current;
+        return {
+            x: (screenX - rect.left - currentPos.x) / currentScale,
+            y: (screenY - rect.top - currentPos.y) / currentScale,
+        };
+    };
+
+    const normalizeWorldRect = (rect: SelectionMarquee) => {
+        const x = Math.min(rect.startX, rect.currentX);
+        const y = Math.min(rect.startY, rect.currentY);
+        return {
+            x,
+            y,
+            width: Math.abs(rect.currentX - rect.startX),
+            height: Math.abs(rect.currentY - rect.startY),
+        };
+    };
+
+    const rectsOverlap = (
+        a: { x: number; y: number; width: number; height: number },
+        b: { x: number; y: number; width: number; height: number }
+    ) => (
+        a.x < b.x + b.width &&
+        a.x + a.width > b.x &&
+        a.y < b.y + b.height &&
+        a.y + a.height > b.y
+    );
+
+    const getFullySelectedGroupId = (ids: string[]) => {
+        const selectedGroups = Array.from(new Set(
+            ids
+                .map(id => artboards.find(board => board.id === id)?.groupId)
+                .filter((id): id is string => Boolean(id))
+        ));
+
+        return selectedGroups.find(groupId => {
+            const groupBoardIds = artboards.filter(board => board.groupId === groupId).map(board => board.id);
+            return groupBoardIds.length > 0 && groupBoardIds.every(id => ids.includes(id));
+        }) || null;
+    };
+
+    const finishSelectionMarquee = (marquee: SelectionMarquee | null) => {
+        if (!marquee) return;
+        const rect = normalizeWorldRect(marquee);
+        if (rect.width < 3 && rect.height < 3) return;
+
+        const selected = artboards
+            .filter(board => rectsOverlap(rect, { x: board.x, y: board.y, width: board.width, height: board.height }))
+            .map(board => board.id);
+
+        setSelectedArtboardIds(prev => (
+            marquee.additive ? Array.from(new Set([...prev, ...selected])) : selected
+        ));
+        if (!marquee.additive) {
+            setSelectedGroup(getFullySelectedGroupId(selected));
+        }
+    };
+
+    const beginCanvasPan = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setContextMenu(null);
+        setIsPanning(true);
+        isPanningRef.current = true;
+        lastMousePos.current = { x: e.clientX, y: e.clientY };
+        if (transformLayerRef.current) {
+            transformLayerRef.current.style.transition = 'none';
+            transformLayerRef.current.style.pointerEvents = 'none';
+            transitionRemovedRef.current = true;
+        }
+    };
+
     const handleMouseDown = (e: React.MouseEvent, artboardId?: string) => {
-        if (e.button !== 0 && e.button !== 1) return;
+        if (e.button === 1) {
+            beginCanvasPan(e);
+            return;
+        }
+        if (e.button !== 0) return;
+
         setContextMenu(null);
         if (artboardId) {
             e.stopPropagation();
-            setSelectedGroup(artboards.find(a => a.id === artboardId)?.groupId || null);
             setMovingArtboard(artboardId);
+            isArtboardDragActiveRef.current = false;
+            const nextSelectedIds = e.shiftKey
+                ? (selectedArtboardIds.includes(artboardId)
+                    ? selectedArtboardIds.filter(id => id !== artboardId)
+                    : [...selectedArtboardIds, artboardId])
+                : selectedArtboardIds.includes(artboardId)
+                    ? selectedArtboardIds
+                    : [artboardId];
+            setSelectedArtboardIds(nextSelectedIds);
+            setSelectedGroup(getFullySelectedGroupId(nextSelectedIds));
+            movingArtboardIdsRef.current = nextSelectedIds.includes(artboardId) ? nextSelectedIds : [artboardId];
             lastMousePos.current = { x: e.clientX, y: e.clientY };
+            dragStartPos.current = { x: e.clientX, y: e.clientY };
             // Clear isNew flag when user clicks the artboard
             const board = artboards.find(a => a.id === artboardId);
             if (board?.isNew && onUpdateArtboard) {
@@ -1015,34 +1424,66 @@ const CanvasBoard: React.FC<Props> = ({
             }
         } else {
             setSelectedGroup(null);
-            setIsPanning(true);
-            isPanningRef.current = true;
-            lastMousePos.current = { x: e.clientX, y: e.clientY };
-            if (transformLayerRef.current) {
-                transformLayerRef.current.style.transition = 'none';
-                transformLayerRef.current.style.pointerEvents = 'none';
-                transitionRemovedRef.current = true;
-            }
+            const start = toWorldFromRefs(e.clientX, e.clientY);
+            const marquee = {
+                startX: start.x,
+                startY: start.y,
+                currentX: start.x,
+                currentY: start.y,
+                additive: e.shiftKey,
+            };
+            setSelectionMarquee(marquee);
+            if (!e.shiftKey) setSelectedArtboardIds([]);
         }
     };
 
     const handleGroupMouseDown = (e: React.MouseEvent, groupId: string) => {
-        if (e.button !== 0 && e.button !== 1) return;
+        if (e.button === 1) {
+            beginCanvasPan(e);
+            return;
+        }
+        if (e.button !== 0) return;
         e.stopPropagation();
         setContextMenu(null);
         setSelectedGroup(groupId);
+        setSelectedArtboardIds(artboards.filter(board => board.groupId === groupId).map(board => board.id));
         setMovingGroup(groupId);
         lastMousePos.current = { x: e.clientX, y: e.clientY };
+        dragStartPos.current = { x: e.clientX, y: e.clientY };
+    };
+
+    const handleGroupContextMenu = (e: React.MouseEvent, groupId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setSelectedGroup(groupId);
+        setSelectedArtboardIds(artboards.filter(board => board.groupId === groupId).map(board => board.id));
+        setContextMenu({ x: e.clientX, y: e.clientY, type: 'group', groupId });
     };
 
     const handleMouseMove = (e: React.MouseEvent) => {
         const dx = e.clientX - lastMousePos.current.x;
         const dy = e.clientY - lastMousePos.current.y;
         const currentScale = scaleRef.current || scale;
-        if (movingGroup && onMoveGroup) {
+        if (selectionMarqueeRef.current) {
+            const current = toWorldFromRefs(e.clientX, e.clientY);
+            setSelectionMarquee({
+                ...selectionMarqueeRef.current,
+                currentX: current.x,
+                currentY: current.y,
+            });
+        } else if (movingGroup && onMoveGroup) {
+            const totalDx = e.clientX - dragStartPos.current.x;
+            const totalDy = e.clientY - dragStartPos.current.y;
+            if (Math.hypot(totalDx, totalDy) < 3) return;
             onMoveGroup(movingGroup, dx / currentScale, dy / currentScale);
             lastMousePos.current = { x: e.clientX, y: e.clientY };
         } else if (movingArtboard) {
+            const totalDx = e.clientX - dragStartPos.current.x;
+            const totalDy = e.clientY - dragStartPos.current.y;
+            if (!isArtboardDragActiveRef.current) {
+                if (Math.hypot(totalDx, totalDy) < 4) return;
+                isArtboardDragActiveRef.current = true;
+            }
             const deltaX = dx / currentScale;
             const deltaY = dy / currentScale;
             const target = artboards.find(a => a.id === movingArtboard);
@@ -1084,7 +1525,17 @@ const CanvasBoard: React.FC<Props> = ({
                     }
                 }
                 setGuides(activeGuides);
-                onMoveArtboard(movingArtboard, newX, newY);
+                const selectedIdsToMove = movingArtboardIdsRef.current.includes(movingArtboard)
+                    ? movingArtboardIdsRef.current
+                    : [movingArtboard];
+                if (selectedIdsToMove.length > 1) {
+                    selectedIdsToMove.forEach(id => {
+                        const board = artboards.find(item => item.id === id);
+                        if (board) onMoveArtboard(id, board.x + deltaX, board.y + deltaY);
+                    });
+                } else {
+                    onMoveArtboard(movingArtboard, newX, newY);
+                }
             }
             lastMousePos.current = { x: e.clientX, y: e.clientY };
         } else if (isPanningRef.current) {
@@ -1096,12 +1547,17 @@ const CanvasBoard: React.FC<Props> = ({
     };
 
     const handleMouseUp = () => {
+        const activeMarquee = selectionMarqueeRef.current;
+        finishSelectionMarquee(activeMarquee);
+        setSelectionMarquee(null);
         const wasPanning = isPanningRef.current;
         const wasMoving = movingArtboard;
         setIsPanning(false);
         isPanningRef.current = false;
         setMovingArtboard(null);
         setMovingGroup(null);
+        isArtboardDragActiveRef.current = false;
+        movingArtboardIdsRef.current = [];
         setGuides([]);
         // Sync final position to React state after panning
         if (wasPanning) {
@@ -1121,8 +1577,73 @@ const CanvasBoard: React.FC<Props> = ({
             transitionRemovedRef.current = false;
         }
     };
-    const handleContextMenu = (e: React.MouseEvent, artboardId: string) => { e.preventDefault(); e.stopPropagation(); setContextMenu({ x: e.clientX, y: e.clientY, artboardId }); };
-    const handleRegenerateClick = () => { if (contextMenu) { onRegenerateArtboard(contextMenu.artboardId); setContextMenu(null); } };
+    const handleContextMenu = (e: React.MouseEvent, artboardId: string) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setContextMenu({ x: e.clientX, y: e.clientY, type: 'artboard', artboardId });
+    };
+    const handleRegenerateClick = () => {
+        if (contextMenu?.type === 'artboard') {
+            onRegenerateArtboard(contextMenu.artboardId);
+            setContextMenu(null);
+        }
+    };
+
+    const requestDeleteGroup = useCallback((groupId: string) => {
+        const group = groups.find(item => item.id === groupId);
+        const groupBoards = artboards.filter(board => board.groupId === groupId);
+        onRequestConfirm(
+            lang === 'zh' ? '删除整组' : 'Delete Group',
+            lang === 'zh'
+                ? `确定删除「${group?.label || '组'}」以及其中 ${groupBoards.length} 张图片吗？`
+                : `Delete "${group?.label || 'Group'}" and its ${groupBoards.length} images?`,
+            () => {
+                if (onDeleteGroup) {
+                    onDeleteGroup(groupId);
+                } else {
+                    groupBoards.forEach(board => onDeleteArtboard(board.id));
+                }
+                setSelectedGroup(null);
+                setSelectedArtboardIds(prev => prev.filter(id => !groupBoards.some(board => board.id === id)));
+                setContextMenu(null);
+            }
+        );
+    }, [artboards, groups, lang, onDeleteArtboard, onDeleteGroup, onRequestConfirm]);
+
+    const requestDeleteSelection = useCallback(() => {
+        if (selectedGroup) {
+            requestDeleteGroup(selectedGroup);
+            return;
+        }
+        if (selectedArtboardIds.length === 0) return;
+
+        const count = selectedArtboardIds.length;
+        onRequestConfirm(
+            lang === 'zh' ? '删除选中图片' : 'Delete Selected',
+            lang === 'zh' ? `确定删除选中的 ${count} 张图片吗？` : `Delete ${count} selected image${count === 1 ? '' : 's'}?`,
+            () => {
+                selectedArtboardIds.forEach(id => onDeleteArtboard(id));
+                setSelectedArtboardIds([]);
+                setContextMenu(null);
+            }
+        );
+    }, [lang, onDeleteArtboard, onRequestConfirm, requestDeleteGroup, selectedArtboardIds, selectedGroup]);
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (event.key !== 'Delete' && event.key !== 'Backspace') return;
+            const target = event.target as HTMLElement | null;
+            const isTextInput = target?.closest('input, textarea, select, [contenteditable="true"]');
+            if (isTextInput || animationPreview || sliceAdjust || uiSplitArtboard || historyModalOpen) return;
+            if (!selectedGroup && selectedArtboardIds.length === 0) return;
+
+            event.preventDefault();
+            requestDeleteSelection();
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [animationPreview, historyModalOpen, requestDeleteSelection, selectedArtboardIds.length, selectedGroup, sliceAdjust, uiSplitArtboard]);
 
     const openAnimationPreview = async (artboardId: string, preferSlicing = false) => {
         const board = artboards.find(item => item.id === artboardId);
@@ -1239,6 +1760,7 @@ const CanvasBoard: React.FC<Props> = ({
                 grid,
                 xLines: detected.xLines,
                 yLines: detected.yLines,
+                rects: detected.rects,
                 offsets: Array.from({ length: frameCount }, () => ({ x: 0, y: 0 })),
                 fps: getAnimationFps(board),
                 selectedFrame: 0,
@@ -1325,6 +1847,36 @@ const CanvasBoard: React.FC<Props> = ({
         });
     };
 
+    const autoAlignSliceAdjustGround = async () => {
+        if (!sliceAdjust) return;
+        const board = artboards.find(item => item.id === sliceAdjust.artboardId);
+        if (!board) return;
+
+        setIsSlicingAnimation(true);
+        try {
+            const sourceImage = await loadImageElement(sliceAdjust.imageUrl);
+            const rects = getSliceAdjustRects(sliceAdjust);
+            const frameCanvases = renderFrameCanvases(sourceImage, rects, board, [], false);
+            const offsets = getFrameRegistrationOffsets(frameCanvases, board);
+            if (!offsets) {
+                setAnimationError(lang === 'zh' ? '未识别到稳定地面线，请手动微调注册点' : 'No stable ground line detected. Use manual registration nudge.');
+                return;
+            }
+
+            setAnimationError(null);
+            setSliceAdjust(prev => prev ? {
+                ...prev,
+                offsets,
+                autoStabilize: false,
+            } : prev);
+        } catch (error) {
+            console.error(error);
+            setAnimationError(lang === 'zh' ? '地面对齐失败，请手动微调注册点' : 'Ground alignment failed. Use manual registration nudge.');
+        } finally {
+            setIsSlicingAnimation(false);
+        }
+    };
+
     const handleSliceAdjustPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
         if (!sliceAdjust?.selectedLine || !sliceAdjustImageRef.current) return;
         const rect = sliceAdjustImageRef.current.getBoundingClientRect();
@@ -1332,10 +1884,10 @@ const CanvasBoard: React.FC<Props> = ({
 
         if (axis === 'x') {
             const value = ((event.clientX - rect.left) / Math.max(1, rect.width)) * sliceAdjust.width;
-            setSliceAdjust(prev => prev ? { ...prev, xLines: updateLineAt(prev.xLines, index, value, prev.width) } : prev);
+            setSliceAdjust(prev => prev ? { ...prev, xLines: updateLineAt(prev.xLines, index, value, prev.width), rects: undefined } : prev);
         } else {
             const value = ((event.clientY - rect.top) / Math.max(1, rect.height)) * sliceAdjust.height;
-            setSliceAdjust(prev => prev ? { ...prev, yLines: updateLineAt(prev.yLines, index, value, prev.height) } : prev);
+            setSliceAdjust(prev => prev ? { ...prev, yLines: updateLineAt(prev.yLines, index, value, prev.height), rects: undefined } : prev);
         }
     };
 
@@ -1406,7 +1958,7 @@ const CanvasBoard: React.FC<Props> = ({
             <div ref={dotGridRef} className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #888 1px, transparent 1px)', backgroundSize: `${Math.max(2, 20 * scale)}px ${Math.max(2, 20 * scale)}px`, backgroundPosition: `${position?.x ?? 0}px ${position?.y ?? 0}px`, transition: 'opacity 0.15s ease-out' }} />
             {isDragOver && (<div className="absolute inset-0 bg-teal-500/20 z-50 flex items-center justify-center border-4 border-teal-500 border-dashed pointer-events-none"><span className="text-2xl font-bold text-teal-600 bg-white/80 px-4 py-2 rounded">{lang === 'zh' ? '释放以上传图片到画布' : 'Drop to add image to canvas'}</span></div>)}
 
-            <div ref={containerRef} className={`w-full h-full ${isPanning ? 'cursor-grabbing' : 'cursor-grab'}`} onMouseDown={(e) => handleMouseDown(e)} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+            <div ref={containerRef} className={`w-full h-full ${isPanning ? 'cursor-grabbing' : 'cursor-crosshair'}`} onMouseDown={(e) => handleMouseDown(e)} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
                 <div
                     ref={transformLayerRef}
                     style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transformOrigin: '0 0', willChange: 'transform' }}
@@ -1415,21 +1967,26 @@ const CanvasBoard: React.FC<Props> = ({
                         <div
                             key={group.id}
                             style={{ position: 'absolute', left: group.x - 20, top: group.y - 40, width: group.width + 40, height: group.height + 60 }}
-                            className={`rounded-xl border-2 border-dashed bg-stone-100/50 dark:bg-stone-800/30 cursor-grab active:cursor-grabbing ${
+                            className={`rounded-xl border-2 border-dashed bg-stone-100/50 dark:bg-stone-800/30 cursor-pointer ${
                                 selectedGroup === group.id || movingGroup === group.id
-                                    ? 'border-teal-500 ring-4 ring-teal-500/20'
+                                    ? 'border-teal-500 ring-4 ring-teal-500/30 z-30'
                                     : 'border-stone-300 dark:border-stone-700 hover:border-teal-400'
                             }`}
                             onMouseDown={(e) => handleGroupMouseDown(e, group.id)}
+                            onContextMenu={(e) => handleGroupContextMenu(e, group.id)}
                         >
-                            <div className="absolute -top-12 left-0 text-lg font-bold text-stone-400 uppercase tracking-widest bg-stone-200 dark:bg-stone-800 px-4 py-1.5 rounded-lg shadow-sm flex items-center gap-2">
+                            <div
+                                className="absolute -top-12 left-0 text-lg font-bold text-stone-400 uppercase tracking-widest bg-stone-200 dark:bg-stone-800 px-4 py-1.5 rounded-lg shadow-sm flex items-center gap-2 cursor-pointer"
+                                onMouseDown={(e) => handleGroupMouseDown(e, group.id)}
+                                onContextMenu={(e) => handleGroupContextMenu(e, group.id)}
+                            >
                                 <IconLoader name="drag" size={16} />
                                 {group.label}
                             </div>
                         </div>
                     ))}
                     {artboards.map(board => (
-                        <div key={board.id} style={{ position: 'absolute', left: board.x, top: board.y, width: board.width, height: board.height, contain: 'layout style' }} className={`bg-white shadow-md dark:shadow-black/40 group hover:ring-2 ring-teal-500/50 ${movingArtboard === board.id ? 'ring-4 ring-teal-500 cursor-grabbing z-50' : 'cursor-grab'} rounded-lg ${board.isNew ? 'flash-new' : ''}`} onMouseDown={(e) => handleMouseDown(e, board.id)} onContextMenu={(e) => handleContextMenu(e, board.id)} onDoubleClick={(e) => handleDoubleClick(e, board.id)}>
+                        <div key={board.id} style={{ position: 'absolute', left: board.x, top: board.y, width: board.width, height: board.height, contain: 'layout style' }} className={`bg-white shadow-md dark:shadow-black/40 group hover:ring-2 ring-teal-500/50 ${selectedArtboardIds.includes(board.id) ? 'ring-4 ring-teal-500 z-40' : ''} ${movingArtboard === board.id && isArtboardDragActiveRef.current ? 'ring-4 ring-teal-500 cursor-grabbing z-50' : 'cursor-pointer'} rounded-lg ${board.isNew ? 'flash-new' : ''}`} onMouseDown={(e) => handleMouseDown(e, board.id)} onContextMenu={(e) => handleContextMenu(e, board.id)} onDoubleClick={(e) => handleDoubleClick(e, board.id)}>
 
                             {/* Floating Toolbar & Label */}
                             <div
@@ -1597,7 +2154,7 @@ const CanvasBoard: React.FC<Props> = ({
                                 board.image.details?.designSystem ? (
                                     <div className="w-full h-full flex flex-col bg-white overflow-hidden rounded-lg border border-stone-200 dark:border-stone-800">
                                         <div
-                                            className="h-4 bg-stone-100 dark:bg-stone-800 border-b border-stone-200 dark:border-stone-700 flex items-center justify-center cursor-grab active:cursor-grabbing hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors z-20"
+                                            className="h-4 bg-stone-100 dark:bg-stone-800 border-b border-stone-200 dark:border-stone-700 flex items-center justify-center cursor-pointer hover:bg-teal-50 dark:hover:bg-teal-900/20 transition-colors z-20"
                                             onMouseDown={(e) => handleMouseDown(e, board.id)}
                                         >
                                             <div className="w-8 h-1 rounded-full bg-stone-300 dark:bg-stone-600 opacity-50"></div>
@@ -1616,6 +2173,15 @@ const CanvasBoard: React.FC<Props> = ({
                             {regeneratingId === board.id && (<div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-sm z-50 rounded-lg"><div className="animate-spin rounded-full h-10 w-10 border-4 border-teal-500 border-t-transparent mb-3"></div><span className="text-xs font-bold animate-pulse">{lang === 'zh' ? '生成中...' : 'Generating...'}</span></div>)}
                         </div>
                     ))}
+                    {selectionMarquee && (() => {
+                        const rect = normalizeWorldRect(selectionMarquee);
+                        return (
+                            <div
+                                className="absolute z-[80] pointer-events-none border border-teal-500 bg-teal-500/15"
+                                style={{ left: rect.x, top: rect.y, width: rect.width, height: rect.height }}
+                            />
+                        );
+                    })()}
                     {guides.map((g, idx) => (<div key={idx} className="absolute bg-red-500 pointer-events-none z-[60]" style={{ left: g.type === 'v' ? g.pos : -10000, top: g.type === 'h' ? g.pos : -10000, width: g.type === 'v' ? 1 : '20000px', height: g.type === 'h' ? 1 : '20000px' }} />))}
                 </div>
             </div>
@@ -1632,6 +2198,29 @@ const CanvasBoard: React.FC<Props> = ({
             </div>
 
             {contextMenu && (() => {
+                if (contextMenu.type === 'group') {
+                    const group = groups.find(item => item.id === contextMenu.groupId);
+                    const groupCount = artboards.filter(board => board.groupId === contextMenu.groupId).length;
+
+                    return (
+                        <div
+                            className="fixed bg-white dark:bg-stone-800 border border-stone-200 dark:border-stone-700 rounded shadow-xl py-1 z-[100] w-56"
+                            style={{ left: contextMenu.x, top: contextMenu.y }}
+                        >
+                            <div className="px-4 py-2 text-xs font-bold uppercase text-stone-400 truncate">
+                                {group?.label || (lang === 'zh' ? '组' : 'Group')} · {groupCount}
+                            </div>
+                            <button
+                                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2"
+                                onClick={() => requestDeleteGroup(contextMenu.groupId)}
+                            >
+                                <IconLoader name="trash" size={14} />
+                                {lang === 'zh' ? '删除整组' : 'Delete Group'}
+                            </button>
+                        </div>
+                    );
+                }
+
                 const board = artboards.find(item => item.id === contextMenu.artboardId);
                 const showAnimationActions = Boolean(board && canPreviewAnimation(board, artboards));
                 const shouldSlice = Boolean(board && isStoryboardSheet(board, artboards));
@@ -1786,10 +2375,11 @@ const CanvasBoard: React.FC<Props> = ({
                                             {Array.from({ length: sliceAdjust.frameCount }).map((_, index) => {
                                                 const col = index % sliceAdjust.grid.cols;
                                                 const row = Math.floor(index / sliceAdjust.grid.cols);
-                                                const left = (sliceAdjust.xLines[col] / sliceAdjust.width) * 100;
-                                                const top = (sliceAdjust.yLines[row] / sliceAdjust.height) * 100;
-                                                const cellWidth = ((sliceAdjust.xLines[col + 1] - sliceAdjust.xLines[col]) / sliceAdjust.width) * 100;
-                                                const cellHeight = ((sliceAdjust.yLines[row + 1] - sliceAdjust.yLines[row]) / sliceAdjust.height) * 100;
+                                                const rect = sliceAdjust.rects?.[index];
+                                                const left = ((rect?.x ?? sliceAdjust.xLines[col]) / sliceAdjust.width) * 100;
+                                                const top = ((rect?.y ?? sliceAdjust.yLines[row]) / sliceAdjust.height) * 100;
+                                                const cellWidth = ((rect?.width ?? (sliceAdjust.xLines[col + 1] - sliceAdjust.xLines[col])) / sliceAdjust.width) * 100;
+                                                const cellHeight = ((rect?.height ?? (sliceAdjust.yLines[row + 1] - sliceAdjust.yLines[row])) / sliceAdjust.height) * 100;
                                                 return (
                                                     <button
                                                         key={index}
@@ -1867,6 +2457,14 @@ const CanvasBoard: React.FC<Props> = ({
                                             <div className="mb-2 text-xs font-bold uppercase text-stone-500">
                                                 {lang === 'zh' ? '注册点微调' : 'Registration Nudge'}
                                             </div>
+                                            <button
+                                                className="mb-2 flex min-h-9 w-full items-center justify-center gap-2 rounded border border-teal-200 bg-teal-50 text-xs font-bold text-teal-700 hover:bg-teal-100 disabled:opacity-50 dark:border-teal-900/70 dark:bg-teal-950/30 dark:text-teal-200 dark:hover:bg-teal-900/40"
+                                                onClick={autoAlignSliceAdjustGround}
+                                                disabled={isSlicingAnimation}
+                                            >
+                                                <IconLoader name="magic-wand" size={14} />
+                                                {lang === 'zh' ? '锁定地面线' : 'Lock Ground Line'}
+                                            </button>
                                             <div className="grid grid-cols-3 gap-2">
                                                 <span />
                                                 <button className="h-9 rounded border border-stone-200 dark:border-stone-700 hover:bg-stone-100 dark:hover:bg-stone-800 text-sm" onClick={() => updateSliceAdjustOffset(0, -2)}>^</button>

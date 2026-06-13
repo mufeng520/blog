@@ -65,7 +65,20 @@ export default function EditorWorkspaceLayout({
               actions.setArtboardGroups(prev => prev.map(group => (group.id === id ? { ...group, x: group.x + dx, y: group.y + dy } : group)));
               actions.setArtboards(prev => prev.map(ab => (ab.groupId === id ? { ...ab, x: ab.x + dx, y: ab.y + dy } : ab)));
             }}
-            onDeleteArtboard={(id) => actions.setArtboards(prev => prev.filter(ab => ab.id !== id))}
+            onDeleteArtboard={(id) => {
+              actions.setArtboards(prev => {
+                const target = prev.find(ab => ab.id === id);
+                const next = prev.filter(ab => ab.id !== id);
+                if (target?.groupId && !next.some(ab => ab.groupId === target.groupId)) {
+                  actions.setArtboardGroups(groups => groups.filter(group => group.id !== target.groupId));
+                }
+                return next;
+              });
+            }}
+            onDeleteGroup={(id) => {
+              actions.setArtboards(prev => prev.filter(ab => ab.groupId !== id));
+              actions.setArtboardGroups(prev => prev.filter(group => group.id !== id));
+            }}
             onUploadImage={(file, x, y) => actions.handleCanvasDrop(file, x, y)}
             onAddImagesToCanvas={actions.handleAddGeneratedImagesToCanvas}
             onAutoArrange={actions.handleAutoArrange}

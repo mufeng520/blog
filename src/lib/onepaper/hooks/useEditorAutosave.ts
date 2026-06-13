@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { AppConfigExport, Artboard } from '../types';
+import type { AppConfigExport, Artboard, ArtboardGroup } from '../types';
 
 type EditorAutosaveConfig = Partial<AppConfigExport>;
 
@@ -7,11 +7,13 @@ type UseEditorAutosaveOptions = {
   currentProjectId: string | null;
   isLoadingProject: boolean;
   artboards: Artboard[];
+  artboardGroups: ArtboardGroup[];
   config: EditorAutosaveConfig;
   onSave: (
     projectId: string,
     config: EditorAutosaveConfig,
     artboards: Artboard[],
+    artboardGroups: ArtboardGroup[],
     thumbnail?: string,
     skipStateUpdate?: boolean,
   ) => Promise<void>;
@@ -21,6 +23,7 @@ export function useEditorAutosave({
   currentProjectId,
   isLoadingProject,
   artboards,
+  artboardGroups,
   config,
   onSave,
 }: UseEditorAutosaveOptions) {
@@ -41,6 +44,7 @@ export function useEditorAutosave({
         label: artboard.label,
         groupId: artboard.groupId,
       })),
+      artboardGroups,
       config,
     });
 
@@ -64,7 +68,7 @@ export function useEditorAutosave({
         } catch (_) {}
       }
 
-      onSave(currentProjectId, config, artboards, thumbnail, true).then(() => {
+      onSave(currentProjectId, config, artboards, artboardGroups, thumbnail, true).then(() => {
         lastSavedRef.current = currentStateString;
         console.log('Auto-saved');
       });
@@ -75,6 +79,7 @@ export function useEditorAutosave({
     currentProjectId,
     isLoadingProject,
     artboards,
+    artboardGroups,
     config,
   ]);
 }

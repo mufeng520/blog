@@ -67,13 +67,18 @@ const buildAnimationKeyframeContract = (config: AnimationSequenceConfig) => {
   const loopRule = config.motion === 'subtle-loop'
     ? '- Loop closure: frame 1 and the final frame must be visually compatible so playback can return to frame 1 without a jump.'
     : '- Action closure: the last frame is the target state; do not force it to loop unless the action naturally loops.';
+  const characterActionRule = config.motion === 'character-action'
+    ? '- For running, jumping, hopping, or leaping actions, include a believable animation arc: contact, squash/compression, lift-off, airborne extension, and landing/recovery poses as appropriate for the keyframe count.'
+    : '';
 
   return `
 KEYFRAME PROGRESSION CONTRACT:
 - The sheet contains ${frameCount} keyframes that complete one full motion cycle or one complete action pass.
 - Each neighboring frame should advance the pose by one clear, readable step.
 ${loopRule}
-- Use a locked camera, fixed scale, fixed horizon/ground line, and a stable registration anchor across every cell.
+- Use a locked camera, fixed scale, and fixed horizon/ground line across every cell.
+- For character motion, allow natural vertical body movement such as bounce, lift, hang time, landing, or jumping; do not force feet or body bottom to the exact same pixel baseline in every frame.
+${characterActionRule}
 - Keep subject proportions, colors, line weight, lighting direction, and background anchors identical.
 - Avoid sudden teleporting, pose skips, cropped limbs, changing character design, or inconsistent object size.
 `.trim();
@@ -492,7 +497,8 @@ STORYBOARD SHEET REQUIREMENTS:
 - Fill cells left-to-right, top-to-bottom; leave any unused cells blank if the grid has extra capacity.
 - Do not draw frame numbers, titles, labels, captions, watermarks, timeline text, or corner badges inside the cells.
 - Do not draw arrows unless the motion type explicitly needs diagram annotations; for character/action loops, show the motion through poses only.
-- Keep the subject aligned to the same baseline and center registration guide in every cell so the sheet can be cut into animation frames.
+- Keep the ground plane/horizon at the same height in every cell; keep the subject roughly centered, but let it rise and fall naturally when the action requires jumping, running bounce, or landing.
+- For animal or character run cycles, the ground shadow/contact line stays fixed while the body follows a smooth upward/downward arc; include airborne frames when the action calls for speed or bounce.
 - Each cell should be a clean standalone frame after cropping away the grid lines.
 ` : `
 FRAME-SPECIFIC REQUIREMENTS:
@@ -500,7 +506,7 @@ FRAME-SPECIFIC REQUIREMENTS:
 - Generate only this single frame as a full-quality standalone image.
 - Position this frame within the overall motion arc at ${(frameIndex / Math.max(config.frameCount - 1, 1)).toFixed(2)} progress.
 ${refImage ? '- Use the previous frame reference to preserve exact visual continuity while advancing the motion.' : '- Establish the first frame clearly so later frames can inherit its design.'}
-- Keep the same camera, baseline, scale, crop, and subject registration used by the whole sequence.
+- Keep the same camera, ground plane, horizon, scale, and crop used by the whole sequence; the subject may rise/fall naturally if this frame is part of a jump, run, or landing.
 `}
 
 CONTENT / ACTION TO ANIMATE:
