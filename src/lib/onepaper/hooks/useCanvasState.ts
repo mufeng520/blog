@@ -125,6 +125,54 @@ export const useCanvasState = (
         });
     };
 
+    const rectsOverlap = (
+        a: { x: number; y: number; width: number; height: number },
+        b: { x: number; y: number; width: number; height: number }
+    ) => (
+        a.x < b.x + b.width &&
+        a.x + a.width > b.x &&
+        a.y < b.y + b.height &&
+        a.y + a.height > b.y
+    );
+
+    const findOpenCanvasOrigin = (
+        origin: { x: number; y: number },
+        width: number,
+        height: number
+    ) => {
+        const padding = 64;
+        const occupied = [
+            ...artboards.map(board => ({ x: board.x, y: board.y, width: board.width, height: board.height })),
+            ...artboardGroups.map(group => ({ x: group.x - 20, y: group.y - 40, width: group.width + 40, height: group.height + 60 })),
+        ];
+
+        let candidate = { ...origin };
+        for (let attempt = 0; attempt < 160; attempt++) {
+            const candidateRect = {
+                x: candidate.x - padding,
+                y: candidate.y - padding,
+                width: width + padding * 2,
+                height: height + padding * 2,
+            };
+
+            if (!occupied.some(rect => rectsOverlap(candidateRect, rect))) return candidate;
+
+            if ((attempt + 1) % 8 === 0) {
+                candidate = {
+                    x: candidate.x + width + padding * 2,
+                    y: origin.y,
+                };
+            } else {
+                candidate = {
+                    x: candidate.x,
+                    y: candidate.y + height + padding * 2,
+                };
+            }
+        }
+
+        return candidate;
+    };
+
     const handleCanvasDrop = async (file: File, x: number, y: number, platform: string, designTokens: any) => {
         try {
             const base64 = await fileToBase64(file);
@@ -182,24 +230,25 @@ export const useCanvasState = (
             rowHeights[row] = Math.max(rowHeights[row] || 0, dims.height);
         });
 
-        const colXs = colWidths.reduce<number[]>((acc, width, index) => {
-            acc[index] = index === 0 ? origin.x : acc[index - 1] + colWidths[index - 1] + gap;
-            return acc;
-        }, []);
-        const rowYs = rowHeights.reduce<number[]>((acc, height, index) => {
-            acc[index] = index === 0 ? origin.y : acc[index - 1] + rowHeights[index - 1] + gap;
-            return acc;
-        }, []);
-
         const groupId = `frames-${Date.now()}`;
         const totalWidth = colWidths.reduce((sum, width) => sum + width, 0) + gap * Math.max(0, colWidths.length - 1);
         const totalHeight = rowHeights.reduce((sum, height) => sum + height, 0) + gap * Math.max(0, rowHeights.length - 1);
+        const placedOrigin = findOpenCanvasOrigin(origin, totalWidth, totalHeight);
+
+        const colXs = colWidths.reduce<number[]>((acc, width, index) => {
+            acc[index] = index === 0 ? placedOrigin.x : acc[index - 1] + colWidths[index - 1] + gap;
+            return acc;
+        }, []);
+        const rowYs = rowHeights.reduce<number[]>((acc, height, index) => {
+            acc[index] = index === 0 ? placedOrigin.y : acc[index - 1] + rowHeights[index - 1] + gap;
+            return acc;
+        }, []);
 
         setArtboardGroups(prev => [...prev, {
             id: groupId,
             label: options?.groupLabel || (lang === 'zh' ? '切分帧' : 'Extracted Frames'),
-            x: origin.x,
-            y: origin.y,
+            x: placedOrigin.x,
+            y: placedOrigin.y,
             width: totalWidth,
             height: totalHeight,
         }]);

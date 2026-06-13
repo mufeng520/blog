@@ -52,11 +52,17 @@ const normalizeTextImages = async (images?: (string | File)[]): Promise<string[]
 };
 
 const callAIProxy = async <T,>(operation: ServerOperation, api: APIConfig, opts: unknown): Promise<T> => {
-    const res = await fetch(AI_PROXY_ENDPOINT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ operation, api, opts }),
-    });
+    let res: Response;
+    try {
+        res = await fetch(AI_PROXY_ENDPOINT, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ operation, api, opts }),
+        });
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error || 'Unknown error');
+        throw new Error(`\u65e0\u6cd5\u8fde\u63a5 AI \u4ee3\u7406\u63a5\u53e3\uff08/api/onepaper/ai\uff09\uff1a\u8bf7\u786e\u8ba4\u540e\u7aef API \u8def\u7531\u5df2\u90e8\u7f72\uff0c\u6216\u5f53\u524d\u7ad9\u70b9\u4e0d\u662f\u7eaf\u9759\u6001\u6258\u7ba1\u3002 (${message})`);
+    }
 
     const data = await res.json().catch(() => null) as ({ error?: string } & Partial<T>) | null;
     if (!res.ok || data?.error) {

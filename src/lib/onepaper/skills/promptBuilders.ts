@@ -487,6 +487,8 @@ ${frameIndex === undefined ? `
 STORYBOARD SHEET REQUIREMENTS:
 - Compose exactly ${config.frameCount} frames in a ${grid.cols} columns x ${grid.rows} rows sprite sheet.
 - Every cell must have the same width and height, separated by straight full-length 1-2px grid lines.
+- The separator grid lines are cutting guides only; do not draw black borders, white borders, mats, frames, or panel strokes inside any cell artwork.
+- Extend the background artwork cleanly to each cell's cutting edge so every cropped frame is full-bleed with no edge stripe.
 - Fill cells left-to-right, top-to-bottom; leave any unused cells blank if the grid has extra capacity.
 - Do not draw frame numbers, titles, labels, captions, watermarks, timeline text, or corner badges inside the cells.
 - Do not draw arrows unless the motion type explicitly needs diagram annotations; for character/action loops, show the motion through poses only.

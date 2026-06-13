@@ -98,9 +98,17 @@ const getOpenAIEndpoint = (baseUrl: string, endpoint: 'chat' | 'image'): string 
   const rawUrl = (baseUrl || fallback).trim() || fallback;
   const url = new URL(rawUrl);
   const cleanPath = url.pathname.replace(/\/+$/, '');
+  const lowerPath = cleanPath.toLowerCase();
 
-  if (cleanPath === '' || cleanPath === '/' || cleanPath.endsWith('/v1')) {
-    url.pathname = `${cleanPath === '' || cleanPath === '/' ? '/v1' : cleanPath}/${
+  if (endpoint === 'image' && lowerPath.endsWith('/chat/completions')) {
+    url.pathname = `${cleanPath.slice(0, -'/chat/completions'.length)}/images/generations`;
+  } else if (endpoint === 'chat' && lowerPath.endsWith('/images/generations')) {
+    url.pathname = `${cleanPath.slice(0, -'/images/generations'.length)}/chat/completions`;
+  }
+
+  const normalizedPath = url.pathname.replace(/\/+$/, '');
+  if (normalizedPath === '' || normalizedPath === '/' || normalizedPath.endsWith('/v1')) {
+    url.pathname = `${normalizedPath === '' || normalizedPath === '/' ? '/v1' : normalizedPath}/${
       endpoint === 'chat' ? 'chat/completions' : 'images/generations'
     }`;
   }
@@ -151,13 +159,46 @@ const processImageInput = async (input: string | undefined | null) => {
   return base64ToPart(input);
 };
 
-const readErrorText = async (res: Response) => {
-  const text = await res.text().catch(() => '');
+const readableHost = (rawUrl: string): string => {
+  try {
+    return new URL(rawUrl).host;
+  } catch {
+    return 'unknown host';
+  }
+};
+
+const normalizeProviderErrorText = (status: number, text: string, statusText?: string) => {
   const cleaned = text
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
     .replace(/<[^>]*>/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-  return cleaned || res.statusText || 'Request failed';
+  const fallback = cleaned || statusText || 'Request failed';
+  const lower = fallback.toLowerCase();
+
+  if (status === 502 && (lower.includes('bad gateway') || lower.includes('cloudflare'))) {
+    return '\u4e0a\u6e38\u7f51\u5173 502\uff1a\u56fe\u7247\u4e2d\u8f6c\u7ad9\u6682\u65f6\u4e0d\u53ef\u7528\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u6216\u5207\u6362\u5176\u4ed6\u56fe\u7247 API\u3002';
+  }
+
+  if (status === 503 && lower.includes('no available compatible accounts')) {
+    return '\u4e2d\u8f6c\u7ad9\u8d26\u53f7\u6c60 503\uff1a\u6ca1\u6709\u53ef\u7528\u7684\u517c\u5bb9\u8d26\u53f7\uff0c\u8bf7\u5207\u6362\u6a21\u578b/API\uff0c\u6216\u7b49\u4e2d\u8f6c\u7ad9\u6062\u590d\u3002';
+  }
+
+  if (status === 403 && lower.includes('forbidden')) {
+    return '\u63a5\u53e3\u8fd4\u56de 403 Forbidden\uff1a\u4e2d\u8f6c\u7ad9\u62d2\u7edd\u8bbf\u95ee\uff0c\u8bf7\u68c0\u67e5 Base URL\u3001API Key\u3001\u767d\u540d\u5355\u6216\u8be5\u6a21\u578b\u6743\u9650\u3002';
+  }
+
+  if ((lower.includes('quality') && lower.includes('\u4e0d\u5408\u6cd5')) || lower.includes('invalid quality')) {
+    return '\u56fe\u7247\u63a5\u53e3\u62d2\u7edd quality \u53c2\u6570\u3002\u5f53\u524d\u7248\u672c\u5df2\u9ed8\u8ba4\u4e0d\u53d1\u9001 quality\uff0c\u8bf7\u5237\u65b0\u9875\u9762\u540e\u91cd\u8bd5\uff1b\u5982\u679c\u4ecd\u51fa\u73b0\uff0c\u8bf7\u68c0\u67e5\u7ebf\u4e0a\u4ee3\u7801\u662f\u5426\u5df2\u66f4\u65b0\u3002';
+  }
+
+  return fallback.length > 700 ? `${fallback.slice(0, 700)}...` : fallback;
+};
+
+const readErrorText = async (res: Response) => {
+  const text = await res.text().catch(() => '');
+  return normalizeProviderErrorText(res.status, text, res.statusText);
 };
 
 const looksOpenAICompatible = (api: APIConfig): boolean => {
@@ -174,19 +215,95 @@ const looksOpenAICompatible = (api: APIConfig): boolean => {
   );
 };
 
-const aspectToSize = (aspect?: string): string => {
+const aspectToSize = (aspect?: string, model = ''): string => {
+  const normalizedModel = model.toLowerCase();
+  if (normalizedModel.includes('gpt-image')) {
+    switch (aspect) {
+      case '16:9':
+      case '4:3':
+      case '3:2':
+        return '1536x1024';
+      case '3:4':
+      case '9:16':
+      case '2:3':
+        return '1024x1536';
+      case '1:1':
+      default:
+        return '1024x1024';
+    }
+  }
+
+  if (normalizedModel.includes('dall-e-2')) {
+    return '1024x1024';
+  }
+
   switch (aspect) {
     case '16:9':
+    case '3:2':
       return '1792x1024';
     case '4:3':
       return '1024x1024';
     case '3:4':
     case '9:16':
+    case '2:3':
       return '1024x1792';
     case '1:1':
     default:
       return '1024x1024';
   }
+};
+
+const describeOpenAIImageTarget = (api: APIConfig) => {
+  const endpoint = getOpenAIEndpoint(api.baseUrl, 'image');
+  return `${api.imageModel || 'gpt-image-2'} @ ${readableHost(endpoint)}`;
+};
+
+const isNetworkFetchFailure = (error: unknown) => {
+  const message = getErrorMessage(error).toLowerCase();
+  return (
+    error instanceof TypeError ||
+    message.includes('fetch failed') ||
+    message.includes('failed to fetch') ||
+    message.includes('network')
+  );
+};
+
+const fetchGeneratedImage = async (imageUrl: string): Promise<string> => {
+  const safeUrl = assertExternalHttpsUrl(imageUrl);
+  let imgRes: Response;
+
+  try {
+    imgRes = await fetchExternal(safeUrl, {
+      headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8' },
+    });
+  } catch (error) {
+    if (isNetworkFetchFailure(error)) {
+      return safeUrl;
+    }
+    throw error;
+  }
+
+  if (!imgRes.ok) {
+    throw new Error(`\u751f\u6210\u56fe\u7247\u5df2\u8fd4\u56de\u94fe\u63a5\uff0c\u4f46\u4ee3\u7406\u4e0b\u8f7d\u5931\u8d25 ${imgRes.status}\uff1a${await readErrorText(imgRes)}`);
+  }
+
+  return responseToDataUrl(imgRes);
+};
+
+const shouldTryChatImageFallback = (error: unknown) => {
+  const message = getErrorMessage(error).toLowerCase();
+  const status = typeof (error as { status?: unknown })?.status === 'number'
+    ? (error as { status: number }).status
+    : null;
+
+  return (
+    message.includes('messages is required') ||
+    message.includes('not found') ||
+    message.includes('cannot post') ||
+    message.includes('unsupported endpoint') ||
+    status === 404 ||
+    status === 405
+  );
 };
 
 const callGeminiTextAPI = async (api: APIConfig, opts: TextAPIOptions): Promise<string> => {
@@ -313,10 +430,11 @@ const callGeminiImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Promis
 };
 
 const callOpenAIImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Promise<string> => {
+  const model = api.imageModel || 'gpt-image-2';
   const body: Record<string, unknown> = {
-    model: api.imageModel || 'gpt-image-2',
+    model,
     prompt: opts.prompt,
-    size: aspectToSize(opts.aspectRatio),
+    size: aspectToSize(opts.aspectRatio, model),
     n: 1,
   };
 
@@ -330,17 +448,16 @@ const callOpenAIImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Promis
   });
 
   if (!res.ok) {
-    throw new Error(`OpenAI image error ${res.status}: ${await readErrorText(res)}`);
+    const error = new Error(`OpenAI image error ${res.status} (${describeOpenAIImageTarget(api)}): ${await readErrorText(res)}`);
+    (error as Error & { status?: number }).status = res.status;
+    throw error;
   }
 
   const data = await res.json();
   const imageData = data.data?.[0];
   if (imageData?.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
   if (!imageData?.url) throw new Error('No image URL returned from OpenAI');
-
-  const imgRes = await fetchExternal(imageData.url);
-  if (!imgRes.ok) throw new Error(`Failed to fetch generated image: ${imgRes.status}`);
-  return responseToDataUrl(imgRes);
+  return fetchGeneratedImage(imageData.url);
 };
 
 const callOpenAIChatImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Promise<string> => {
@@ -357,7 +474,9 @@ const callOpenAIChatImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Pr
   });
 
   if (!res.ok) {
-    throw new Error(`OpenAI chat image error ${res.status}: ${await readErrorText(res)}`);
+    const error = new Error(`OpenAI chat image error ${res.status} (${api.imageModel || 'gpt-image-2'} @ ${readableHost(getOpenAIEndpoint(api.baseUrl, 'chat'))}): ${await readErrorText(res)}`);
+    (error as Error & { status?: number }).status = res.status;
+    throw error;
   }
 
   const data = await res.json();
@@ -369,9 +488,7 @@ const callOpenAIChatImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Pr
   const imageUrl = markdownMatch?.[1] || plainUrlMatch?.[1];
 
   if (imageUrl) {
-    const imgRes = await fetchExternal(imageUrl);
-    if (!imgRes.ok) throw new Error(`Failed to fetch generated image: ${imgRes.status}`);
-    return responseToDataUrl(imgRes);
+    return fetchGeneratedImage(imageUrl);
   }
 
   const base64Match = content.match(/data:image\/[^;]+;base64,([A-Za-z0-9+/=]+)/);
@@ -477,7 +594,7 @@ export const POST: APIRoute = async ({ request }) => {
         try {
           return json({ image: await callOpenAIImageAPI(api, body.opts as ImageAPIOptions) });
         } catch (error) {
-          if (getErrorMessage(error).includes('messages is required')) {
+          if (shouldTryChatImageFallback(error)) {
             return json({ image: await callOpenAIChatImageAPI(api, body.opts as ImageAPIOptions) });
           }
           throw error;

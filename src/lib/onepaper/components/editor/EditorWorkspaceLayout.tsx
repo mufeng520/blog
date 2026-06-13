@@ -61,6 +61,10 @@ export default function EditorWorkspaceLayout({
             onSelectArtboard={(id) => actions.handleOpenRegen(id)}
             onInspectArtboard={(image) => actions.setInspectImage(image)}
             onMoveArtboard={(id, x, y) => actions.setArtboards(prev => prev.map(ab => (ab.id === id ? { ...ab, x, y } : ab)))}
+            onMoveGroup={(id, dx, dy) => {
+              actions.setArtboardGroups(prev => prev.map(group => (group.id === id ? { ...group, x: group.x + dx, y: group.y + dy } : group)));
+              actions.setArtboards(prev => prev.map(ab => (ab.groupId === id ? { ...ab, x: ab.x + dx, y: ab.y + dy } : ab)));
+            }}
             onDeleteArtboard={(id) => actions.setArtboards(prev => prev.filter(ab => ab.id !== id))}
             onUploadImage={(file, x, y) => actions.handleCanvasDrop(file, x, y)}
             onAddImagesToCanvas={actions.handleAddGeneratedImagesToCanvas}

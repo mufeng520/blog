@@ -12,6 +12,7 @@ interface Props {
     onSelectArtboard: (id: string) => void;
     onInspectArtboard?: (image: GeneratedImage) => void;
     onMoveArtboard: (id: string, x: number, y: number) => void;
+    onMoveGroup?: (id: string, dx: number, dy: number) => void;
     onDeleteArtboard: (id: string) => void;
     onUploadImage: (file: File, x: number, y: number) => void;
     onAddImagesToCanvas?: (
@@ -385,7 +386,7 @@ const buildFrameRectsFromLines = (
         const top = clamp(yLines[row] ?? 0, 0, imageHeight - 1);
         const right = clamp(xLines[col + 1] ?? imageWidth, left + 1, imageWidth);
         const bottom = clamp(yLines[row + 1] ?? imageHeight, top + 1, imageHeight);
-        const borderInset = Math.max(2, Math.min(8, Math.round(Math.min(right - left, bottom - top) * 0.012)));
+        const borderInset = Math.max(3, Math.min(12, Math.round(Math.min(right - left, bottom - top) * 0.018)));
 
         rects.push({
             x: clamp(left + borderInset, 0, imageWidth - 1),
@@ -516,6 +517,105 @@ const getRegistrationStrength = (board: Artboard) => {
     return { x: 0.75, y: 0.85 };
 };
 
+const drawTranslatedCanvasWithBleed = (
+    ctx: CanvasRenderingContext2D,
+    sourceCanvas: HTMLCanvasElement,
+    dx: number,
+    dy: number
+) => {
+    const width = sourceCanvas.width;
+    const height = sourceCanvas.height;
+
+    ctx.clearRect(0, 0, width, height);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.drawImage(sourceCanvas, dx, dy);
+
+    if (dy > 0) {
+        ctx.drawImage(sourceCanvas, 0, 0, width, 1, 0, 0, width, dy);
+    } else if (dy < 0) {
+        ctx.drawImage(sourceCanvas, 0, height - 1, width, 1, 0, height + dy, width, -dy);
+    }
+
+    if (dx > 0) {
+        ctx.drawImage(sourceCanvas, 0, 0, 1, height, 0, 0, dx, height);
+    } else if (dx < 0) {
+        ctx.drawImage(sourceCanvas, width - 1, 0, 1, height, width + dx, 0, -dx, height);
+    }
+};
+
+const getEdgeDarkLineScore = (
+    imageData: ImageData,
+    side: 'top' | 'right' | 'bottom' | 'left',
+    inset: number
+) => {
+    const { width, height, data } = imageData;
+    const isHorizontal = side === 'top' || side === 'bottom';
+    const length = isHorizontal ? width : height;
+    const step = Math.max(1, Math.floor(length / 900));
+    let sum = 0;
+    let samples = 0;
+
+    for (let pos = 0; pos < length; pos += step) {
+        const x = side === 'left' ? inset : side === 'right' ? width - 1 - inset : pos;
+        const y = side === 'top' ? inset : side === 'bottom' ? height - 1 - inset : pos;
+        const offset = ((clamp(y, 0, height - 1) * width) + clamp(x, 0, width - 1)) * 4;
+        sum += getDarkLineWeight(data, offset);
+        samples++;
+    }
+
+    return samples ? sum / samples : 0;
+};
+
+const getDarkEdgeInset = (imageData: ImageData, side: 'top' | 'right' | 'bottom' | 'left', maxInset: number) => {
+    let inset = 0;
+    for (let index = 0; index < maxInset; index++) {
+        const score = getEdgeDarkLineScore(imageData, side, index);
+        if (score < 0.08) break;
+        inset = index + 1;
+    }
+    return inset;
+};
+
+const cleanFrameCanvasEdges = (sourceCanvas: HTMLCanvasElement) => {
+    const width = sourceCanvas.width;
+    const height = sourceCanvas.height;
+    const sourceCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+    if (!sourceCtx || width < 8 || height < 8) return sourceCanvas;
+
+    const maxDynamicInset = Math.max(1, Math.min(12, Math.round(Math.min(width, height) * 0.025)));
+    const imageData = sourceCtx.getImageData(0, 0, width, height);
+    const baseInset = Math.max(1, Math.min(3, Math.round(Math.min(width, height) * 0.004)));
+    const left = Math.max(baseInset, getDarkEdgeInset(imageData, 'left', maxDynamicInset));
+    const top = Math.max(baseInset, getDarkEdgeInset(imageData, 'top', maxDynamicInset));
+    const right = Math.max(baseInset, getDarkEdgeInset(imageData, 'right', maxDynamicInset));
+    const bottom = Math.max(baseInset, getDarkEdgeInset(imageData, 'bottom', maxDynamicInset));
+
+    if (left + right >= width - 2 || top + bottom >= height - 2) return sourceCanvas;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return sourceCanvas;
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(
+        sourceCanvas,
+        left,
+        top,
+        width - left - right,
+        height - top - bottom,
+        0,
+        0,
+        width,
+        height
+    );
+    return canvas;
+};
+
 const stabilizeFrameCanvases = (canvases: HTMLCanvasElement[], board: Artboard) => {
     const anchors = canvases.map(detectRegistrationAnchor);
     const validAnchors = anchors.filter((anchor): anchor is NonNullable<typeof anchor> => Boolean(anchor));
@@ -541,10 +641,7 @@ const stabilizeFrameCanvases = (canvases: HTMLCanvasElement[], board: Artboard) 
         const ctx = canvas.getContext('2d');
         if (!ctx) return sourceCanvas;
 
-        const sourceCtx = sourceCanvas.getContext('2d');
-        ctx.fillStyle = sourceCtx ? sampleCanvasBackground(sourceCtx, width, height) : '#ffffff';
-        ctx.fillRect(0, 0, width, height);
-        ctx.drawImage(sourceCanvas, dx, dy);
+        drawTranslatedCanvasWithBleed(ctx, sourceCanvas, dx, dy);
         return canvas;
     });
 };
@@ -560,10 +657,7 @@ const applyFrameOffsets = (canvases: HTMLCanvasElement[], offsets: FrameOffset[]
         const ctx = canvas.getContext('2d');
         if (!ctx) return sourceCanvas;
 
-        const sourceCtx = sourceCanvas.getContext('2d');
-        ctx.fillStyle = sourceCtx ? sampleCanvasBackground(sourceCtx, sourceCanvas.width, sourceCanvas.height) : '#ffffff';
-        ctx.fillRect(0, 0, sourceCanvas.width, sourceCanvas.height);
-        ctx.drawImage(sourceCanvas, offset.x, offset.y);
+        drawTranslatedCanvasWithBleed(ctx, sourceCanvas, offset.x, offset.y);
         return canvas;
     });
 };
@@ -588,16 +682,39 @@ const renderFrameCanvases = (
         return canvas;
     });
 
-    return applyFrameOffsets(stabilizeFrameCanvases(canvases, board), offsets);
+    return applyFrameOffsets(stabilizeFrameCanvases(canvases, board), offsets).map(cleanFrameCanvasEdges);
 };
 
 const loadImageElement = (src: string): Promise<HTMLImageElement> => {
     return new Promise((resolve, reject) => {
         const img = new Image();
+        if (src.startsWith('http://') || src.startsWith('https://')) {
+            img.crossOrigin = 'anonymous';
+        }
         img.onload = () => resolve(img);
         img.onerror = () => reject(new Error('Failed to load image'));
         img.src = src;
     });
+};
+
+const blobToPngBlob = async (blob: Blob) => {
+    if (blob.type === 'image/png') return blob;
+
+    const url = URL.createObjectURL(blob);
+    try {
+        const image = await loadImageElement(url);
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth || image.width;
+        canvas.height = image.naturalHeight || image.height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return blob;
+        ctx.drawImage(image, 0, 0);
+        return await new Promise<Blob>((resolve) => {
+            canvas.toBlob((pngBlob) => resolve(pngBlob || blob), 'image/png');
+        });
+    } finally {
+        URL.revokeObjectURL(url);
+    }
 };
 
 const getGeneratedImageDetails = (
@@ -724,7 +841,7 @@ const buildFramesFromSliceAdjust = async (board: Artboard, state: SliceAdjustSta
 
 const CanvasBoard: React.FC<Props> = ({
     artboards, groups, onSelectArtboard, onInspectArtboard,
-    onMoveArtboard, onDeleteArtboard, onUploadImage, onAddImagesToCanvas,
+    onMoveArtboard, onMoveGroup, onDeleteArtboard, onUploadImage, onAddImagesToCanvas,
     onAutoArrange, onRegenerateArtboard, onUpdateArtboard,
     lang, regeneratingId, onRequestConfirm, onDeleteHistoryItem, onCopyImage,
     devMode,
@@ -739,6 +856,8 @@ const CanvasBoard: React.FC<Props> = ({
     // Interaction State
     const [isPanning, setIsPanning] = useState(false);
     const [movingArtboard, setMovingArtboard] = useState<string | null>(null);
+    const [movingGroup, setMovingGroup] = useState<string | null>(null);
+    const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
     const lastMousePos = useRef({ x: 0, y: 0 });
     const [isDragOver, setIsDragOver] = useState(false);
     const transformLayerRef = useRef<HTMLDivElement>(null);
@@ -755,8 +874,46 @@ const CanvasBoard: React.FC<Props> = ({
     const [isAnimationPlaying, setIsAnimationPlaying] = useState(true);
     const [isSlicingAnimation, setIsSlicingAnimation] = useState(false);
     const [animationError, setAnimationError] = useState<string | null>(null);
+    const [clipboardMessage, setClipboardMessage] = useState<string | null>(null);
     const [sliceAdjust, setSliceAdjust] = useState<SliceAdjustState | null>(null);
     const [uiSplitArtboard, setUiSplitArtboard] = useState<Artboard | null>(null);
+    const clipboardMessageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => () => {
+        if (clipboardMessageTimeoutRef.current) clearTimeout(clipboardMessageTimeoutRef.current);
+    }, []);
+
+    const showClipboardMessage = useCallback((message: string) => {
+        setClipboardMessage(message);
+        if (clipboardMessageTimeoutRef.current) clearTimeout(clipboardMessageTimeoutRef.current);
+        clipboardMessageTimeoutRef.current = setTimeout(() => setClipboardMessage(null), 2200);
+    }, []);
+
+    const copyImageToClipboard = useCallback(async (imageUrl: string) => {
+        try {
+            const ClipboardItemCtor = (window as any).ClipboardItem;
+            if (!navigator.clipboard?.write || !ClipboardItemCtor) {
+                throw new Error('Image clipboard is not supported');
+            }
+
+            const response = await fetch(imageUrl);
+            if (!response.ok) throw new Error(`Image fetch failed: ${response.status}`);
+            const sourceBlob = await response.blob();
+            const pngBlob = await blobToPngBlob(sourceBlob);
+            await navigator.clipboard.write([
+                new ClipboardItemCtor({ [pngBlob.type || 'image/png']: pngBlob }),
+            ]);
+            showClipboardMessage(lang === 'zh' ? '\u5df2\u590d\u5236\u56fe\u7247\u5230\u526a\u8d34\u677f' : 'Image copied to clipboard');
+        } catch (error) {
+            try {
+                await navigator.clipboard?.writeText(imageUrl);
+                showClipboardMessage(lang === 'zh' ? '\u5df2\u590d\u5236\u56fe\u7247\u94fe\u63a5' : 'Image link copied');
+            } catch {
+                console.error(error);
+                showClipboardMessage(lang === 'zh' ? '\u590d\u5236\u5931\u8d25\uff0c\u8bf7\u68c0\u67e5\u6d4f\u89c8\u5668\u526a\u8d34\u677f\u6743\u9650' : 'Copy failed. Check clipboard permission.');
+            }
+        }
+    }, [lang, showClipboardMessage]);
 
     const handleSaveLabel = () => {
         if (editingLabel && onUpdateArtboard) {
@@ -807,37 +964,30 @@ const CanvasBoard: React.FC<Props> = ({
         if (!node) return;
         const handleNativeWheel = (e: WheelEvent) => {
             e.preventDefault();
-            if (e.ctrlKey || e.metaKey) {
-                const zoomSensitivity = 0.001;
-                const delta = -e.deltaY * zoomSensitivity;
-                const prevScale = scaleRef.current;
-                const prevPos = posRef.current;
+            setContextMenu(null);
+            const deltaUnit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 240 : 1;
+            const deltaY = e.deltaY * deltaUnit;
+            const prevScale = scaleRef.current;
+            const prevPos = posRef.current;
+            const zoomFactor = Math.exp(-deltaY * 0.0012);
+            const nextScale = Math.min(Math.max(0.1, prevScale * zoomFactor), 5);
 
-                const nextScale = Math.min(Math.max(0.1, prevScale + delta), 5);
+            const rect = node.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
 
-                const rect = node.getBoundingClientRect();
-                const mouseX = e.clientX - rect.left;
-                const mouseY = e.clientY - rect.top;
+            const worldX = (mouseX - prevPos.x) / prevScale;
+            const worldY = (mouseY - prevPos.y) / prevScale;
 
-                const worldX = (mouseX - prevPos.x) / prevScale;
-                const worldY = (mouseY - prevPos.y) / prevScale;
+            const newPos = {
+                x: mouseX - worldX * nextScale,
+                y: mouseY - worldY * nextScale,
+            };
 
-                const newX = mouseX - worldX * nextScale;
-                const newY = mouseY - worldY * nextScale;
-
-                const newPos = { x: newX, y: newY };
-                scaleRef.current = nextScale;
-                posRef.current = newPos;
-                applyTransformToDOM(newPos, nextScale);
-                scheduleSyncToReact(newPos, nextScale);
-            } else {
-                setContextMenu(null);
-                const prevPos = posRef.current;
-                const newPos = { x: prevPos.x - e.deltaX, y: prevPos.y - e.deltaY };
-                posRef.current = newPos;
-                applyTransformToDOM(newPos, scaleRef.current);
-                scheduleSyncToReact(newPos, scaleRef.current);
-            }
+            scaleRef.current = nextScale;
+            posRef.current = newPos;
+            applyTransformToDOM(newPos, nextScale);
+            scheduleSyncToReact(newPos, nextScale);
         };
         node.addEventListener('wheel', handleNativeWheel, { passive: false });
         return () => node.removeEventListener('wheel', handleNativeWheel);
@@ -855,6 +1005,7 @@ const CanvasBoard: React.FC<Props> = ({
         setContextMenu(null);
         if (artboardId) {
             e.stopPropagation();
+            setSelectedGroup(artboards.find(a => a.id === artboardId)?.groupId || null);
             setMovingArtboard(artboardId);
             lastMousePos.current = { x: e.clientX, y: e.clientY };
             // Clear isNew flag when user clicks the artboard
@@ -863,6 +1014,7 @@ const CanvasBoard: React.FC<Props> = ({
                 onUpdateArtboard(artboardId, { isNew: false });
             }
         } else {
+            setSelectedGroup(null);
             setIsPanning(true);
             isPanningRef.current = true;
             lastMousePos.current = { x: e.clientX, y: e.clientY };
@@ -874,12 +1026,25 @@ const CanvasBoard: React.FC<Props> = ({
         }
     };
 
+    const handleGroupMouseDown = (e: React.MouseEvent, groupId: string) => {
+        if (e.button !== 0 && e.button !== 1) return;
+        e.stopPropagation();
+        setContextMenu(null);
+        setSelectedGroup(groupId);
+        setMovingGroup(groupId);
+        lastMousePos.current = { x: e.clientX, y: e.clientY };
+    };
+
     const handleMouseMove = (e: React.MouseEvent) => {
         const dx = e.clientX - lastMousePos.current.x;
         const dy = e.clientY - lastMousePos.current.y;
-        if (movingArtboard) {
-            const deltaX = dx / scale;
-            const deltaY = dy / scale;
+        const currentScale = scaleRef.current || scale;
+        if (movingGroup && onMoveGroup) {
+            onMoveGroup(movingGroup, dx / currentScale, dy / currentScale);
+            lastMousePos.current = { x: e.clientX, y: e.clientY };
+        } else if (movingArtboard) {
+            const deltaX = dx / currentScale;
+            const deltaY = dy / currentScale;
             const target = artboards.find(a => a.id === movingArtboard);
             if (target) {
                 let newX = target.x + deltaX;
@@ -896,7 +1061,7 @@ const CanvasBoard: React.FC<Props> = ({
                     if (!snappedX) {
                         for (let i = 0; i < 3; i++) {
                             for (const ox of otherEdgesX) {
-                                if (Math.abs(edgesX[i] - ox) < SNAP_THRESHOLD / scale) {
+                                if (Math.abs(edgesX[i] - ox) < SNAP_THRESHOLD / currentScale) {
                                     newX = ox - (i === 1 ? target.width / 2 : i === 2 ? target.width : 0);
                                     activeGuides.push({ type: 'v', pos: ox });
                                     snappedX = true; break;
@@ -908,7 +1073,7 @@ const CanvasBoard: React.FC<Props> = ({
                     if (!snappedY) {
                         for (let i = 0; i < 3; i++) {
                             for (const oy of otherEdgesY) {
-                                if (Math.abs(edgesY[i] - oy) < SNAP_THRESHOLD / scale) {
+                                if (Math.abs(edgesY[i] - oy) < SNAP_THRESHOLD / currentScale) {
                                     newY = oy - (i === 1 ? target.height / 2 : i === 2 ? target.height : 0);
                                     activeGuides.push({ type: 'h', pos: oy });
                                     snappedY = true; break;
@@ -936,6 +1101,7 @@ const CanvasBoard: React.FC<Props> = ({
         setIsPanning(false);
         isPanningRef.current = false;
         setMovingArtboard(null);
+        setMovingGroup(null);
         setGuides([]);
         // Sync final position to React state after panning
         if (wasPanning) {
@@ -1246,8 +1412,20 @@ const CanvasBoard: React.FC<Props> = ({
                     style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transformOrigin: '0 0', willChange: 'transform' }}
                 >
                     {groups.map(group => (
-                        <div key={group.id} style={{ position: 'absolute', left: group.x - 20, top: group.y - 40, width: group.width + 40, height: group.height + 60 }} className="border-2 border-dashed border-stone-300 dark:border-stone-700 rounded-xl pointer-events-none bg-stone-100/50 dark:bg-stone-800/30">
-                            <div className="absolute -top-12 left-0 text-lg font-bold text-stone-400 uppercase tracking-widest bg-stone-200 dark:bg-stone-800 px-4 py-1.5 rounded-lg shadow-sm">{group.label}</div>
+                        <div
+                            key={group.id}
+                            style={{ position: 'absolute', left: group.x - 20, top: group.y - 40, width: group.width + 40, height: group.height + 60 }}
+                            className={`rounded-xl border-2 border-dashed bg-stone-100/50 dark:bg-stone-800/30 cursor-grab active:cursor-grabbing ${
+                                selectedGroup === group.id || movingGroup === group.id
+                                    ? 'border-teal-500 ring-4 ring-teal-500/20'
+                                    : 'border-stone-300 dark:border-stone-700 hover:border-teal-400'
+                            }`}
+                            onMouseDown={(e) => handleGroupMouseDown(e, group.id)}
+                        >
+                            <div className="absolute -top-12 left-0 text-lg font-bold text-stone-400 uppercase tracking-widest bg-stone-200 dark:bg-stone-800 px-4 py-1.5 rounded-lg shadow-sm flex items-center gap-2">
+                                <IconLoader name="drag" size={16} />
+                                {group.label}
+                            </div>
                         </div>
                     ))}
                     {artboards.map(board => (
@@ -1369,6 +1547,14 @@ const CanvasBoard: React.FC<Props> = ({
                                             title={lang === 'zh' ? '下载图片' : 'Download Image'}
                                         >
                                             <IconLoader name="download" size={14} />
+                                        </button>
+
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); copyImageToClipboard(board.image.url); }}
+                                            className="p-1 hover:bg-stone-100 dark:hover:bg-stone-700 rounded text-stone-500 hover:text-teal-500 transition-colors"
+                                            title={lang === 'zh' ? '\u590d\u5236\u56fe\u7247\u5230\u526a\u8d34\u677f' : 'Copy Image to Clipboard'}
+                                        >
+                                            <IconLoader name="clipboard" size={14} />
                                         </button>
 
                                         {onCopyImage && (
@@ -1501,6 +1687,25 @@ const CanvasBoard: React.FC<Props> = ({
                                 <div className="my-1 h-px bg-stone-100 dark:bg-stone-700" />
                             </>
                         )}
+                        {board && (
+                            <button
+                                className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2"
+                                onClick={() => { copyImageToClipboard(board.image.url); setContextMenu(null); }}
+                            >
+                                <IconLoader name="clipboard" size={14} />
+                                {lang === 'zh' ? '\u590d\u5236\u56fe\u7247\u5230\u526a\u8d34\u677f' : 'Copy Image to Clipboard'}
+                            </button>
+                        )}
+                        {board && onCopyImage && (
+                            <button
+                                className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2"
+                                onClick={() => { onCopyImage(board.image.url); setContextMenu(null); }}
+                            >
+                                <IconLoader name="copy" size={14} />
+                                {lang === 'zh' ? '\u590d\u5236\u5230\u53c2\u8003\u56fe' : 'Copy to Reference'}
+                            </button>
+                        )}
+                        <div className="my-1 h-px bg-stone-100 dark:bg-stone-700" />
                         <button
                             className="w-full text-left px-4 py-2 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-700 flex items-center gap-2"
                             onClick={handleRegenerateClick}
@@ -1521,6 +1726,11 @@ const CanvasBoard: React.FC<Props> = ({
             {animationError && (
                 <div className="fixed top-4 left-1/2 z-[120] -translate-x-1/2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-xl">
                     {animationError}
+                </div>
+            )}
+            {clipboardMessage && (
+                <div className="fixed top-4 left-1/2 z-[120] -translate-x-1/2 rounded-lg bg-stone-900 px-4 py-2 text-sm font-medium text-white shadow-xl dark:bg-stone-100 dark:text-stone-900">
+                    {clipboardMessage}
                 </div>
             )}
             {sliceAdjust && (() => {
