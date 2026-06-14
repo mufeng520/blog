@@ -136,12 +136,6 @@ const base64ToPart = (base64String: string) => {
   return { inlineData: { mimeType, data: base64Data } };
 };
 
-const responseToDataUrl = async (res: Response, fallbackMimeType = 'image/png') => {
-  const arrayBuffer = await res.arrayBuffer();
-  const mimeType = res.headers.get('content-type') || fallbackMimeType;
-  return `data:${mimeType};base64,${Buffer.from(arrayBuffer).toString('base64')}`;
-};
-
 const processImageInput = async (input: string | undefined | null) => {
   if (!input) return null;
   if (input.startsWith('http://') || input.startsWith('https://')) {
@@ -263,37 +257,7 @@ const isChatCompletionsEndpoint = (baseUrl: string): boolean => {
   return normalized.includes('/chat/completions') || normalized.includes('chat.completions');
 };
 
-const isNetworkFetchFailure = (error: unknown) => {
-  const message = getErrorMessage(error).toLowerCase();
-  return (
-    error instanceof TypeError ||
-    message.includes('fetch failed') ||
-    message.includes('failed to fetch') ||
-    message.includes('network')
-  );
-};
-
-const fetchGeneratedImage = async (imageUrl: string): Promise<string> => {
-  const safeUrl = assertExternalHttpsUrl(imageUrl);
-  let imgRes: Response;
-
-  try {
-    imgRes = await fetchExternal(safeUrl, {
-      headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/*,*/*;q=0.8' },
-    });
-  } catch (error) {
-    if (isNetworkFetchFailure(error)) {
-      return safeUrl;
-    }
-    throw error;
-  }
-
-  if (!imgRes.ok) {
-    throw new Error(`\u751f\u6210\u56fe\u7247\u5df2\u8fd4\u56de\u94fe\u63a5\uff0c\u4f46\u4ee3\u7406\u4e0b\u8f7d\u5931\u8d25 ${imgRes.status}\uff1a${await readErrorText(imgRes)}`);
-  }
-
-  return responseToDataUrl(imgRes);
-};
+const normalizeGeneratedImageUrl = (imageUrl: string): string => assertExternalHttpsUrl(imageUrl);
 
 const shouldTryChatImageFallback = (error: unknown) => {
   const message = getErrorMessage(error).toLowerCase();
@@ -462,7 +426,7 @@ const callOpenAIImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Promis
   const imageData = data.data?.[0];
   if (imageData?.b64_json) return `data:image/png;base64,${imageData.b64_json}`;
   if (!imageData?.url) throw new Error('No image URL returned from OpenAI');
-  return fetchGeneratedImage(imageData.url);
+  return normalizeGeneratedImageUrl(imageData.url);
 };
 
 const callOpenAIChatImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Promise<string> => {
@@ -493,7 +457,7 @@ const callOpenAIChatImageAPI = async (api: APIConfig, opts: ImageAPIOptions): Pr
   const imageUrl = markdownMatch?.[1] || plainUrlMatch?.[1];
 
   if (imageUrl) {
-    return fetchGeneratedImage(imageUrl);
+    return normalizeGeneratedImageUrl(imageUrl);
   }
 
   const base64Match = content.match(/data:image\/[^;]+;base64,([A-Za-z0-9+/=]+)/);
