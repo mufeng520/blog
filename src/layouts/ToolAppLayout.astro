@@ -2,6 +2,7 @@
 
 import { toolRoutes } from '../lib/tool-routes';
 import type { ToolShellConfig } from '../lib/tool-shells';
+import '../styles/tailwind.css';
 
 type Props = ToolShellConfig;
 
@@ -17,7 +18,6 @@ const {
   lang = 'zh',
   bodyClass = '',
   fontLinks = [],
-  tailwindConfig,
   toolGlobalStyle,
 } = Astro.props;
 ---
@@ -32,8 +32,6 @@ const {
     <link rel="icon" href={iconHref} />
     {appleTouchIconHref ? <link rel="apple-touch-icon" href={appleTouchIconHref} /> : null}
     {fontLinks.map((href) => <link rel="stylesheet" href={href} />)}
-    {tailwindConfig ? <script is:inline set:html={tailwindConfig} /> : null}
-    <script is:inline src="https://cdn.tailwindcss.com"></script>
     {toolGlobalStyle ? <style is:global set:html={toolGlobalStyle} /> : null}
     <style is:global>
       .mufeng-tool-bar {

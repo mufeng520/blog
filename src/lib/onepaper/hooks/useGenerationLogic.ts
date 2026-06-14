@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { GeneratedImage, GenerationConfig, LayoutElement, DesignSystem } from '../types';
 import type { LangType } from '../types';
 import { loadGeminiService, loadSkillPromptTools } from './useGenerationDependencies';
@@ -111,6 +111,7 @@ export const useGenerationLogic = (
     } | null>(null);
     const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
     const [inspectImage, setInspectImage] = useState<GeneratedImage | null>(null);
+    const generationInFlightRef = useRef(false);
 
     const [regenState, setRegenState] = useState<{
         isOpen: boolean; artboardId: string | null; targetImage: string | null; mode: 'refine' | 'new';
@@ -124,6 +125,16 @@ export const useGenerationLogic = (
         ? { id: config.mediaResolution.id, name: config.mediaResolution.name, width: config.mediaResolution.width, height: config.mediaResolution.height, type: config.platform as any }
         : config.resolution;
     const mediaFields = { activeRole: config.activeRole as any, mediaAspectRatio: config.mediaAspectRatio as any, mediaType: config.mediaType as any };
+
+    const beginGeneration = () => {
+        if (generationInFlightRef.current) return false;
+        generationInFlightRef.current = true;
+        return true;
+    };
+
+    const endGeneration = () => {
+        generationInFlightRef.current = false;
+    };
 
     // Actions
     const handleExtractStyle = async (files: File[]) => {
@@ -181,6 +192,7 @@ export const useGenerationLogic = (
     };
 
     const handleConfirmGeneration = async (overridePrompt?: string, ignoreLayoutImage: boolean = false, projectId?: string | null) => {
+        if (!beginGeneration()) return;
         setIsGenerating(true); setProgressValue(20); setError(null); setReviewData(null);
 
         const layoutImageToUse = ignoreLayoutImage ? null : canvas.layoutImage;
@@ -233,10 +245,11 @@ export const useGenerationLogic = (
         } catch (err: any) {
             if (err?.message === "QUOTA_EXCEEDED") setError(lang === 'zh' ? '配额已耗尽' : 'Quota Exceeded');
             else setError(err.message);
-        } finally { setIsGenerating(false); setTimeout(() => setProgressValue(0), 500); }
+        } finally { endGeneration(); setIsGenerating(false); setTimeout(() => setProgressValue(0), 500); }
     };
 
     const startBatchGenerationFlow = async (feedback: string | null) => {
+        if (!beginGeneration()) return;
         setIsGenerating(true); setError(null);
         setBatchProgress(lang === 'zh' ? '正在生成设计规范...' : 'Generating Design Spec...');
 
@@ -279,11 +292,12 @@ export const useGenerationLogic = (
                 setSpecReviewImage(resultImage);
             }
         } catch (e: any) { setError(e.message); }
-        finally { setIsGenerating(false); setBatchProgress(''); }
+        finally { endGeneration(); setIsGenerating(false); setBatchProgress(''); }
     };
 
     const continueBatchGeneration = async (currentProjectId: string | null) => {
         if (config.pages.length === 0) return;
+        if (!beginGeneration()) return;
         const currentSpec = specReviewImage;
         setSpecReviewImage(null); setSpecFeedback('');
         setIsGenerating(true); setError(null); setProgressValue(0);
@@ -366,11 +380,12 @@ export const useGenerationLogic = (
                 setProgressValue((completed / total) * 100);
             }
         } catch (e: any) { setError(e.message); }
-        finally { setIsGenerating(false); setBatchProgress(''); setProgressValue(0); }
+        finally { endGeneration(); setIsGenerating(false); setBatchProgress(''); setProgressValue(0); }
     };
 
     // --- Skill Mode: Single Image Generation ---
     const handleSkillSingleGeneration = async (skillType: string, skillConfig: any, currentProjectId: string | null) => {
+        if (!beginGeneration()) return;
         setIsGenerating(true); setProgressValue(20); setError(null);
 
         // Resolve skill-specific resolution override
@@ -455,11 +470,12 @@ export const useGenerationLogic = (
         } catch (err: any) {
             if (err?.message === "QUOTA_EXCEEDED") setError(lang === 'zh' ? '配额已耗尽' : 'Quota Exceeded');
             else setError(err.message);
-        } finally { setIsGenerating(false); setTimeout(() => setProgressValue(0), 500); }
+        } finally { endGeneration(); setIsGenerating(false); setTimeout(() => setProgressValue(0), 500); }
     };
 
     // --- Skill Mode: Multi-Image Sequence Generation ---
     const handleSkillSequenceGeneration = async (skillType: string, skillConfig: any, currentProjectId: string | null) => {
+        if (!beginGeneration()) return;
         setIsGenerating(true); setError(null); setProgressValue(0);
         const batchId = `skill-${skillType}-${Date.now()}`;
 
@@ -473,6 +489,7 @@ export const useGenerationLogic = (
         const pageCount = pages.length;
         if (pageCount === 0) {
             setError(lang === 'zh' ? '请先填写分镜内容或设置帧数' : 'Please add storyboard pages or set a frame count');
+            endGeneration();
             setIsGenerating(false);
             return;
         }
@@ -559,7 +576,7 @@ export const useGenerationLogic = (
         } catch (err: any) {
             if (err?.message === "QUOTA_EXCEEDED") setError(lang === 'zh' ? '配额已耗尽' : 'Quota Exceeded');
             else setError(err.message);
-        } finally { setIsGenerating(false); setBatchProgress(''); setProgressValue(0); }
+        } finally { endGeneration(); setIsGenerating(false); setBatchProgress(''); setProgressValue(0); }
     };
 
     const handlePrepareGeneration = async (devMode: boolean, currentProjectId: string | null) => {
@@ -637,6 +654,7 @@ export const useGenerationLogic = (
     const handleRegenerateArtboard = async (id: string, prompt: string, ref: string | null, layout: string | null, mask: string | null) => {
         const targetBoard = canvas.artboards.find(a => a.id === id);
         if (!targetBoard) return;
+        if (!beginGeneration()) return;
 
         setIsGenerating(true); setRegeneratingId(id); setError(null);
         const oldDetails = targetBoard.image.details;
@@ -685,7 +703,7 @@ export const useGenerationLogic = (
                 return b;
             }));
         } catch (err: any) { setError(err.message || 'Regeneration failed'); }
-        finally { setIsGenerating(false); setRegeneratingId(null); }
+        finally { endGeneration(); setIsGenerating(false); setRegeneratingId(null); }
     };
 
     // Open Regen

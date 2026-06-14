@@ -258,6 +258,11 @@ const describeOpenAIImageTarget = (api: APIConfig) => {
   return `${api.imageModel || 'gpt-image-2'} @ ${readableHost(endpoint)}`;
 };
 
+const isChatCompletionsEndpoint = (baseUrl: string): boolean => {
+  const normalized = baseUrl.trim().toLowerCase();
+  return normalized.includes('/chat/completions') || normalized.includes('chat.completions');
+};
+
 const isNetworkFetchFailure = (error: unknown) => {
   const message = getErrorMessage(error).toLowerCase();
   return (
@@ -602,6 +607,10 @@ export const POST: APIRoute = async ({ request }) => {
       case 'gemini-image':
         return json({ image: await callGeminiImageAPI(api, body.opts as ImageAPIOptions) });
       case 'openai-image': {
+        if (isChatCompletionsEndpoint(api.baseUrl)) {
+          return json({ image: await callOpenAIChatImageAPI(api, body.opts as ImageAPIOptions) });
+        }
+
         try {
           return json({ image: await callOpenAIImageAPI(api, body.opts as ImageAPIOptions) });
         } catch (error) {
