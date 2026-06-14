@@ -1173,6 +1173,7 @@ const CanvasBoard: React.FC<Props> = ({
     const dotGridRef = useRef<HTMLDivElement>(null);
     const transitionRemovedRef = useRef(false);
     const isPanningRef = useRef(false);
+    const activeTouchIdRef = useRef<number | null>(null);
     const syncTimeoutRef = useRef<ReturnType<typeof setTimeout>>(0 as any);
     const [guides, setGuides] = useState<{ type: 'v' | 'h'; pos: number }[]>([]);
     const [contextMenu, setContextMenu] = useState<CanvasContextMenu | null>(null);
@@ -1380,17 +1381,22 @@ const CanvasBoard: React.FC<Props> = ({
         }
     };
 
-    const beginCanvasPan = (e: React.MouseEvent) => {
-        e.preventDefault();
+    const beginCanvasPanAt = (clientX: number, clientY: number) => {
         setContextMenu(null);
+        setSelectionMarquee(null);
         setIsPanning(true);
         isPanningRef.current = true;
-        lastMousePos.current = { x: e.clientX, y: e.clientY };
+        lastMousePos.current = { x: clientX, y: clientY };
         if (transformLayerRef.current) {
             transformLayerRef.current.style.transition = 'none';
             transformLayerRef.current.style.pointerEvents = 'none';
             transitionRemovedRef.current = true;
         }
+    };
+
+    const beginCanvasPan = (e: React.MouseEvent) => {
+        e.preventDefault();
+        beginCanvasPanAt(e.clientX, e.clientY);
     };
 
     const handleMouseDown = (e: React.MouseEvent, artboardId?: string) => {
@@ -1577,6 +1583,56 @@ const CanvasBoard: React.FC<Props> = ({
             transitionRemovedRef.current = false;
         }
     };
+
+    const getTouchById = (touches: React.TouchList, touchId: number) => {
+        for (let i = 0; i < touches.length; i++) {
+            const touch = touches.item(i);
+            if (touch?.identifier === touchId) return touch;
+        }
+        return null;
+    };
+
+    const handleCanvasTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (activeTouchIdRef.current !== null || e.touches.length !== 1) return;
+
+        const target = e.target as HTMLElement | null;
+        const isInteractive = target?.closest('button, input, textarea, select, [contenteditable="true"], a, [data-canvas-touch-block]');
+        if (isInteractive) return;
+
+        const touch = e.touches.item(0);
+        if (!touch) return;
+
+        e.preventDefault();
+        activeTouchIdRef.current = touch.identifier;
+        beginCanvasPanAt(touch.clientX, touch.clientY);
+    };
+
+    const handleCanvasTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        const touchId = activeTouchIdRef.current;
+        if (touchId === null || !isPanningRef.current) return;
+
+        const touch = getTouchById(e.touches, touchId);
+        if (!touch) return;
+
+        e.preventDefault();
+        const dx = touch.clientX - lastMousePos.current.x;
+        const dy = touch.clientY - lastMousePos.current.y;
+        const newPos = { x: posRef.current.x + dx, y: posRef.current.y + dy };
+        posRef.current = newPos;
+        applyTransformToDOM(newPos, scaleRef.current);
+        lastMousePos.current = { x: touch.clientX, y: touch.clientY };
+    };
+
+    const handleCanvasTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+        const touchId = activeTouchIdRef.current;
+        if (touchId === null) return;
+        if (getTouchById(e.touches, touchId)) return;
+
+        e.preventDefault();
+        activeTouchIdRef.current = null;
+        handleMouseUp();
+    };
+
     const handleContextMenu = (e: React.MouseEvent, artboardId: string) => {
         e.preventDefault();
         e.stopPropagation();
@@ -1954,17 +2010,18 @@ const CanvasBoard: React.FC<Props> = ({
     const handleSpecUpdate = (id: string, newDs: DesignSystem) => { if (onUpdateArtboard) { const target = artboards.find(a => a.id === id); if (target && target.image.details) { onUpdateArtboard(id, { image: { ...target.image, details: { ...target.image.details, designSystem: newDs } } }); } } };
 
     return (
-        <div className="relative w-full h-full overflow-hidden bg-[#e5e5e5] dark:bg-[#1c1917] select-none touch-pan-x touch-pan-y">
+        <div className="relative w-full h-full overflow-hidden bg-[#e5e5e5] dark:bg-[#1c1917] select-none">
             <div ref={dotGridRef} className="absolute inset-0 opacity-20 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #888 1px, transparent 1px)', backgroundSize: `${Math.max(2, 20 * scale)}px ${Math.max(2, 20 * scale)}px`, backgroundPosition: `${position?.x ?? 0}px ${position?.y ?? 0}px`, transition: 'opacity 0.15s ease-out' }} />
             {isDragOver && (<div className="absolute inset-0 bg-teal-500/20 z-50 flex items-center justify-center border-4 border-teal-500 border-dashed pointer-events-none"><span className="text-2xl font-bold text-teal-600 bg-white/80 px-4 py-2 rounded">{lang === 'zh' ? '释放以上传图片到画布' : 'Drop to add image to canvas'}</span></div>)}
 
-            <div ref={containerRef} className={`w-full h-full ${isPanning ? 'cursor-grabbing' : 'cursor-crosshair'}`} onMouseDown={(e) => handleMouseDown(e)} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
+            <div ref={containerRef} className={`w-full h-full touch-none ${isPanning ? 'cursor-grabbing' : 'cursor-crosshair'}`} style={{ touchAction: 'none' }} onMouseDown={(e) => handleMouseDown(e)} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp} onTouchStart={handleCanvasTouchStart} onTouchMove={handleCanvasTouchMove} onTouchEnd={handleCanvasTouchEnd} onTouchCancel={handleCanvasTouchEnd} onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
                 <div
                     ref={transformLayerRef}
                     style={{ transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`, transformOrigin: '0 0', willChange: 'transform' }}
                 >
                     {groups.map(group => (
                         <div
+                            data-canvas-touch-block
                             key={group.id}
                             style={{ position: 'absolute', left: group.x - 20, top: group.y - 40, width: group.width + 40, height: group.height + 60 }}
                             className={`rounded-xl border-2 border-dashed bg-stone-100/50 dark:bg-stone-800/30 cursor-pointer ${
@@ -1986,7 +2043,7 @@ const CanvasBoard: React.FC<Props> = ({
                         </div>
                     ))}
                     {artboards.map(board => (
-                        <div key={board.id} style={{ position: 'absolute', left: board.x, top: board.y, width: board.width, height: board.height, contain: 'layout style' }} className={`bg-white shadow-md dark:shadow-black/40 group hover:ring-2 ring-teal-500/50 ${selectedArtboardIds.includes(board.id) ? 'ring-4 ring-teal-500 z-40' : ''} ${movingArtboard === board.id && isArtboardDragActiveRef.current ? 'ring-4 ring-teal-500 cursor-grabbing z-50' : 'cursor-pointer'} rounded-lg ${board.isNew ? 'flash-new' : ''}`} onMouseDown={(e) => handleMouseDown(e, board.id)} onContextMenu={(e) => handleContextMenu(e, board.id)} onDoubleClick={(e) => handleDoubleClick(e, board.id)}>
+                        <div data-canvas-touch-block key={board.id} style={{ position: 'absolute', left: board.x, top: board.y, width: board.width, height: board.height, contain: 'layout style' }} className={`bg-white shadow-md dark:shadow-black/40 group hover:ring-2 ring-teal-500/50 ${selectedArtboardIds.includes(board.id) ? 'ring-4 ring-teal-500 z-40' : ''} ${movingArtboard === board.id && isArtboardDragActiveRef.current ? 'ring-4 ring-teal-500 cursor-grabbing z-50' : 'cursor-pointer'} rounded-lg ${board.isNew ? 'flash-new' : ''}`} onMouseDown={(e) => handleMouseDown(e, board.id)} onContextMenu={(e) => handleContextMenu(e, board.id)} onDoubleClick={(e) => handleDoubleClick(e, board.id)}>
 
                             {/* Floating Toolbar & Label */}
                             <div
