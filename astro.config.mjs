@@ -11,7 +11,7 @@ import vercel from '@astrojs/vercel';
 export default defineConfig({
   output: 'server',
   adapter: vercel({
-    maxDuration: 60,
+    maxDuration: 300,
   }),
   integrations: [react()],
   vite: {

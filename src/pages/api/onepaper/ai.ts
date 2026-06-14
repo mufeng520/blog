@@ -42,6 +42,8 @@ const routeHeaders = {
   Allow: 'GET, HEAD, POST, OPTIONS',
 };
 
+const encoder = new TextEncoder();
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
@@ -50,6 +52,38 @@ const json = (body: unknown, status = 200) =>
       ...routeHeaders,
     },
   });
+
+const streamJson = (producer: () => Promise<unknown>, status = 200) => {
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      controller.enqueue(encoder.encode(' '));
+
+      const heartbeat = setInterval(() => {
+        controller.enqueue(encoder.encode(' '));
+      }, 4000);
+
+      try {
+        const body = await producer();
+        clearInterval(heartbeat);
+        controller.enqueue(encoder.encode(JSON.stringify(body)));
+        controller.close();
+      } catch (error) {
+        clearInterval(heartbeat);
+        controller.enqueue(encoder.encode(JSON.stringify({ error: getErrorMessage(error) })));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Accel-Buffering': 'no',
+      ...routeHeaders,
+    },
+  });
+};
 
 const getErrorMessage = (error: unknown) =>
   error instanceof Error ? error.message : String(error || 'Unknown error');
@@ -554,44 +588,53 @@ export const OPTIONS: APIRoute = () =>
   });
 
 export const POST: APIRoute = async ({ request }) => {
+  let body: any;
+
   try {
-    const body = await request.json();
-    const operation = body?.operation as ServerOperation;
-    const api = body?.api as APIConfig | undefined;
+    body = await request.json();
+  } catch (error) {
+    return json({ error: getErrorMessage(error) }, 400);
+  }
 
-    if (!api || !api.provider || !api.apiKey?.trim()) {
-      return json({ error: 'Missing API provider or API key.' }, 400);
-    }
+  const operation = body?.operation as ServerOperation;
+  const api = body?.api as APIConfig | undefined;
 
+  if (!api || !api.provider || !api.apiKey?.trim()) {
+    return json({ error: 'Missing API provider or API key.' }, 400);
+  }
+
+  if (!operation) {
+    return json({ error: 'Unknown AI operation.' }, 400);
+  }
+
+  return streamJson(async () => {
     switch (operation) {
       case 'gemini-text':
-        return json({ text: await callGeminiTextAPI(api, body.opts as TextAPIOptions) });
+        return { text: await callGeminiTextAPI(api, body.opts as TextAPIOptions) };
       case 'openai-text':
-        return json({ text: await callOpenAITextAPI(api, body.opts as TextAPIOptions) });
+        return { text: await callOpenAITextAPI(api, body.opts as TextAPIOptions) };
       case 'gemini-image':
-        return json({ image: await callGeminiImageAPI(api, body.opts as ImageAPIOptions) });
+        return { image: await callGeminiImageAPI(api, body.opts as ImageAPIOptions) };
       case 'openai-image': {
         if (isChatCompletionsEndpoint(api.baseUrl)) {
-          return json({ image: await callOpenAIChatImageAPI(api, body.opts as ImageAPIOptions) });
+          return { image: await callOpenAIChatImageAPI(api, body.opts as ImageAPIOptions) };
         }
 
         try {
-          return json({ image: await callOpenAIImageAPI(api, body.opts as ImageAPIOptions) });
+          return { image: await callOpenAIImageAPI(api, body.opts as ImageAPIOptions) };
         } catch (error) {
           if (shouldTryChatImageFallback(error)) {
-            return json({ image: await callOpenAIChatImageAPI(api, body.opts as ImageAPIOptions) });
+            return { image: await callOpenAIChatImageAPI(api, body.opts as ImageAPIOptions) };
           }
           throw error;
         }
       }
       case 'openai-chat-image':
-        return json({ image: await callOpenAIChatImageAPI(api, body.opts as ImageAPIOptions) });
+        return { image: await callOpenAIChatImageAPI(api, body.opts as ImageAPIOptions) };
       case 'models':
-        return json({ models: await listModels(api) });
+        return { models: await listModels(api) };
       default:
-        return json({ error: 'Unknown AI operation.' }, 400);
+        throw new Error('Unknown AI operation.');
     }
-  } catch (error) {
-    return json({ error: getErrorMessage(error) }, 500);
-  }
+  });
 };
