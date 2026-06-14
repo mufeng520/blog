@@ -105,13 +105,6 @@ const getOpenAIEndpoint = (baseUrl: string, endpoint: 'chat' | 'image'): string 
   const rawUrl = (baseUrl || fallback).trim() || fallback;
   const url = new URL(rawUrl);
   const cleanPath = url.pathname.replace(/\/+$/, '');
-  const lowerPath = cleanPath.toLowerCase();
-
-  if (endpoint === 'image' && lowerPath.endsWith('/chat/completions')) {
-    url.pathname = `${cleanPath.slice(0, -'/chat/completions'.length)}/images/generations`;
-  } else if (endpoint === 'chat' && lowerPath.endsWith('/images/generations')) {
-    url.pathname = `${cleanPath.slice(0, -'/images/generations'.length)}/chat/completions`;
-  }
 
   const normalizedPath = url.pathname.replace(/\/+$/, '');
   if (normalizedPath === '' || normalizedPath === '/' || normalizedPath.endsWith('/v1')) {
@@ -603,19 +596,11 @@ export const POST: APIRoute = async ({ request }) => {
 
     switch (operation) {
       case 'gemini-text':
-        return json({
-          text: looksOpenAICompatible(api)
-            ? await callOpenAITextAPI(api, body.opts as TextAPIOptions)
-            : await callGeminiTextAPI(api, body.opts as TextAPIOptions),
-        });
+        return json({ text: await callGeminiTextAPI(api, body.opts as TextAPIOptions) });
       case 'openai-text':
         return json({ text: await callOpenAITextAPI(api, body.opts as TextAPIOptions) });
       case 'gemini-image':
-        return json({
-          image: looksOpenAICompatible(api)
-            ? await callOpenAIImageAPI(api, body.opts as ImageAPIOptions)
-            : await callGeminiImageAPI(api, body.opts as ImageAPIOptions),
-        });
+        return json({ image: await callGeminiImageAPI(api, body.opts as ImageAPIOptions) });
       case 'openai-image': {
         try {
           return json({ image: await callOpenAIImageAPI(api, body.opts as ImageAPIOptions) });
